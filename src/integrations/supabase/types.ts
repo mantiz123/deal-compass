@@ -280,76 +280,127 @@ export type Database = {
       }
       properties: {
         Row: {
+          active_liens_count: number | null
           address: string
           arv: number | null
           bathrooms: number | null
           bedrooms: number | null
           city: string
           created_at: string
+          data_fetched_at: string | null
+          data_source: string | null
           equity_percent: number | null
+          eviction_count: number | null
           id: string
           is_absentee_owner: boolean | null
+          is_foreclosure: boolean | null
+          is_probate: boolean | null
+          last_refinance_date: string | null
+          last_sale_date: string | null
+          last_sale_price: number | null
           lot_size: number | null
+          mailing_address_different: boolean | null
           mao: number | null
+          mortgage_age_years: number | null
+          neighborhood_vacancy_rate: number | null
           notes: string | null
           owner_email: string | null
           owner_name: string | null
           owner_phone: string | null
+          owner_tenure_years: number | null
+          owner_type: string | null
+          price_growth_3yr: number | null
           property_type: Database["public"]["Enums"]["property_type"]
+          proximity_to_development: string | null
           repair_cost: number | null
           sqft: number | null
           state: string
           tax_debt: number | null
+          tax_delinquent: boolean | null
           updated_at: string
           year_built: number | null
           zip_code: string
         }
         Insert: {
+          active_liens_count?: number | null
           address: string
           arv?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
           city: string
           created_at?: string
+          data_fetched_at?: string | null
+          data_source?: string | null
           equity_percent?: number | null
+          eviction_count?: number | null
           id?: string
           is_absentee_owner?: boolean | null
+          is_foreclosure?: boolean | null
+          is_probate?: boolean | null
+          last_refinance_date?: string | null
+          last_sale_date?: string | null
+          last_sale_price?: number | null
           lot_size?: number | null
+          mailing_address_different?: boolean | null
           mao?: number | null
+          mortgage_age_years?: number | null
+          neighborhood_vacancy_rate?: number | null
           notes?: string | null
           owner_email?: string | null
           owner_name?: string | null
           owner_phone?: string | null
+          owner_tenure_years?: number | null
+          owner_type?: string | null
+          price_growth_3yr?: number | null
           property_type?: Database["public"]["Enums"]["property_type"]
+          proximity_to_development?: string | null
           repair_cost?: number | null
           sqft?: number | null
           state?: string
           tax_debt?: number | null
+          tax_delinquent?: boolean | null
           updated_at?: string
           year_built?: number | null
           zip_code: string
         }
         Update: {
+          active_liens_count?: number | null
           address?: string
           arv?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string
           created_at?: string
+          data_fetched_at?: string | null
+          data_source?: string | null
           equity_percent?: number | null
+          eviction_count?: number | null
           id?: string
           is_absentee_owner?: boolean | null
+          is_foreclosure?: boolean | null
+          is_probate?: boolean | null
+          last_refinance_date?: string | null
+          last_sale_date?: string | null
+          last_sale_price?: number | null
           lot_size?: number | null
+          mailing_address_different?: boolean | null
           mao?: number | null
+          mortgage_age_years?: number | null
+          neighborhood_vacancy_rate?: number | null
           notes?: string | null
           owner_email?: string | null
           owner_name?: string | null
           owner_phone?: string | null
+          owner_tenure_years?: number | null
+          owner_type?: string | null
+          price_growth_3yr?: number | null
           property_type?: Database["public"]["Enums"]["property_type"]
+          proximity_to_development?: string | null
           repair_cost?: number | null
           sqft?: number | null
           state?: string
           tax_debt?: number | null
+          tax_delinquent?: boolean | null
           updated_at?: string
           year_built?: number | null
           zip_code?: string
