@@ -9,6 +9,7 @@ import Pipeline from "./pages/Pipeline";
 import Leads from "./pages/Leads";
 import Buyers from "./pages/Buyers";
 import Tracking from "./pages/Tracking";
+import Campaigns from "./pages/Campaigns";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/leads" element={<Leads />} />
             <Route path="/buyers" element={<Buyers />} />
             <Route path="/tracking" element={<Tracking />} />
+            <Route path="/campaigns" element={<Campaigns />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
