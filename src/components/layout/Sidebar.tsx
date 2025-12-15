@@ -12,8 +12,10 @@ import {
   Zap,
   Building2,
   MessageSquare,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -29,6 +31,7 @@ const navigation = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <aside
@@ -77,8 +80,20 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Collapse button */}
-        <div className="border-t border-border p-2">
+        {/* Bottom section */}
+        <div className="border-t border-border p-2 space-y-1">
+          {/* Logout button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            onClick={signOut}
+          >
+            <LogOut className="h-4 w-4" />
+            {!collapsed && <span className="ml-2">Cerrar sesión</span>}
+          </Button>
+
+          {/* Collapse button */}
           <Button
             variant="ghost"
             size="sm"
@@ -90,7 +105,7 @@ export function Sidebar() {
             ) : (
               <>
                 <ChevronLeft className="h-4 w-4" />
-                <span className="ml-2">Collapse</span>
+                <span className="ml-2">Colapsar</span>
               </>
             )}
           </Button>
