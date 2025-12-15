@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,9 +23,11 @@ import {
   Calendar,
   CheckCircle2,
   Eye,
-  MousePointer
+  MousePointer,
+  Send
 } from 'lucide-react';
 import type { Buyer } from '@/hooks/useBuyers';
+import { SendToBuyerSheet } from './SendToBuyerSheet';
 
 interface BuyerDetailSheetProps {
   buyer: Buyer | null;
@@ -48,6 +52,7 @@ const propertyTypeLabels: Record<string, string> = {
 };
 
 export function BuyerDetailSheet({ buyer, open, onOpenChange }: BuyerDetailSheetProps) {
+  const [showSendSheet, setShowSendSheet] = useState(false);
   // Fetch deal packages for this buyer
   const { data: dealPackages, isLoading: loadingDeals } = useQuery({
     queryKey: ['buyer-deals', buyer?.id],
@@ -112,10 +117,21 @@ export function BuyerDetailSheet({ buyer, open, onOpenChange }: BuyerDetailSheet
                 </p>
               )}
             </div>
-            <Badge variant={buyer.is_active ? 'default' : 'secondary'}>
-              {buyer.is_active ? 'Activo' : 'Inactivo'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={buyer.is_active ? 'default' : 'secondary'}>
+                {buyer.is_active ? 'Activo' : 'Inactivo'}
+              </Badge>
+            </div>
           </div>
+          {buyer.is_active && (
+            <Button 
+              className="mt-3 w-full" 
+              onClick={() => setShowSendSheet(true)}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Enviar Deal Packages
+            </Button>
+          )}
         </SheetHeader>
 
         <ScrollArea className="flex-1 -mx-6 px-6">
@@ -351,6 +367,13 @@ export function BuyerDetailSheet({ buyer, open, onOpenChange }: BuyerDetailSheet
           </div>
         </ScrollArea>
       </SheetContent>
+
+      {/* Send Deal Packages Sheet */}
+      <SendToBuyerSheet
+        buyer={buyer}
+        open={showSendSheet}
+        onOpenChange={setShowSendSheet}
+      />
     </Sheet>
   );
 }
