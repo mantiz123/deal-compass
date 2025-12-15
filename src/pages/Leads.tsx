@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
-import { PIWScoreDetails } from "@/components/leads/PIWScoreDetails";
+import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { useLeads, useCalculatePIWScore, Lead } from "@/hooks/useLeads";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -367,8 +367,8 @@ const Leads = () => {
         onOpenChange={setShowNewLeadDialog} 
       />
 
-      {/* PIW Score Details Sheet */}
-      <PIWScoreDetails
+      {/* Lead Detail Sheet */}
+      <LeadDetailSheet
         lead={selectedLead}
         open={!!selectedLead}
         onOpenChange={(open) => !open && setSelectedLead(null)}
