@@ -5,9 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useBuyers, type Buyer } from "@/hooks/useBuyers";
 import { useBuyerStats } from "@/hooks/useBuyerMatchmaking";
 import { NewBuyerDialog } from "@/components/buyers/NewBuyerDialog";
+import { EditBuyerDialog } from "@/components/buyers/EditBuyerDialog";
+import { DeleteBuyerDialog } from "@/components/buyers/DeleteBuyerDialog";
 import {
   Search,
   Plus,
@@ -21,6 +30,9 @@ import {
   Star,
   Users,
   AlertCircle,
+  Pencil,
+  Trash2,
+  UserX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +49,8 @@ const Buyers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const [editBuyer, setEditBuyer] = useState<Buyer | null>(null);
+  const [deleteBuyer, setDeleteBuyer] = useState<Buyer | null>(null);
 
   const filteredBuyers = buyers?.filter(buyer => {
     // Filter by search term
@@ -312,19 +326,55 @@ const Buyers = () => {
                         <Mail className="h-4 w-4" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditBuyer(buyer)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setDeleteBuyer(buyer)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
+
+                {/* Inactive indicator */}
+                {!buyer.is_active && (
+                  <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 text-sm text-muted-foreground">
+                    <UserX className="h-4 w-4" />
+                    <span>Inactivo</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
-      {/* New Buyer Dialog */}
+      {/* Dialogs */}
       <NewBuyerDialog open={showNewDialog} onOpenChange={setShowNewDialog} />
+      <EditBuyerDialog 
+        buyer={editBuyer} 
+        open={!!editBuyer} 
+        onOpenChange={(open) => !open && setEditBuyer(null)} 
+      />
+      <DeleteBuyerDialog 
+        buyer={deleteBuyer} 
+        open={!!deleteBuyer} 
+        onOpenChange={(open) => !open && setDeleteBuyer(null)} 
+      />
     </Layout>
   );
 };
