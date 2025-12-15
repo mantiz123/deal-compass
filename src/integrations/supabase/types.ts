@@ -14,16 +14,398 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      buyers: {
+        Row: {
+          ai_match_score: number | null
+          avg_close_time_days: number | null
+          company_name: string | null
+          contact_name: string
+          created_at: string
+          deals_closed: number | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          max_arv: number | null
+          max_repair_level: string | null
+          min_arv: number | null
+          notes: string | null
+          phone: string | null
+          preferred_property_types:
+            | Database["public"]["Enums"]["property_type"][]
+            | null
+          preferred_zip_codes: string[] | null
+          tier: Database["public"]["Enums"]["buyer_tier"]
+          total_volume: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_match_score?: number | null
+          avg_close_time_days?: number | null
+          company_name?: string | null
+          contact_name: string
+          created_at?: string
+          deals_closed?: number | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_arv?: number | null
+          max_repair_level?: string | null
+          min_arv?: number | null
+          notes?: string | null
+          phone?: string | null
+          preferred_property_types?:
+            | Database["public"]["Enums"]["property_type"][]
+            | null
+          preferred_zip_codes?: string[] | null
+          tier?: Database["public"]["Enums"]["buyer_tier"]
+          total_volume?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_match_score?: number | null
+          avg_close_time_days?: number | null
+          company_name?: string | null
+          contact_name?: string
+          created_at?: string
+          deals_closed?: number | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_arv?: number | null
+          max_repair_level?: string | null
+          min_arv?: number | null
+          notes?: string | null
+          phone?: string | null
+          preferred_property_types?:
+            | Database["public"]["Enums"]["property_type"][]
+            | null
+          preferred_zip_codes?: string[] | null
+          tier?: Database["public"]["Enums"]["buyer_tier"]
+          total_volume?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      deal_packages: {
+        Row: {
+          buyer_id: string
+          clicked_at: string | null
+          id: string
+          lead_id: string
+          opened_at: string | null
+          response: string | null
+          sent_at: string
+        }
+        Insert: {
+          buyer_id: string
+          clicked_at?: string | null
+          id?: string
+          lead_id: string
+          opened_at?: string | null
+          response?: string | null
+          sent_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          clicked_at?: string | null
+          id?: string
+          lead_id?: string
+          opened_at?: string | null
+          response?: string | null
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_packages_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "buyers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_packages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interactions: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string | null
+          direction: string | null
+          id: string
+          interaction_type: string
+          lead_id: string
+          sentiment: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string | null
+          id?: string
+          interaction_type: string
+          lead_id: string
+          sentiment?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string | null
+          id?: string
+          interaction_type?: string
+          lead_id?: string
+          sentiment?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          assigned_agent_id: string | null
+          assignment_fee: number | null
+          closing_date: string | null
+          created_at: string
+          id: string
+          last_contact_at: string | null
+          next_follow_up_at: string | null
+          offer_amount: number | null
+          piw_score: number | null
+          piw_score_factors: Json | null
+          property_id: string
+          source: string | null
+          status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_agent_id?: string | null
+          assignment_fee?: number | null
+          closing_date?: string | null
+          created_at?: string
+          id?: string
+          last_contact_at?: string | null
+          next_follow_up_at?: string | null
+          offer_amount?: number | null
+          piw_score?: number | null
+          piw_score_factors?: Json | null
+          property_id: string
+          source?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_agent_id?: string | null
+          assignment_fee?: number | null
+          closing_date?: string | null
+          created_at?: string
+          id?: string
+          last_contact_at?: string | null
+          next_follow_up_at?: string | null
+          offer_amount?: number | null
+          piw_score?: number | null
+          piw_score_factors?: Json | null
+          property_id?: string
+          source?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_assigned_agent_id_fkey"
+            columns: ["assigned_agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "leads_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          address: string
+          arv: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string
+          created_at: string
+          equity_percent: number | null
+          id: string
+          is_absentee_owner: boolean | null
+          lot_size: number | null
+          mao: number | null
+          notes: string | null
+          owner_email: string | null
+          owner_name: string | null
+          owner_phone: string | null
+          property_type: Database["public"]["Enums"]["property_type"]
+          repair_cost: number | null
+          sqft: number | null
+          state: string
+          tax_debt: number | null
+          updated_at: string
+          year_built: number | null
+          zip_code: string
+        }
+        Insert: {
+          address: string
+          arv?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city: string
+          created_at?: string
+          equity_percent?: number | null
+          id?: string
+          is_absentee_owner?: boolean | null
+          lot_size?: number | null
+          mao?: number | null
+          notes?: string | null
+          owner_email?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          property_type?: Database["public"]["Enums"]["property_type"]
+          repair_cost?: number | null
+          sqft?: number | null
+          state?: string
+          tax_debt?: number | null
+          updated_at?: string
+          year_built?: number | null
+          zip_code: string
+        }
+        Update: {
+          address?: string
+          arv?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string
+          created_at?: string
+          equity_percent?: number | null
+          id?: string
+          is_absentee_owner?: boolean | null
+          lot_size?: number | null
+          mao?: number | null
+          notes?: string | null
+          owner_email?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          property_type?: Database["public"]["Enums"]["property_type"]
+          repair_cost?: number | null
+          sqft?: number | null
+          state?: string
+          tax_debt?: number | null
+          updated_at?: string
+          year_built?: number | null
+          zip_code?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "agent" | "buyer"
+      buyer_tier: "platinum" | "gold" | "silver" | "bronze"
+      lead_status:
+        | "captacion"
+        | "contacto"
+        | "bajo_contrato"
+        | "cesion"
+        | "cerrado"
+      property_type:
+        | "single_family"
+        | "multi_family"
+        | "condo"
+        | "townhouse"
+        | "land"
+        | "commercial"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +532,24 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "agent", "buyer"],
+      buyer_tier: ["platinum", "gold", "silver", "bronze"],
+      lead_status: [
+        "captacion",
+        "contacto",
+        "bajo_contrato",
+        "cesion",
+        "cerrado",
+      ],
+      property_type: [
+        "single_family",
+        "multi_family",
+        "condo",
+        "townhouse",
+        "land",
+        "commercial",
+      ],
+    },
   },
 } as const
