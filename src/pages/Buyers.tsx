@@ -17,6 +17,7 @@ import { useBuyerStats } from "@/hooks/useBuyerMatchmaking";
 import { NewBuyerDialog } from "@/components/buyers/NewBuyerDialog";
 import { EditBuyerDialog } from "@/components/buyers/EditBuyerDialog";
 import { DeleteBuyerDialog } from "@/components/buyers/DeleteBuyerDialog";
+import { BuyerDetailSheet } from "@/components/buyers/BuyerDetailSheet";
 import {
   Search,
   Plus,
@@ -33,6 +34,7 @@ import {
   Pencil,
   Trash2,
   UserX,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +53,7 @@ const Buyers = () => {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [editBuyer, setEditBuyer] = useState<Buyer | null>(null);
   const [deleteBuyer, setDeleteBuyer] = useState<Buyer | null>(null);
+  const [viewBuyer, setViewBuyer] = useState<Buyer | null>(null);
 
   const filteredBuyers = buyers?.filter(buyer => {
     // Filter by search term
@@ -243,8 +246,9 @@ const Buyers = () => {
             <Card
               key={buyer.id}
               variant="interactive"
-              className="animate-fade-in"
+              className="animate-fade-in cursor-pointer"
               style={{ animationDelay: `${index * 50}ms` }}
+              onClick={() => setViewBuyer(buyer)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -333,13 +337,17 @@ const Buyers = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditBuyer(buyer)}>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setViewBuyer(buyer); }}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Detalles
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditBuyer(buyer); }}>
                           <Pencil className="h-4 w-4 mr-2" />
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => setDeleteBuyer(buyer)}
+                          onClick={(e) => { e.stopPropagation(); setDeleteBuyer(buyer); }}
                           className="text-destructive focus:text-destructive"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -363,7 +371,7 @@ const Buyers = () => {
         </div>
       )}
 
-      {/* Dialogs */}
+      {/* Dialogs & Sheets */}
       <NewBuyerDialog open={showNewDialog} onOpenChange={setShowNewDialog} />
       <EditBuyerDialog 
         buyer={editBuyer} 
@@ -374,6 +382,11 @@ const Buyers = () => {
         buyer={deleteBuyer} 
         open={!!deleteBuyer} 
         onOpenChange={(open) => !open && setDeleteBuyer(null)} 
+      />
+      <BuyerDetailSheet
+        buyer={viewBuyer}
+        open={!!viewBuyer}
+        onOpenChange={(open) => !open && setViewBuyer(null)}
       />
     </Layout>
   );
