@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
+import { SendDealPackageSheet } from "@/components/buyers/SendDealPackageSheet";
 import { Lead } from "@/hooks/useLeads";
 import { 
   Brain, 
@@ -17,6 +19,8 @@ import {
   Clock,
   Loader2,
   RefreshCw,
+  Send,
+  Users,
 } from "lucide-react";
 
 interface PIWScoreDetailsProps {
@@ -28,6 +32,8 @@ interface PIWScoreDetailsProps {
 }
 
 export function PIWScoreDetails({ lead, open, onOpenChange, onRecalculate, isCalculating }: PIWScoreDetailsProps) {
+  const [showDealPackage, setShowDealPackage] = useState(false);
+  
   if (!lead) return null;
 
   const factors = lead.piw_score_factors as any;
@@ -43,6 +49,8 @@ export function PIWScoreDetails({ lead, open, onOpenChange, onRecalculate, isCal
     (lead.piw_score || 0) >= 80 ? 'hot' : 
     (lead.piw_score || 0) >= 50 ? 'warm' : 'cold'
   );
+
+  const isHotLead = priority === 'hot' || (lead.piw_score && lead.piw_score >= 80);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -96,6 +104,19 @@ export function PIWScoreDetails({ lead, open, onOpenChange, onRecalculate, isCal
                 <p className="text-sm mt-1">{factors.recommended_action}</p>
               )}
             </div>
+          )}
+
+          {/* Send Deal Package Button - Only for HOT leads */}
+          {isHotLead && lead.piw_score !== null && (
+            <Button 
+              className="w-full" 
+              size="lg"
+              onClick={() => setShowDealPackage(true)}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Enviar Deal Package a Compradores
+              <Users className="h-4 w-4 ml-2" />
+            </Button>
           )}
 
           {/* Score Breakdown */}
@@ -257,6 +278,13 @@ export function PIWScoreDetails({ lead, open, onOpenChange, onRecalculate, isCal
           )}
         </div>
       </SheetContent>
+
+      {/* Deal Package Sheet */}
+      <SendDealPackageSheet 
+        lead={lead}
+        open={showDealPackage}
+        onOpenChange={setShowDealPackage}
+      />
     </Sheet>
   );
 }

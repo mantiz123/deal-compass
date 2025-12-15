@@ -1,8 +1,13 @@
+import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useBuyers, type Buyer } from "@/hooks/useBuyers";
+import { useBuyerStats } from "@/hooks/useBuyerMatchmaking";
+import { NewBuyerDialog } from "@/components/buyers/NewBuyerDialog";
 import {
   Search,
   Plus,
@@ -14,88 +19,12 @@ import {
   Home,
   Zap,
   Star,
+  Users,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const mockBuyers = [
-  {
-    id: 1,
-    name: "Atlantic Capital Investments",
-    contact: "Mark Thompson",
-    email: "mark@atlanticcapital.com",
-    phone: "(205) 555-0123",
-    zipCodes: ["35201", "35203", "35205", "35209"],
-    propertyTypes: ["SFH", "Duplex"],
-    arvRange: "$100K - $250K",
-    repairLevel: "Light to Heavy",
-    closedDeals: 12,
-    matchScore: 94,
-    tier: "platinum",
-    lastActive: "2 hours ago",
-  },
-  {
-    id: 2,
-    name: "Southern Rehab LLC",
-    contact: "Jennifer Adams",
-    email: "jen@southernrehab.com",
-    phone: "(334) 555-0456",
-    zipCodes: ["36104", "36106", "36109"],
-    propertyTypes: ["SFH"],
-    arvRange: "$80K - $150K",
-    repairLevel: "Heavy",
-    closedDeals: 8,
-    matchScore: 87,
-    tier: "gold",
-    lastActive: "1 day ago",
-  },
-  {
-    id: 3,
-    name: "Rocket City Properties",
-    contact: "David Chen",
-    email: "david@rocketcityprops.com",
-    phone: "(256) 555-0789",
-    zipCodes: ["35801", "35802", "35805", "35806"],
-    propertyTypes: ["SFH", "Multifamily"],
-    arvRange: "$150K - $350K",
-    repairLevel: "Light to Medium",
-    closedDeals: 15,
-    matchScore: 91,
-    tier: "platinum",
-    lastActive: "5 hours ago",
-  },
-  {
-    id: 4,
-    name: "Gulf Coast Ventures",
-    contact: "Lisa Martinez",
-    email: "lisa@gulfcoastv.com",
-    phone: "(251) 555-0321",
-    zipCodes: ["36602", "36604", "36606"],
-    propertyTypes: ["SFH", "Condo"],
-    arvRange: "$120K - $280K",
-    repairLevel: "Light",
-    closedDeals: 6,
-    matchScore: 78,
-    tier: "silver",
-    lastActive: "3 days ago",
-  },
-  {
-    id: 5,
-    name: "Bama Flippers Inc",
-    contact: "Robert Taylor",
-    email: "rob@bamaflippers.com",
-    phone: "(205) 555-0654",
-    zipCodes: ["35401", "35404", "35405"],
-    propertyTypes: ["SFH"],
-    arvRange: "$60K - $120K",
-    repairLevel: "Medium to Heavy",
-    closedDeals: 4,
-    matchScore: 72,
-    tier: "bronze",
-    lastActive: "1 week ago",
-  },
-];
-
-const tierConfig = {
+const tierConfig: Record<string, { label: string; color: string }> = {
   platinum: { label: "Platinum", color: "bg-primary/20 text-primary border-primary/30" },
   gold: { label: "Gold", color: "bg-accent/20 text-accent border-accent/30" },
   silver: { label: "Silver", color: "bg-muted text-muted-foreground border-border" },
@@ -103,6 +32,41 @@ const tierConfig = {
 };
 
 const Buyers = () => {
+  const { data: buyers, isLoading, error } = useBuyers();
+  const { data: stats } = useBuyerStats();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [showNewDialog, setShowNewDialog] = useState(false);
+
+  const filteredBuyers = buyers?.filter(buyer => {
+    // Filter by search term
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      const matchesSearch =
+        buyer.contact_name?.toLowerCase().includes(search) ||
+        buyer.company_name?.toLowerCase().includes(search) ||
+        buyer.preferred_zip_codes?.some(zip => zip.includes(search));
+      if (!matchesSearch) return false;
+    }
+    
+    // Filter by tier
+    if (selectedTier && buyer.tier !== selectedTier) return false;
+    
+    return true;
+  });
+
+  const formatARVRange = (buyer: Buyer) => {
+    if (!buyer.min_arv && !buyer.max_arv) return 'Sin especificar';
+    const min = buyer.min_arv ? `$${Number(buyer.min_arv).toLocaleString()}` : '$0';
+    const max = buyer.max_arv ? `$${Number(buyer.max_arv).toLocaleString()}` : '∞';
+    return `${min} - ${max}`;
+  };
+
+  const formatPropertyTypes = (types: string[] | null) => {
+    if (!types || types.length === 0) return ['Todos'];
+    return types.map(t => t.replace('_', ' ').toUpperCase().slice(0, 3));
+  };
+
   return (
     <Layout>
       {/* Header */}
@@ -111,10 +75,10 @@ const Buyers = () => {
           <div>
             <h1 className="text-3xl font-bold">Buyers Network</h1>
             <p className="text-muted-foreground">
-              Manage your cash buyer network with AI-powered matchmaking
+              Gestiona tu red de cash buyers con matchmaking impulsado por IA
             </p>
           </div>
-          <Button>
+          <Button onClick={() => setShowNewDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Buyer
           </Button>
@@ -128,10 +92,10 @@ const Buyers = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Buyers</p>
-                <p className="text-2xl font-bold">89</p>
+                <p className="text-2xl font-bold">{stats?.totalBuyers || 0}</p>
               </div>
               <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                <Home className="h-5 w-5" />
+                <Users className="h-5 w-5" />
               </div>
             </div>
           </CardContent>
@@ -140,8 +104,8 @@ const Buyers = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active This Week</p>
-                <p className="text-2xl font-bold">34</p>
+                <p className="text-sm text-muted-foreground">Activos</p>
+                <p className="text-2xl font-bold">{stats?.activeBuyers || 0}</p>
               </div>
               <div className="rounded-lg bg-success/10 p-2 text-success">
                 <Zap className="h-5 w-5" />
@@ -153,8 +117,8 @@ const Buyers = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Avg. Close Time</p>
-                <p className="text-2xl font-bold">12 days</p>
+                <p className="text-sm text-muted-foreground">Tiempo Cierre Prom.</p>
+                <p className="text-2xl font-bold">{stats?.avgCloseTime || 0} días</p>
               </div>
               <div className="rounded-lg bg-info/10 p-2 text-info">
                 <Star className="h-5 w-5" />
@@ -166,8 +130,8 @@ const Buyers = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Closed</p>
-                <p className="text-2xl font-bold">$2.4M</p>
+                <p className="text-sm text-muted-foreground">Deals Totales</p>
+                <p className="text-2xl font-bold">{stats?.totalDeals || 0}</p>
               </div>
               <div className="rounded-lg bg-accent/10 p-2 text-accent">
                 <DollarSign className="h-5 w-5" />
@@ -177,22 +141,29 @@ const Buyers = () => {
         </Card>
       </div>
 
-      {/* Search */}
+      {/* Search & Filters */}
       <Card variant="glass" className="mb-6">
         <CardContent className="py-4">
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search buyers by name, zip code, or property type..."
+                placeholder="Buscar por nombre, empresa o ZIP code..."
                 className="pl-10 bg-secondary/50"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <div className="flex gap-2">
               {Object.entries(tierConfig).map(([key, config]) => (
                 <Badge
                   key={key}
-                  className={cn("cursor-pointer", config.color)}
+                  className={cn(
+                    "cursor-pointer transition-all",
+                    config.color,
+                    selectedTier === key && "ring-2 ring-primary"
+                  )}
+                  onClick={() => setSelectedTier(selectedTier === key ? null : key)}
                 >
                   {config.label}
                 </Badge>
@@ -202,77 +173,158 @@ const Buyers = () => {
         </CardContent>
       </Card>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} variant="glass">
+              <CardHeader className="pb-3">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-12 w-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <Card variant="glass" className="border-destructive/50">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Error al cargar compradores</h3>
+            <p className="text-muted-foreground">Por favor, intenta de nuevo más tarde.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && !error && buyers?.length === 0 && (
+        <Card variant="glass">
+          <CardContent className="p-12 text-center">
+            <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No hay compradores todavía</h3>
+            <p className="text-muted-foreground mb-6">
+              Añade tu primer cash buyer para comenzar a hacer matchmaking con tus deals.
+            </p>
+            <Button onClick={() => setShowNewDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Añadir Primer Comprador
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Buyers Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {mockBuyers.map((buyer, index) => (
-          <Card
-            key={buyer.id}
-            variant="interactive"
-            className="animate-fade-in"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-base">{buyer.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{buyer.contact}</p>
+      {!isLoading && !error && filteredBuyers && filteredBuyers.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredBuyers.map((buyer, index) => (
+            <Card
+              key={buyer.id}
+              variant="interactive"
+              className="animate-fade-in"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-base">
+                      {buyer.company_name || buyer.contact_name}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">{buyer.contact_name}</p>
+                  </div>
+                  <Badge className={tierConfig[buyer.tier]?.color || tierConfig.bronze.color}>
+                    {tierConfig[buyer.tier]?.label || 'Bronze'}
+                  </Badge>
                 </div>
-                <Badge className={tierConfig[buyer.tier].color}>
-                  {tierConfig[buyer.tier].label}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Match Score */}
-              <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-3">
-                <span className="text-sm text-muted-foreground">AI Match Score</span>
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-primary" />
-                  <span className="text-lg font-bold text-primary">{buyer.matchScore}%</span>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* AI Match Score Placeholder */}
+                <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-3">
+                  <span className="text-sm text-muted-foreground">Deals Cerrados</span>
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-primary" />
+                    <span className="text-lg font-bold text-primary">
+                      {buyer.deals_closed || 0}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Details */}
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Zip Codes:</span>
-                  <span className="font-medium">{buyer.zipCodes.slice(0, 3).join(", ")}...</span>
+                {/* Details */}
+                <div className="space-y-2 text-sm">
+                  {buyer.preferred_zip_codes && buyer.preferred_zip_codes.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Zips:</span>
+                      <span className="font-medium">
+                        {buyer.preferred_zip_codes.slice(0, 3).join(", ")}
+                        {buyer.preferred_zip_codes.length > 3 && '...'}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Home className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Tipos:</span>
+                    <span className="font-medium">
+                      {formatPropertyTypes(buyer.preferred_property_types).join(", ")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">ARV:</span>
+                    <span className="font-medium">{formatARVRange(buyer)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Home className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Types:</span>
-                  <span className="font-medium">{buyer.propertyTypes.join(", ")}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">ARV Range:</span>
-                  <span className="font-medium">{buyer.arvRange}</span>
-                </div>
-              </div>
 
-              {/* Stats */}
-              <div className="flex items-center justify-between border-t border-border pt-3">
-                <div className="text-center">
-                  <p className="text-lg font-bold text-success">{buyer.closedDeals}</p>
-                  <p className="text-xs text-muted-foreground">Deals Closed</p>
+                {/* Actions */}
+                <div className="flex items-center justify-between border-t border-border pt-3">
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-success">
+                      {buyer.avg_close_time_days || '-'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Días Promedio</p>
+                  </div>
+                  <div className="flex gap-1">
+                    {buyer.phone && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => window.open(`tel:${buyer.phone}`)}
+                      >
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {buyer.email && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => window.open(`mailto:${buyer.email}`)}
+                      >
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Mail className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* New Buyer Dialog */}
+      <NewBuyerDialog open={showNewDialog} onOpenChange={setShowNewDialog} />
     </Layout>
   );
 };
