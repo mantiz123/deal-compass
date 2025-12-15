@@ -231,7 +231,7 @@ export default function Auth() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground">
-          OptionRadarX © 2024 • Alabama, USA
+          PIW Navigator © 2024 • Alabama, USA
         </p>
       </div>
     </div>
