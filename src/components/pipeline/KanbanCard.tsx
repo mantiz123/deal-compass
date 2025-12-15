@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card } from '@/components/ui/card';
@@ -13,7 +13,7 @@ interface KanbanCardProps {
   lead: Lead;
 }
 
-export function KanbanCard({ lead }: KanbanCardProps) {
+export const KanbanCard = forwardRef<HTMLDivElement, KanbanCardProps>(({ lead }, ref) => {
   const [showDetail, setShowDetail] = useState(false);
   const {
     attributes,
@@ -32,10 +32,20 @@ export function KanbanCard({ lead }: KanbanCardProps) {
   const property = lead.property;
   const assignmentFee = lead.assignment_fee ? Number(lead.assignment_fee) : null;
 
+  // Combine refs
+  const combinedRef = (node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    if (typeof ref === 'function') {
+      ref(node);
+    } else if (ref) {
+      ref.current = node;
+    }
+  };
+
   return (
     <>
       <Card
-        ref={setNodeRef}
+        ref={combinedRef}
         style={style}
         variant="interactive"
         className={cn(
@@ -138,4 +148,6 @@ export function KanbanCard({ lead }: KanbanCardProps) {
       />
     </>
   );
-}
+});
+
+KanbanCard.displayName = 'KanbanCard';
