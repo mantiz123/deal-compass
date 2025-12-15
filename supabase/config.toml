@@ -1,1 +1,4 @@
 project_id = "nbswprixtajseabjbrre"
+
+[functions.calculate-piw-score]
+verify_jwt = true
