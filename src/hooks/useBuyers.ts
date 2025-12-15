@@ -104,3 +104,34 @@ export function useUpdateBuyer() {
     },
   });
 }
+
+export function useDeleteBuyer() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('buyers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['buyers'] });
+      toast({
+        title: 'Comprador eliminado',
+        description: 'El comprador ha sido eliminado de la red',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: 'No se pudo eliminar el comprador',
+        variant: 'destructive',
+      });
+      console.error('Error deleting buyer:', error);
+    },
+  });
+}
