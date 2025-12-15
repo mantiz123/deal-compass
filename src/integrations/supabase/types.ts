@@ -89,6 +89,158 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_enrollments: {
+        Row: {
+          campaign_id: string
+          completed_at: string | null
+          current_sequence: number
+          enrolled_at: string
+          id: string
+          last_sent_at: string | null
+          lead_id: string
+          next_send_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          completed_at?: string | null
+          current_sequence?: number
+          enrolled_at?: string
+          id?: string
+          last_sent_at?: string | null
+          lead_id: string
+          next_send_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          completed_at?: string | null
+          current_sequence?: number
+          enrolled_at?: string
+          id?: string
+          last_sent_at?: string | null
+          lead_id?: string
+          next_send_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_enrollments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "drip_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_enrollments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_message_logs: {
+        Row: {
+          channel: string
+          clicked_at: string | null
+          created_at: string
+          delivered_at: string | null
+          enrollment_id: string
+          error_message: string | null
+          id: string
+          opened_at: string | null
+          sent_at: string | null
+          sequence_id: string
+          status: string
+        }
+        Insert: {
+          channel: string
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          enrollment_id: string
+          error_message?: string | null
+          id?: string
+          opened_at?: string | null
+          sent_at?: string | null
+          sequence_id: string
+          status?: string
+        }
+        Update: {
+          channel?: string
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          enrollment_id?: string
+          error_message?: string | null
+          id?: string
+          opened_at?: string | null
+          sent_at?: string | null
+          sequence_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_message_logs_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_message_logs_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_sequences: {
+        Row: {
+          campaign_id: string
+          channel: string
+          content: string
+          created_at: string
+          delay_days: number
+          delay_hours: number
+          id: string
+          sequence_order: number
+          subject: string | null
+        }
+        Insert: {
+          campaign_id: string
+          channel: string
+          content: string
+          created_at?: string
+          delay_days?: number
+          delay_hours?: number
+          id?: string
+          sequence_order: number
+          subject?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          channel?: string
+          content?: string
+          created_at?: string
+          delay_days?: number
+          delay_hours?: number
+          id?: string
+          sequence_order?: number
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_sequences_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "drip_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_packages: {
         Row: {
           buyer_id: string
@@ -133,6 +285,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      drip_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          trigger_status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          trigger_status: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          trigger_status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       interactions: {
         Row: {
