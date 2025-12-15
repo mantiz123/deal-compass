@@ -1,15 +1,19 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   useDealPackageTracking,
   useDealPackageStats,
   useRealtimeDealPackages,
   type DealPackageWithTracking,
 } from '@/hooks/useDealPackageTracking';
+import { useBuyers } from '@/hooks/useBuyers';
 import {
   Mail,
   MousePointerClick,
@@ -20,11 +24,13 @@ import {
   AlertCircle,
   RefreshCw,
   TrendingUp,
-  Users,
   MapPin,
+  CalendarIcon,
+  Filter,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -35,11 +41,20 @@ const tierColors: Record<string, string> = {
   bronze: 'bg-warning/10 text-warning border-warning/30',
 };
 
+type StatusFilter = 'all' | 'sent' | 'opened' | 'clicked' | 'responded';
+
 export function DealPackageTracker() {
   const queryClient = useQueryClient();
   const { data: packages, isLoading: packagesLoading } = useDealPackageTracking();
   const { data: stats, isLoading: statsLoading } = useDealPackageStats();
+  const { data: buyers } = useBuyers();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [buyerFilter, setBuyerFilter] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
@@ -52,11 +67,42 @@ export function DealPackageTracker() {
   useRealtimeDealPackages(handleRefresh);
 
   const getPackageStatus = (pkg: DealPackageWithTracking) => {
-    if (pkg.response) return { label: 'Respondido', color: 'bg-success text-success-foreground', icon: CheckCircle2 };
-    if (pkg.clicked_at) return { label: 'Clickeado', color: 'bg-primary text-primary-foreground', icon: MousePointerClick };
-    if (pkg.opened_at) return { label: 'Abierto', color: 'bg-info text-info-foreground', icon: Eye };
-    return { label: 'Enviado', color: 'bg-muted text-muted-foreground', icon: Send };
+    if (pkg.response) return { label: 'Respondido', color: 'bg-success text-success-foreground', icon: CheckCircle2, key: 'responded' as const };
+    if (pkg.clicked_at) return { label: 'Clickeado', color: 'bg-primary text-primary-foreground', icon: MousePointerClick, key: 'clicked' as const };
+    if (pkg.opened_at) return { label: 'Abierto', color: 'bg-info text-info-foreground', icon: Eye, key: 'opened' as const };
+    return { label: 'Enviado', color: 'bg-muted text-muted-foreground', icon: Send, key: 'sent' as const };
   };
+
+  const filteredPackages = useMemo(() => {
+    if (!packages) return [];
+    
+    return packages.filter((pkg) => {
+      // Status filter
+      if (statusFilter !== 'all') {
+        const status = getPackageStatus(pkg);
+        if (status.key !== statusFilter) return false;
+      }
+      
+      // Buyer filter
+      if (buyerFilter !== 'all' && pkg.buyer_id !== buyerFilter) return false;
+      
+      // Date filters
+      const sentDate = new Date(pkg.sent_at);
+      if (dateFrom && isBefore(sentDate, startOfDay(dateFrom))) return false;
+      if (dateTo && isAfter(sentDate, endOfDay(dateTo))) return false;
+      
+      return true;
+    });
+  }, [packages, statusFilter, buyerFilter, dateFrom, dateTo]);
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setBuyerFilter('all');
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
+
+  const hasActiveFilters = statusFilter !== 'all' || buyerFilter !== 'all' || dateFrom || dateTo;
 
   return (
     <div className="space-y-6">
@@ -144,6 +190,93 @@ export function DealPackageTracker() {
         </Card>
       </div>
 
+      {/* Filters */}
+      <Card variant="glass">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Filter className="h-4 w-4" />
+              <span>Filtros:</span>
+            </div>
+            
+            {/* Status Filter */}
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="sent">Enviado</SelectItem>
+                <SelectItem value="opened">Abierto</SelectItem>
+                <SelectItem value="clicked">Clickeado</SelectItem>
+                <SelectItem value="responded">Respondido</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Buyer Filter */}
+            <Select value={buyerFilter} onValueChange={setBuyerFilter}>
+              <SelectTrigger className="w-[180px] h-9">
+                <SelectValue placeholder="Comprador" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los compradores</SelectItem>
+                {buyers?.map((buyer) => (
+                  <SelectItem key={buyer.id} value={buyer.id}>
+                    {buyer.company_name || buyer.contact_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Date From */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn('w-[140px] justify-start text-left font-normal', !dateFrom && 'text-muted-foreground')}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFrom ? format(dateFrom, 'dd/MM/yyyy') : 'Desde'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateFrom}
+                  onSelect={setDateFrom}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            
+            {/* Date To */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn('w-[140px] justify-start text-left font-normal', !dateTo && 'text-muted-foreground')}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateTo ? format(dateTo, 'dd/MM/yyyy') : 'Hasta'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateTo}
+                  onSelect={setDateTo}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                <X className="h-4 w-4 mr-1" />
+                Limpiar
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Activity Feed */}
       <Card variant="glass">
         <CardHeader className="pb-3">
@@ -151,6 +284,11 @@ export function DealPackageTracker() {
             <CardTitle className="text-lg flex items-center gap-2">
               <Mail className="h-5 w-5 text-primary" />
               Deal Packages Enviados
+              {hasActiveFilters && (
+                <Badge variant="secondary" className="ml-2">
+                  {filteredPackages.length} resultados
+                </Badge>
+              )}
             </CardTitle>
             <Button
               variant="ghost"
@@ -170,17 +308,19 @@ export function DealPackageTracker() {
                 <Skeleton key={i} className="h-20 w-full" />
               ))}
             </div>
-          ) : !packages || packages.length === 0 ? (
+          ) : filteredPackages.length === 0 ? (
             <div className="text-center py-8">
               <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground">No hay deal packages enviados aún.</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Ve a un lead y envía un deal package para comenzar el tracking.
+                {hasActiveFilters 
+                  ? 'Intenta ajustar los filtros para ver más resultados.'
+                  : 'Ve a un lead y envía un deal package para comenzar el tracking.'}
               </p>
             </div>
           ) : (
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-              {packages.map((pkg) => {
+              {filteredPackages.map((pkg) => {
                 const status = getPackageStatus(pkg);
                 const StatusIcon = status.icon;
 
