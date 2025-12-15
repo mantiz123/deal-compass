@@ -132,24 +132,39 @@ export function useUpdateLeadStatus() {
   });
 }
 
+export interface PIWScoreResult {
+  score: number;
+  factors: {
+    seller_motivation_score: number;
+    financial_viability_score: number;
+    closing_difficulty_score: number;
+  };
+  priority: 'hot' | 'warm' | 'cold';
+  key_indicators: string[];
+  risks: string[];
+  recommended_action: string;
+  analysis: string;
+}
+
 export function useCalculatePIWScore() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ leadId, propertyData }: { leadId: string; propertyData: Partial<Property> }) => {
+    mutationFn: async ({ leadId, propertyData }: { leadId: string; propertyData: Partial<Property> }): Promise<PIWScoreResult> => {
       const { data, error } = await supabase.functions.invoke('calculate-piw-score', {
         body: { leadId, propertyData },
       });
 
       if (error) throw error;
-      return data;
+      return data as PIWScoreResult;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      const priorityEmoji = data.priority === 'hot' ? '🔥' : data.priority === 'warm' ? '⚡' : '❄️';
       toast({
-        title: 'PIW Score calculado',
-        description: `Score: ${data.score}% - ${data.analysis}`,
+        title: `PIW Score: ${data.score}% ${priorityEmoji}`,
+        description: data.recommended_action,
       });
     },
     onError: (error: any) => {
