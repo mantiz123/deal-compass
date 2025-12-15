@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDealPackageNotifications } from "@/hooks/useDealPackageNotifications";
 import { Loader2 } from "lucide-react";
 
 interface LayoutProps {
@@ -12,6 +13,9 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Enable realtime notifications for deal packages
+  useDealPackageNotifications();
 
   useEffect(() => {
     if (!loading && !user) {
