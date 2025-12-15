@@ -75,11 +75,30 @@ export function KanbanBoard({ onAddDeal }: KanbanBoardProps) {
     if (!over) return;
 
     const leadId = active.id as string;
-    const newStatus = over.id as LeadStatus;
+    const overId = over.id as string;
 
-    // Find current lead
+    // Find the current lead being dragged
     const lead = leads?.find(l => l.id === leadId);
-    if (!lead || lead.status === newStatus) return;
+    if (!lead) return;
+
+    // Determine the target status
+    // over.id could be a column ID or a lead ID
+    let newStatus: LeadStatus;
+    
+    // Check if overId is a valid column status
+    const isColumnId = COLUMNS.some(col => col.id === overId);
+    
+    if (isColumnId) {
+      newStatus = overId as LeadStatus;
+    } else {
+      // overId is a lead ID, find which column it belongs to
+      const targetLead = leads?.find(l => l.id === overId);
+      if (!targetLead) return;
+      newStatus = targetLead.status as LeadStatus;
+    }
+
+    // Don't update if status hasn't changed
+    if (lead.status === newStatus) return;
 
     // Update status in database
     updateStatus.mutate({ id: leadId, status: newStatus });
