@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Sparkles, Check, AlertCircle, Home, DollarSign, MapPin, GraduationCap, TrendingUp, Brain } from 'lucide-react';
+import { Loader2, Sparkles, Check, AlertCircle, Home, DollarSign, MapPin, GraduationCap, TrendingUp, Brain, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUpdateProperty } from '@/hooks/useProperties';
@@ -53,6 +53,19 @@ interface OfferAnalysis {
   reasoning: string;
 }
 
+interface RepairEstimate {
+  estimated_repair_cost: number;
+  repair_level: 'cosmetic' | 'moderate' | 'heavy' | 'gut_rehab';
+  cost_per_sqft: number;
+  confidence: 'high' | 'medium' | 'low';
+  factors: string[];
+  breakdown: {
+    condition_factor: number;
+    age_factor: number;
+    keywords_found: string[];
+  };
+}
+
 interface ParsedComp {
   address: string;
   sale_price: number;
@@ -64,6 +77,7 @@ interface ParsedComp {
 interface ParsedData {
   property: ParsedProperty;
   market_data: ParsedMarketData;
+  repair_estimate?: RepairEstimate;
   school_details?: SchoolDetail[];
   price_history: Array<{ date: string | null; event: string; price: number }>;
   comps: ParsedComp[];
@@ -86,6 +100,7 @@ interface ListingDataParserProps {
     school_rating?: number | null;
     days_on_market_avg?: number | null;
     crime_index?: number | null;
+    repair_cost?: number | null;
   };
   onDataApplied?: () => void;
   onRecalculatePIW?: () => void;
@@ -138,6 +153,10 @@ export function ListingDataParser({
         Object.keys(data.data.market_data || {}).forEach(k => {
           if (data.data.market_data[k] !== null) allFields.add(`market.${k}`);
         });
+        // Auto-select repair estimate if present
+        if (data.data.repair_estimate?.estimated_repair_cost) {
+          allFields.add('repair.estimated_repair_cost');
+        }
         setSelectedFields(allFields);
         // Auto-select all comps
         setSelectedComps(new Set(data.data.comps?.map((_: ParsedComp, i: number) => i) || []));
@@ -211,6 +230,9 @@ export function ListingDataParser({
       }
       if (selectedFields.has('market.crime_index') && parsedData.market_data.crime_index) {
         propertyUpdate.crime_index = parsedData.market_data.crime_index;
+      }
+      if (selectedFields.has('repair.estimated_repair_cost') && parsedData.repair_estimate?.estimated_repair_cost) {
+        propertyUpdate.repair_cost = parsedData.repair_estimate.estimated_repair_cost;
       }
 
       // Update property if there are fields to update
@@ -345,6 +367,92 @@ export function ListingDataParser({
                         <p className="text-xs text-muted-foreground">
                           {parsedData.offer_analysis.reasoning}
                         </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Repair Cost Estimate - Critical for MAO calculation */}
+                {parsedData.repair_estimate && (
+                  <Card className="border-amber-500/50 bg-amber-500/5">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Wrench className="h-4 w-4 text-amber-500" />
+                        Estimación de Reparaciones (IA)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="repair-cost"
+                            checked={selectedFields.has('repair.estimated_repair_cost')}
+                            onCheckedChange={() => toggleField('repair.estimated_repair_cost')}
+                          />
+                          <Label htmlFor="repair-cost" className="text-sm cursor-pointer">
+                            Aplicar costo estimado
+                          </Label>
+                        </div>
+                        <Badge variant="outline" className={
+                          parsedData.repair_estimate.confidence === 'high' ? 'border-green-500 text-green-500' :
+                          parsedData.repair_estimate.confidence === 'medium' ? 'border-amber-500 text-amber-500' :
+                          'border-red-500 text-red-500'
+                        }>
+                          Confianza: {parsedData.repair_estimate.confidence === 'high' ? 'Alta' : 
+                                      parsedData.repair_estimate.confidence === 'medium' ? 'Media' : 'Baja'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/30">
+                        <p className="text-xs text-muted-foreground mb-1">Costo de Reparación Estimado</p>
+                        <p className="text-xl font-bold text-amber-500">
+                          {formatCurrency(parsedData.repair_estimate.estimated_repair_cost)}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          ${parsedData.repair_estimate.cost_per_sqft}/sqft × {parsedData.property.sqft?.toLocaleString() || '?'} sqft
+                        </p>
+                        {currentProperty?.repair_cost && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Valor actual: {formatCurrency(currentProperty.repair_cost)}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Nivel:</span>
+                          <Badge variant="outline" className={
+                            parsedData.repair_estimate.repair_level === 'gut_rehab' ? 'bg-red-500/10 text-red-500' :
+                            parsedData.repair_estimate.repair_level === 'heavy' ? 'bg-orange-500/10 text-orange-500' :
+                            parsedData.repair_estimate.repair_level === 'moderate' ? 'bg-amber-500/10 text-amber-500' :
+                            'bg-green-500/10 text-green-500'
+                          }>
+                            {parsedData.repair_estimate.repair_level === 'gut_rehab' ? '🔨 GUT REHAB' :
+                             parsedData.repair_estimate.repair_level === 'heavy' ? '🛠️ HEAVY' :
+                             parsedData.repair_estimate.repair_level === 'moderate' ? '🔧 MODERADO' :
+                             '✨ COSMÉTICO'}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {parsedData.repair_estimate.breakdown?.keywords_found?.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {parsedData.repair_estimate.breakdown.keywords_found.map((kw, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs">
+                              {kw}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {parsedData.repair_estimate.factors?.length > 0 && (
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          {parsedData.repair_estimate.factors.slice(0, 3).map((f, i) => (
+                            <li key={i} className="flex items-start gap-1">
+                              <span className="text-amber-500">•</span> {f}
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </CardContent>
                   </Card>
