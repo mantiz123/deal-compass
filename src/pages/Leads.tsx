@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
+import { PropertyComparisonSheet } from "@/components/leads/PropertyComparisonSheet";
 import { useLeads, useCalculatePIWScore, Lead } from "@/hooks/useLeads";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -207,6 +208,7 @@ const Leads = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <PropertyComparisonSheet />
             <Button variant="outline">
               <Filter className="mr-2 h-4 w-4" />
               Filtros

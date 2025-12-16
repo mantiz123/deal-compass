@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom';
-import { useLeads } from "@/hooks/useLeads";
+import { useLeads, useMarkLeadContacted } from "@/hooks/useLeads";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PIWScoreGauge } from "./PIWScoreGauge";
-import { Phone, Mail, ChevronRight, Flame, DollarSign, TrendingUp } from "lucide-react";
+import { Phone, Mail, ChevronRight, Flame, DollarSign, TrendingUp, CheckCircle, Clock } from "lucide-react";
+import { format, isToday } from 'date-fns';
 
 export const LeadsDelDia = () => {
   const { data: leads, isLoading } = useLeads();
+  const markContacted = useMarkLeadContacted();
 
   // Calculate spread and filter/sort leads
   const leadsWithSpread = leads
@@ -90,11 +92,16 @@ export const LeadsDelDia = () => {
             {leadsWithSpread.map((lead, index) => {
               const property = lead.property;
               const spreadColor = lead.spread > 0 ? "text-success" : lead.spread < 0 ? "text-destructive" : "text-muted-foreground";
+              const contactedToday = lead.last_contact_at && isToday(new Date(lead.last_contact_at));
               
               return (
                 <div 
                   key={lead.id}
-                  className="group flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card/50 hover:bg-accent/10 hover:border-primary/30 transition-all duration-200"
+                  className={`group flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
+                    contactedToday 
+                      ? "border-success/30 bg-success/5" 
+                      : "border-border/50 bg-card/50 hover:bg-accent/10 hover:border-primary/30"
+                  }`}
                 >
                   {/* Rank */}
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
@@ -157,6 +164,30 @@ export const LeadsDelDia = () => {
                         }}
                       >
                         <Mail className="h-3.5 w-3.5 text-info" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Contacted Today Button */}
+                  <div className="flex-shrink-0">
+                    {contactedToday ? (
+                      <div className="flex items-center gap-1 text-success text-xs">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="hidden sm:inline">Contactado</span>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markContacted.mutate(lead.id);
+                        }}
+                        disabled={markContacted.isPending}
+                      >
+                        <Clock className="h-3 w-3" />
+                        <span className="hidden sm:inline">Contactado</span>
                       </Button>
                     )}
                   </div>

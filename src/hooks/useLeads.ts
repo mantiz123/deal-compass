@@ -141,6 +141,40 @@ export function useUpdateLeadStatus() {
   });
 }
 
+export function useMarkLeadContacted() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (leadId: string) => {
+      const { data, error } = await supabase
+        .from('leads')
+        .update({ last_contact_at: new Date().toISOString() })
+        .eq('id', leadId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      toast({
+        title: 'Lead marcado como contactado',
+        description: 'El registro de contacto se ha actualizado',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el contacto',
+        variant: 'destructive',
+      });
+      console.error('Error marking lead as contacted:', error);
+    },
+  });
+}
+
 export interface PIWScoreResult {
   score: number;
   factors: {
