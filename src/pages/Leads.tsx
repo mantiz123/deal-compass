@@ -300,22 +300,22 @@ const Leads = () => {
                           <div className="flex gap-1 flex-wrap max-w-[150px]">
                             {lead.property?.is_absentee_owner && (
                               <Badge variant="info" className="text-[10px]">
-                                Absentee
+                                Ausente
                               </Badge>
                             )}
                             {lead.property?.tax_delinquent && (
                               <Badge variant="warning" className="text-[10px]">
-                                Tax Delinq.
+                                Deuda Imp.
                               </Badge>
                             )}
                             {lead.property?.is_foreclosure && (
                               <Badge variant="accent" className="text-[10px]">
-                                Foreclosure
+                                Ejecución
                               </Badge>
                             )}
                             {lead.property?.is_probate && (
                               <Badge variant="glow" className="text-[10px]">
-                                Probate
+                                Sucesión
                               </Badge>
                             )}
                           </div>
