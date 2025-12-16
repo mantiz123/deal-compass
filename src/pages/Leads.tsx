@@ -337,13 +337,35 @@ const Leads = () => {
                           )}
                         </td>
                         <td className="p-4">
-                          {lead.property?.mao ? (
-                            <p className="font-semibold text-success">
-                              ${lead.property.mao.toLocaleString()}
-                            </p>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
+                          {(() => {
+                            const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
+                            const repairCost = lead.property?.repair_cost ? Number(lead.property.repair_cost) : 0;
+                            const savedMao = lead.property?.mao ? Number(lead.property.mao) : 0;
+                            const calculatedMao = arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0;
+                            const displayMao = savedMao || calculatedMao;
+                            const isCalculated = !savedMao && calculatedMao > 0;
+                            
+                            return displayMao > 0 ? (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <p className={`font-semibold ${isCalculated ? 'text-accent' : 'text-success'}`}>
+                                    ${displayMao.toLocaleString()}
+                                    {isCalculated && <span className="text-[10px] ml-1">*</span>}
+                                  </p>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="max-w-[200px] text-xs">
+                                    {isCalculated 
+                                      ? `Estimado: ARV ($${arv.toLocaleString()}) × 70% - Reparaciones ($${repairCost.toLocaleString()})`
+                                      : 'MAO guardado en la propiedad'
+                                    }
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            );
+                          })()}
                         </td>
                         <td className="p-4">
                           <TooltipProvider>
