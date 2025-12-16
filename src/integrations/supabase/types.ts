@@ -589,9 +589,12 @@ export type Database = {
           bedrooms: number | null
           city: string
           created_at: string
+          crime_index: number | null
           data_fetched_at: string | null
           data_source: string | null
+          days_on_market_avg: number | null
           equity_percent: number | null
+          estimated_monthly_rent: number | null
           eviction_count: number | null
           id: string
           is_absentee_owner: boolean | null
@@ -603,6 +606,7 @@ export type Database = {
           lot_size: number | null
           mailing_address_different: boolean | null
           mao: number | null
+          median_household_income: number | null
           mortgage_age_years: number | null
           neighborhood_vacancy_rate: number | null
           notes: string | null
@@ -611,15 +615,18 @@ export type Database = {
           owner_phone: string | null
           owner_tenure_years: number | null
           owner_type: string | null
+          population_growth_5yr: number | null
           price_growth_3yr: number | null
           property_type: Database["public"]["Enums"]["property_type"]
           proximity_to_development: string | null
           repair_cost: number | null
+          school_rating: number | null
           sqft: number | null
           state: string
           tax_debt: number | null
           tax_delinquent: boolean | null
           updated_at: string
+          walkability_score: number | null
           year_built: number | null
           zip_code: string
         }
@@ -631,9 +638,12 @@ export type Database = {
           bedrooms?: number | null
           city: string
           created_at?: string
+          crime_index?: number | null
           data_fetched_at?: string | null
           data_source?: string | null
+          days_on_market_avg?: number | null
           equity_percent?: number | null
+          estimated_monthly_rent?: number | null
           eviction_count?: number | null
           id?: string
           is_absentee_owner?: boolean | null
@@ -645,6 +655,7 @@ export type Database = {
           lot_size?: number | null
           mailing_address_different?: boolean | null
           mao?: number | null
+          median_household_income?: number | null
           mortgage_age_years?: number | null
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
@@ -653,15 +664,18 @@ export type Database = {
           owner_phone?: string | null
           owner_tenure_years?: number | null
           owner_type?: string | null
+          population_growth_5yr?: number | null
           price_growth_3yr?: number | null
           property_type?: Database["public"]["Enums"]["property_type"]
           proximity_to_development?: string | null
           repair_cost?: number | null
+          school_rating?: number | null
           sqft?: number | null
           state?: string
           tax_debt?: number | null
           tax_delinquent?: boolean | null
           updated_at?: string
+          walkability_score?: number | null
           year_built?: number | null
           zip_code: string
         }
@@ -673,9 +687,12 @@ export type Database = {
           bedrooms?: number | null
           city?: string
           created_at?: string
+          crime_index?: number | null
           data_fetched_at?: string | null
           data_source?: string | null
+          days_on_market_avg?: number | null
           equity_percent?: number | null
+          estimated_monthly_rent?: number | null
           eviction_count?: number | null
           id?: string
           is_absentee_owner?: boolean | null
@@ -687,6 +704,7 @@ export type Database = {
           lot_size?: number | null
           mailing_address_different?: boolean | null
           mao?: number | null
+          median_household_income?: number | null
           mortgage_age_years?: number | null
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
@@ -695,15 +713,18 @@ export type Database = {
           owner_phone?: string | null
           owner_tenure_years?: number | null
           owner_type?: string | null
+          population_growth_5yr?: number | null
           price_growth_3yr?: number | null
           property_type?: Database["public"]["Enums"]["property_type"]
           proximity_to_development?: string | null
           repair_cost?: number | null
+          school_rating?: number | null
           sqft?: number | null
           state?: string
           tax_debt?: number | null
           tax_delinquent?: boolean | null
           updated_at?: string
+          walkability_score?: number | null
           year_built?: number | null
           zip_code?: string
         }
@@ -768,6 +789,65 @@ export type Database = {
           },
           {
             foreignKeyName: "property_analyses_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_comps: {
+        Row: {
+          address: string
+          bathrooms: number | null
+          bedrooms: number | null
+          created_at: string
+          created_by: string | null
+          distance_miles: number | null
+          id: string
+          notes: string | null
+          price_per_sqft: number | null
+          property_id: string
+          sale_date: string | null
+          sale_price: number
+          source: string | null
+          sqft: number | null
+        }
+        Insert: {
+          address: string
+          bathrooms?: number | null
+          bedrooms?: number | null
+          created_at?: string
+          created_by?: string | null
+          distance_miles?: number | null
+          id?: string
+          notes?: string | null
+          price_per_sqft?: number | null
+          property_id: string
+          sale_date?: string | null
+          sale_price: number
+          source?: string | null
+          sqft?: number | null
+        }
+        Update: {
+          address?: string
+          bathrooms?: number | null
+          bedrooms?: number | null
+          created_at?: string
+          created_by?: string | null
+          distance_miles?: number | null
+          id?: string
+          notes?: string | null
+          price_per_sqft?: number | null
+          property_id?: string
+          sale_date?: string | null
+          sale_price?: number
+          source?: string | null
+          sqft?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_comps_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
@@ -878,7 +958,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      property_comps_summary: {
+        Row: {
+          avg_price_per_sqft: number | null
+          avg_sale_price: number | null
+          comp_count: number | null
+          max_sale_price: number | null
+          min_sale_price: number | null
+          property_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_comps_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
