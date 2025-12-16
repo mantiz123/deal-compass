@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.track-deal-package]
 verify_jwt = false
+
+[functions.generate-deal-package]
+verify_jwt = true

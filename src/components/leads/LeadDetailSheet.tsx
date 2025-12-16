@@ -16,6 +16,7 @@ import { PIWScoreGauge } from '@/components/dashboard/PIWScoreGauge';
 import { LeadTimeline } from './LeadTimeline';
 import { LeadDocuments } from './LeadDocuments';
 import { NewInteractionDialog } from './NewInteractionDialog';
+import { DealPackageGenerator } from './DealPackageGenerator';
 import { useInteractions } from '@/hooks/useInteractions';
 import { useUpdateProperty } from '@/hooks/useProperties';
 import { useQueryClient } from '@tanstack/react-query';
@@ -39,6 +40,7 @@ import {
   Calculator,
   Save,
   TrendingUp,
+  Download,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -68,6 +70,7 @@ export function LeadDetailSheet({
   isCalculating 
 }: LeadDetailSheetProps) {
   const [showNewInteraction, setShowNewInteraction] = useState(false);
+  const [showDealPackage, setShowDealPackage] = useState(false);
   const { data: interactions, isLoading: loadingInteractions } = useInteractions(lead?.id || '');
   const updateProperty = useUpdateProperty();
   const queryClient = useQueryClient();
@@ -173,18 +176,28 @@ export function LeadDetailSheet({
                   </Badge>
                 </div>
               </div>
-              <Button 
-                variant="outline" 
-                onClick={onRecalculate}
-                disabled={isCalculating}
-              >
-                {isCalculating ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Brain className="mr-2 h-4 w-4" />
-                )}
-                Recalcular
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={onRecalculate}
+                  disabled={isCalculating}
+                  size="sm"
+                >
+                  {isCalculating ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Brain className="mr-2 h-4 w-4" />
+                  )}
+                  Recalcular
+                </Button>
+                <Button 
+                  onClick={() => setShowDealPackage(true)}
+                  size="sm"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Deal Package
+                </Button>
+              </div>
             </div>
 
             {/* Score Breakdown */}
@@ -560,6 +573,15 @@ export function LeadDetailSheet({
         leadId={lead.id}
         open={showNewInteraction}
         onOpenChange={setShowNewInteraction}
+      />
+
+      {/* Deal Package Generator */}
+      <DealPackageGenerator
+        leadId={lead.id}
+        propertyAddress={`${property?.address || ''}, ${property?.city || ''}`}
+        currentAssignmentFee={lead.assignment_fee ? Number(lead.assignment_fee) : undefined}
+        open={showDealPackage}
+        onOpenChange={setShowDealPackage}
       />
     </>
   );
