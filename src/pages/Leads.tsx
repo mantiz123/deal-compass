@@ -91,6 +91,21 @@ const Leads = () => {
     }
   };
 
+  // Helper function to calculate spread for sorting
+  const calculateSpread = (lead: Lead): number => {
+    const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
+    const repairCost = lead.property?.repair_cost ? Number(lead.property.repair_cost) : 0;
+    const savedMao = lead.property?.mao ? Number(lead.property.mao) : 0;
+    const mao = savedMao || (arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0);
+    
+    const offerAmount = lead.offer_amount ? Number(lead.offer_amount) : 0;
+    const listingPrice = lead.listing_price ? Number(lead.listing_price) : 0;
+    const lastSalePrice = lead.property?.last_sale_price ? Number(lead.property.last_sale_price) : 0;
+    
+    const acquisitionCost = offerAmount || listingPrice || lastSalePrice;
+    return mao > 0 && acquisitionCost > 0 ? mao - acquisitionCost : -Infinity;
+  };
+
   const filteredLeads = leads?.filter(lead => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
@@ -99,7 +114,7 @@ const Leads = () => {
       lead.property?.city?.toLowerCase().includes(search) ||
       lead.property?.owner_name?.toLowerCase().includes(search)
     );
-  });
+  })?.sort((a, b) => calculateSpread(b) - calculateSpread(a)); // Sort by spread DESC
 
   const getPriority = (lead: Lead): string => {
     const factors = lead.piw_score_factors as any;
@@ -252,19 +267,106 @@ const Leads = () => {
       {!isLoading && !error && filteredLeads && filteredLeads.length > 0 && (
         <Card variant="glass">
           <CardContent className="p-0">
+            <TooltipProvider>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border text-left text-sm text-muted-foreground">
                     <th className="p-4 font-medium">Propiedad</th>
                     <th className="p-4 font-medium">Propietario</th>
-                    <th className="p-4 font-medium">PIW Score</th>
-                    <th className="p-4 font-medium">Prioridad</th>
-                    <th className="p-4 font-medium">ARV</th>
-                    <th className="p-4 font-medium">MAO</th>
-                    <th className="p-4 font-medium">Spread</th>
-                    <th className="p-4 font-medium">Indicadores</th>
-                    <th className="p-4 font-medium">Estado</th>
+                    <th className="p-4 font-medium">
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 cursor-help">
+                          PIW Score
+                          <AlertTriangle className="h-3 w-3 opacity-50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[250px]">
+                          <p className="text-xs">
+                            <strong>Probability of Investment Win</strong>: Puntuación IA (0-100) que predice la probabilidad de cerrar el deal exitosamente basado en motivación del vendedor, viabilidad financiera y dificultad de cierre.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </th>
+                    <th className="p-4 font-medium">
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 cursor-help">
+                          Prioridad
+                          <AlertTriangle className="h-3 w-3 opacity-50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[250px]">
+                          <p className="text-xs">
+                            <strong>HOT</strong>: PIW ≥80% - Contactar hoy<br/>
+                            <strong>WARM</strong>: PIW 50-79% - Seguimiento activo<br/>
+                            <strong>COLD</strong>: PIW &lt;50% - Baja prioridad
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </th>
+                    <th className="p-4 font-medium">
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 cursor-help">
+                          ARV
+                          <AlertTriangle className="h-3 w-3 opacity-50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[250px]">
+                          <p className="text-xs">
+                            <strong>After Repair Value</strong>: Valor estimado de la propiedad después de reparaciones. Base para calcular la oferta máxima permitida.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </th>
+                    <th className="p-4 font-medium">
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 cursor-help">
+                          MAO
+                          <AlertTriangle className="h-3 w-3 opacity-50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[250px]">
+                          <p className="text-xs">
+                            <strong>Maximum Allowable Offer</strong>: Oferta máxima permitida calculada como ARV × 70% - Costo de Reparaciones. Precio máximo a pagar para mantener margen.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </th>
+                    <th className="p-4 font-medium">
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 cursor-help">
+                          Spread ↓
+                          <AlertTriangle className="h-3 w-3 opacity-50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[250px]">
+                          <p className="text-xs">
+                            <strong>Margen de Ganancia</strong>: MAO menos precio de adquisición (oferta/listing/última venta). Verde = ganancia potencial, Rojo = pérdida. Ordenado de mayor a menor.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </th>
+                    <th className="p-4 font-medium">
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 cursor-help">
+                          Indicadores
+                          <AlertTriangle className="h-3 w-3 opacity-50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[250px]">
+                          <p className="text-xs">
+                            Señales de motivación del vendedor: Ausente (no vive ahí), Deuda Imp. (impuestos atrasados), Ejecución (foreclosure), Sucesión (herencia/probate).
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </th>
+                    <th className="p-4 font-medium">
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 cursor-help">
+                          Estado
+                          <AlertTriangle className="h-3 w-3 opacity-50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[250px]">
+                          <p className="text-xs">
+                            Etapa del pipeline: Captación → Contacto → Bajo Contrato → Cesión → Cerrado
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </th>
                     <th className="p-4 font-medium">Acciones</th>
                   </tr>
                 </thead>
@@ -503,6 +605,7 @@ const Leads = () => {
                 </tbody>
               </table>
             </div>
+            </TooltipProvider>
           </CardContent>
         </Card>
       )}
