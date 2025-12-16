@@ -11,3 +11,9 @@ verify_jwt = true
 
 [functions.analyze-property]
 verify_jwt = true
+
+[functions.parse-listing-data]
+verify_jwt = true
+
+[functions.adjust-piw-score-conversation]
+verify_jwt = true

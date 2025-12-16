@@ -21,8 +21,11 @@ import { PropertyCompsManager } from './PropertyCompsManager';
 import { MarketDataInput } from './MarketDataInput';
 import { DealPackageGenerator } from './DealPackageGenerator';
 import { ListingDataParser } from './ListingDataParser';
+import { LogConversationDialog } from './LogConversationDialog';
+import { ConversationHistory } from './ConversationHistory';
 import { useInteractions } from '@/hooks/useInteractions';
 import { useUpdateProperty } from '@/hooks/useProperties';
+import { useLatestConversation } from '@/hooks/useSellerConversations';
 import { useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -46,6 +49,7 @@ import {
   Save,
   TrendingUp,
   Download,
+  MessageSquare,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -76,7 +80,9 @@ export function LeadDetailSheet({
 }: LeadDetailSheetProps) {
   const [showNewInteraction, setShowNewInteraction] = useState(false);
   const [showDealPackage, setShowDealPackage] = useState(false);
+  const [showLogConversation, setShowLogConversation] = useState(false);
   const { data: interactions, isLoading: loadingInteractions } = useInteractions(lead?.id || '');
+  const { data: latestConversation } = useLatestConversation(lead?.id);
   const updateProperty = useUpdateProperty();
   const queryClient = useQueryClient();
   
@@ -184,6 +190,15 @@ export function LeadDetailSheet({
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
+                  onClick={() => setShowLogConversation(true)}
+                  size="sm"
+                  className="bg-primary/10 border-primary/30 hover:bg-primary/20"
+                >
+                  <Phone className="mr-2 h-4 w-4" />
+                  Log Llamada
+                </Button>
+                <Button 
+                  variant="outline" 
                   onClick={onRecalculate}
                   disabled={isCalculating}
                   size="sm"
@@ -205,6 +220,26 @@ export function LeadDetailSheet({
               </div>
             </div>
 
+            {/* Latest Conversation Indicator */}
+            {latestConversation && (
+              <div className="mt-4 pt-3 border-t border-border">
+                <div className="flex items-center gap-2 text-sm">
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                  <span className="text-muted-foreground">Última conversación:</span>
+                  <span className="font-medium">
+                    {format(new Date(latestConversation.conversation_date), "d MMM", { locale: es })}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${
+                    (latestConversation.ai_adjusted_score ?? 0) >= 80 ? 'bg-green-500/10 text-green-500' :
+                    (latestConversation.ai_adjusted_score ?? 0) >= 50 ? 'bg-amber-500/10 text-amber-500' :
+                    'bg-red-500/10 text-red-500'
+                  }`}>
+                    Score ajustado: {latestConversation.ai_adjusted_score}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Score Breakdown */}
             {factors && (
               <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-border">
@@ -225,8 +260,12 @@ export function LeadDetailSheet({
           </Card>
 
           {/* Tabs */}
-          <Tabs defaultValue="timeline" className="w-full">
-            <TabsList className="w-full grid grid-cols-4">
+          <Tabs defaultValue="conversations" className="w-full">
+            <TabsList className="w-full grid grid-cols-5">
+              <TabsTrigger value="conversations" className="gap-1 text-xs sm:text-sm">
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">Seller</span>
+              </TabsTrigger>
               <TabsTrigger value="timeline" className="gap-1 text-xs sm:text-sm">
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Timeline</span>
@@ -244,6 +283,21 @@ export function LeadDetailSheet({
                 <span className="hidden sm:inline">Docs</span>
               </TabsTrigger>
             </TabsList>
+
+            {/* Conversations Tab - Seller Intelligence */}
+            <TabsContent value="conversations" className="mt-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Seller Conversation Intelligence
+                </h3>
+                <Button size="sm" onClick={() => setShowLogConversation(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Registrar Llamada
+                </Button>
+              </div>
+              <ConversationHistory leadId={lead.id} />
+            </TabsContent>
 
             {/* Timeline Tab */}
             <TabsContent value="timeline" className="mt-4">
@@ -638,6 +692,15 @@ export function LeadDetailSheet({
         currentAssignmentFee={lead.assignment_fee ? Number(lead.assignment_fee) : undefined}
         open={showDealPackage}
         onOpenChange={setShowDealPackage}
+      />
+
+      {/* Log Conversation Dialog */}
+      <LogConversationDialog
+        open={showLogConversation}
+        onOpenChange={setShowLogConversation}
+        leadId={lead.id}
+        currentPiwScore={lead.piw_score || 0}
+        propertyAddress={`${property?.address || ''}, ${property?.city || ''}`}
       />
     </>
   );
