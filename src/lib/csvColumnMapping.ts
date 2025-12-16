@@ -128,11 +128,15 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'equity_percent',
     label: 'Porcentaje de Equity',
-    aliases: ['estimatedequitypercent', 'equitypercent', 'equity', 'equitypct', 'ltv', 'loantovalue'],
+    // IMPORTANT: Don't use 'equity' alone - it would match "Estimated Equity" (dollar amount)
+    aliases: ['estimatedequitypercent', 'equitypercent', 'equitypct', 'ltv', 'loantovalue'],
     required: false,
     transform: (value: string) => {
       const num = parseFloat(value.replace(/%/g, ''));
-      return !isNaN(num) ? num : null;
+      // Cap at reasonable percentage values
+      if (isNaN(num)) return null;
+      if (num > 100) return null; // Likely a dollar amount, not percentage
+      return num;
     },
   },
   {
@@ -150,6 +154,16 @@ export const propertyFields: PropertyField[] = [
     label: 'Tipo de Propietario',
     aliases: ['ownertype', 'ownershiptype', 'entitytype'],
     required: false,
+    transform: (value: string) => {
+      const normalized = normalize(value);
+      // Map PropWire values to DB-valid values
+      if (normalized === 'individual' || normalized === 'person') return 'individual';
+      if (normalized === 'company' || normalized === 'llc' || normalized === 'corporation' || normalized === 'corp') return 'corporation';
+      if (normalized === 'trust') return 'trust';
+      if (normalized === 'estate') return 'estate';
+      // Return null for unknown types to avoid constraint violations
+      return null;
+    },
   },
   {
     key: 'is_absentee_owner',
