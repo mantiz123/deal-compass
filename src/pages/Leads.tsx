@@ -262,6 +262,7 @@ const Leads = () => {
                     <th className="p-4 font-medium">Prioridad</th>
                     <th className="p-4 font-medium">ARV</th>
                     <th className="p-4 font-medium">MAO</th>
+                    <th className="p-4 font-medium">Spread</th>
                     <th className="p-4 font-medium">Indicadores</th>
                     <th className="p-4 font-medium">Estado</th>
                     <th className="p-4 font-medium">Acciones</th>
@@ -359,6 +360,42 @@ const Leads = () => {
                                       ? `Estimado: ARV ($${arv.toLocaleString()}) × 70% - Reparaciones ($${repairCost.toLocaleString()})`
                                       : 'MAO guardado en la propiedad'
                                     }
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            );
+                          })()}
+                        </td>
+                        <td className="p-4">
+                          {(() => {
+                            const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
+                            const repairCost = lead.property?.repair_cost ? Number(lead.property.repair_cost) : 0;
+                            const savedMao = lead.property?.mao ? Number(lead.property.mao) : 0;
+                            const mao = savedMao || (arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0);
+                            
+                            // Use listing_price, offer_amount, or last_sale_price as acquisition cost
+                            const listingPrice = lead.listing_price ? Number(lead.listing_price) : 0;
+                            const offerAmount = lead.offer_amount ? Number(lead.offer_amount) : 0;
+                            const lastSalePrice = lead.property?.last_sale_price ? Number(lead.property.last_sale_price) : 0;
+                            
+                            const acquisitionCost = offerAmount || listingPrice || lastSalePrice;
+                            const spread = mao > 0 && acquisitionCost > 0 ? mao - acquisitionCost : 0;
+                            
+                            const sourceLabel = offerAmount ? 'Oferta' : listingPrice ? 'Listing' : lastSalePrice ? 'Últ. Venta' : '';
+                            
+                            return spread !== 0 ? (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <p className={`font-semibold ${spread > 0 ? 'text-success' : 'text-destructive'}`}>
+                                    {spread > 0 ? '+' : ''}${spread.toLocaleString()}
+                                  </p>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="max-w-[220px] text-xs">
+                                    MAO (${mao.toLocaleString()}) - {sourceLabel} (${acquisitionCost.toLocaleString()})
+                                    {spread > 0 ? ' = Ganancia potencial' : ' = Pérdida potencial'}
                                   </p>
                                 </TooltipContent>
                               </Tooltip>
