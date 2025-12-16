@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Pipeline from "./pages/Pipeline";
@@ -23,31 +24,33 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/pipeline" element={<Pipeline />} />
-            <Route path="/leads" element={<Leads />} />
-            <Route path="/buyers" element={<Buyers />} />
-            <Route path="/tracking" element={<Tracking />} />
-            <Route path="/campaigns" element={<Campaigns />} />
-            <Route path="/deals" element={<Deals />} />
-            <Route path="/properties" element={<Properties />} />
-            <Route path="/realtors" element={<Realtors />} />
-            <Route path="/payments" element={<Payments />} />
-            <Route path="/import" element={<Import />} />
-            <Route path="/settings" element={<Settings />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/pipeline" element={<Pipeline />} />
+              <Route path="/leads" element={<Leads />} />
+              <Route path="/buyers" element={<Buyers />} />
+              <Route path="/tracking" element={<Tracking />} />
+              <Route path="/campaigns" element={<Campaigns />} />
+              <Route path="/deals" element={<Deals />} />
+              <Route path="/properties" element={<Properties />} />
+              <Route path="/realtors" element={<Realtors />} />
+              <Route path="/payments" element={<Payments />} />
+              <Route path="/import" element={<Import />} />
+              <Route path="/settings" element={<Settings />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
