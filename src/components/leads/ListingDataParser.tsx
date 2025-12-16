@@ -231,13 +231,27 @@ export function ListingDataParser({
       if (selectedFields.has('market.crime_index') && parsedData.market_data.crime_index) {
         propertyUpdate.crime_index = parsedData.market_data.crime_index;
       }
-      if (selectedFields.has('repair.estimated_repair_cost') && parsedData.repair_estimate?.estimated_repair_cost) {
+      // Fix: Check for !== undefined instead of truthy to allow 0 values
+      if (selectedFields.has('repair.estimated_repair_cost') && parsedData.repair_estimate?.estimated_repair_cost !== undefined) {
         propertyUpdate.repair_cost = parsedData.repair_estimate.estimated_repair_cost;
       }
 
       // Update property if there are fields to update
       if (Object.keys(propertyUpdate).length > 0) {
         await updateProperty.mutateAsync({ id: propertyId, ...propertyUpdate });
+      }
+
+      // Update lead's listing_price if selected and leadId is provided
+      if (selectedFields.has('property.listing_price') && parsedData.property.listing_price && leadId) {
+        const { error: leadError } = await supabase
+          .from('leads')
+          .update({ listing_price: parsedData.property.listing_price, updated_at: new Date().toISOString() })
+          .eq('id', leadId);
+        
+        if (leadError) {
+          console.error('Error updating lead listing_price:', leadError);
+          toast.error('Error al actualizar listing price');
+        }
       }
 
       // Add selected comps
