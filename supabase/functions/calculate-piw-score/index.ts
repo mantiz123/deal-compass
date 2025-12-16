@@ -324,7 +324,7 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
   lines.push('\n### I. SELLER MOTIVATION INDICATORS');
   
   // Owner tenure
-  if (p.owner_tenure_years !== undefined) {
+  if (p.owner_tenure_years != null) {
     lines.push(`- Owner Tenure: ${p.owner_tenure_years} years`);
   }
   
@@ -338,26 +338,26 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
   }
   
   // Mailing address
-  if (p.mailing_address_different !== undefined) {
+  if (p.mailing_address_different != null) {
     lines.push(`- Mailing Address Different: ${p.mailing_address_different ? '✓ YES (confirms absentee)' : 'No'}`);
   }
   
   // Tax situation
-  if (p.tax_delinquent !== undefined) {
+  if (p.tax_delinquent != null) {
     lines.push(`- Tax Delinquent: ${p.tax_delinquent ? '⚠️ YES (HIGH MOTIVATION)' : 'No'}`);
   }
-  if (p.tax_debt !== undefined && p.tax_debt > 0) {
+  if (p.tax_debt != null && p.tax_debt > 0) {
     lines.push(`- Tax Debt Amount: $${p.tax_debt.toLocaleString()} ${p.tax_debt > 2000 ? '(SIGNIFICANT)' : ''}`);
   }
   
   // Distress indicators
-  if (p.is_probate !== undefined) {
+  if (p.is_probate != null) {
     lines.push(`- Probate/Estate: ${p.is_probate ? '✓ YES (HIGH MOTIVATION)' : 'No'}`);
   }
-  if (p.is_foreclosure !== undefined) {
+  if (p.is_foreclosure != null) {
     lines.push(`- Foreclosure: ${p.is_foreclosure ? '🚨 YES (URGENT - HIGH MOTIVATION)' : 'No'}`);
   }
-  if (p.eviction_count !== undefined && p.eviction_count > 0) {
+  if (p.eviction_count != null && p.eviction_count > 0) {
     lines.push(`- Eviction History: ${p.eviction_count} evictions (burned-out landlord indicator)`);
   }
   
@@ -365,53 +365,53 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
   if (p.last_refinance_date) {
     lines.push(`- Last Refinance: ${p.last_refinance_date}`);
   }
-  if (p.mortgage_age_years !== undefined) {
+  if (p.mortgage_age_years != null) {
     const mortgageNote = p.mortgage_age_years > 15 ? ' (HIGH EQUITY likely)' : '';
     lines.push(`- Mortgage Age: ${p.mortgage_age_years} years${mortgageNote}`);
   }
   
   lines.push('\n### II. FINANCIAL VIABILITY');
   
-  if (p.equity_percent !== undefined) {
+  if (p.equity_percent != null) {
     const equityNote = p.equity_percent > 40 ? ' (STRONG)' : p.equity_percent > 20 ? ' (Acceptable)' : ' (LOW - risky)';
     lines.push(`- Estimated Equity: ${p.equity_percent}%${equityNote}`);
   }
-  if (p.arv !== undefined) {
+  if (p.arv != null) {
     lines.push(`- ARV (After Repair Value): $${p.arv.toLocaleString()}`);
   }
-  if (p.repair_cost !== undefined) {
+  if (p.repair_cost != null) {
     lines.push(`- Estimated Repair Cost: $${p.repair_cost.toLocaleString()}`);
-    if (p.arv) {
+    if (p.arv != null) {
       const repairPercent = ((p.repair_cost / p.arv) * 100).toFixed(1);
       lines.push(`- Repair/ARV Ratio: ${repairPercent}%`);
     }
   }
-  if (p.mao !== undefined) {
+  if (p.mao != null) {
     lines.push(`- MAO (Max Allowable Offer): $${p.mao.toLocaleString()}`);
   }
-  if (p.sqft !== undefined) {
+  if (p.sqft != null) {
     lines.push(`- Square Footage: ${p.sqft.toLocaleString()} sq ft`);
   }
-  if (p.bedrooms !== undefined || p.bathrooms !== undefined) {
-    lines.push(`- Beds/Baths: ${p.bedrooms || '?'}/${p.bathrooms || '?'}`);
+  if (p.bedrooms != null || p.bathrooms != null) {
+    lines.push(`- Beds/Baths: ${p.bedrooms ?? '?'}/${p.bathrooms ?? '?'}`);
   }
-  if (p.year_built !== undefined) {
+  if (p.year_built != null) {
     const age = new Date().getFullYear() - p.year_built;
     const ageNote = age > 50 ? ' (older - check systems)' : '';
     lines.push(`- Year Built: ${p.year_built} (${age} years old${ageNote})`);
   }
-  if (p.neighborhood_vacancy_rate !== undefined) {
+  if (p.neighborhood_vacancy_rate != null) {
     const vacancyNote = p.neighborhood_vacancy_rate > 10 ? ' ⚠️ HIGH' : '';
     lines.push(`- Neighborhood Vacancy Rate: ${p.neighborhood_vacancy_rate}%${vacancyNote}`);
   }
-  if (p.price_growth_3yr !== undefined) {
+  if (p.price_growth_3yr != null) {
     const growthNote = p.price_growth_3yr > 5 ? ' (GROWING MARKET)' : p.price_growth_3yr < 0 ? ' (DECLINING)' : '';
     lines.push(`- 3-Year Price Growth: ${p.price_growth_3yr}%${growthNote}`);
   }
   
   lines.push('\n### III. CLOSING DIFFICULTY');
   
-  if (p.active_liens_count !== undefined) {
+  if (p.active_liens_count != null) {
     const liensNote = p.active_liens_count > 2 ? ' ⚠️ COMPLEX TITLE' : p.active_liens_count === 0 ? ' (CLEAN)' : '';
     lines.push(`- Active Liens: ${p.active_liens_count}${liensNote}`);
   }
@@ -446,10 +446,10 @@ function calculateFallbackScore(p: PropertyData): any {
   sellerMotivation = Math.min(40, sellerMotivation);
   
   // Financial Viability (max 35)
-  if (p.equity_percent !== undefined) {
+  if (p.equity_percent != null) {
     financialViability += Math.min(15, p.equity_percent * 0.35);
   }
-  if (p.price_growth_3yr !== undefined && p.price_growth_3yr > 0) {
+  if (p.price_growth_3yr != null && p.price_growth_3yr > 0) {
     financialViability += Math.min(10, p.price_growth_3yr);
   }
   if (p.property_type === 'single_family') financialViability += 5;
