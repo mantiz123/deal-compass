@@ -16,6 +16,7 @@ import { PIWScoreGauge } from '@/components/dashboard/PIWScoreGauge';
 import { LeadTimeline } from './LeadTimeline';
 import { LeadDocuments } from './LeadDocuments';
 import { NewInteractionDialog } from './NewInteractionDialog';
+import { AIPropertyInsights } from './AIPropertyInsights';
 import { DealPackageGenerator } from './DealPackageGenerator';
 import { useInteractions } from '@/hooks/useInteractions';
 import { useUpdateProperty } from '@/hooks/useProperties';
@@ -32,6 +33,7 @@ import {
   Plus,
   Brain,
   Loader2,
+  Sparkles,
   Clock,
   FileText,
   Activity,
@@ -221,18 +223,22 @@ export function LeadDetailSheet({
 
           {/* Tabs */}
           <Tabs defaultValue="timeline" className="w-full">
-            <TabsList className="w-full grid grid-cols-3">
-              <TabsTrigger value="timeline" className="gap-2">
+            <TabsList className="w-full grid grid-cols-4">
+              <TabsTrigger value="timeline" className="gap-1 text-xs sm:text-sm">
                 <Activity className="h-4 w-4" />
-                Timeline
+                <span className="hidden sm:inline">Timeline</span>
               </TabsTrigger>
-              <TabsTrigger value="details" className="gap-2">
+              <TabsTrigger value="ai-insights" className="gap-1 text-xs sm:text-sm">
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">IA</span>
+              </TabsTrigger>
+              <TabsTrigger value="details" className="gap-1 text-xs sm:text-sm">
                 <Home className="h-4 w-4" />
-                Detalles
+                <span className="hidden sm:inline">Detalles</span>
               </TabsTrigger>
-              <TabsTrigger value="documents" className="gap-2">
+              <TabsTrigger value="documents" className="gap-1 text-xs sm:text-sm">
                 <FileText className="h-4 w-4" />
-                Documentos
+                <span className="hidden sm:inline">Docs</span>
               </TabsTrigger>
             </TabsList>
 
@@ -261,6 +267,11 @@ export function LeadDetailSheet({
               ) : (
                 <LeadTimeline interactions={interactions || []} />
               )}
+            </TabsContent>
+
+            {/* AI Insights Tab */}
+            <TabsContent value="ai-insights" className="mt-4">
+              <AIPropertyInsights lead={lead} />
             </TabsContent>
 
             {/* Details Tab */}
