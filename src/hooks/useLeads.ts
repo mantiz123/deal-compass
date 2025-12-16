@@ -55,6 +55,9 @@ export function useCreateLead() {
     mutationFn: async (data: {
       property: TablesInsert<'properties'>;
       source?: string;
+      referred_by_realtor_id?: string;
+      referral_commission?: number;
+      listing_price?: number;
     }) => {
       // First create the property
       const { data: property, error: propertyError } = await supabase
@@ -65,13 +68,16 @@ export function useCreateLead() {
 
       if (propertyError) throw propertyError;
 
-      // Then create the lead
+      // Then create the lead with referral info
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
           property_id: property.id,
           source: data.source,
           status: 'captacion',
+          referred_by_realtor_id: data.referred_by_realtor_id || null,
+          referral_commission: data.referral_commission || null,
+          listing_price: data.listing_price || null,
         })
         .select()
         .single();
@@ -80,11 +86,14 @@ export function useCreateLead() {
 
       return { property, lead };
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      const isReferral = !!variables.referred_by_realtor_id;
       toast({
-        title: 'Lead creado',
-        description: 'El lead se ha creado correctamente',
+        title: isReferral ? 'Referral creado' : 'Lead creado',
+        description: isReferral 
+          ? 'El lead referido por Realtor se ha creado correctamente' 
+          : 'El lead se ha creado correctamente',
       });
     },
     onError: (error) => {

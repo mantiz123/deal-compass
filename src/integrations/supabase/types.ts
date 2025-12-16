@@ -416,11 +416,14 @@ export type Database = {
           created_at: string
           id: string
           last_contact_at: string | null
+          listing_price: number | null
           next_follow_up_at: string | null
           offer_amount: number | null
           piw_score: number | null
           piw_score_factors: Json | null
           property_id: string
+          referral_commission: number | null
+          referred_by_realtor_id: string | null
           source: string | null
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
@@ -432,11 +435,14 @@ export type Database = {
           created_at?: string
           id?: string
           last_contact_at?: string | null
+          listing_price?: number | null
           next_follow_up_at?: string | null
           offer_amount?: number | null
           piw_score?: number | null
           piw_score_factors?: Json | null
           property_id: string
+          referral_commission?: number | null
+          referred_by_realtor_id?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
@@ -448,11 +454,14 @@ export type Database = {
           created_at?: string
           id?: string
           last_contact_at?: string | null
+          listing_price?: number | null
           next_follow_up_at?: string | null
           offer_amount?: number | null
           piw_score?: number | null
           piw_score_factors?: Json | null
           property_id?: string
+          referral_commission?: number | null
+          referred_by_realtor_id?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
@@ -470,6 +479,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_referred_by_realtor_id_fkey"
+            columns: ["referred_by_realtor_id"]
+            isOneToOne: false
+            referencedRelation: "realtors"
             referencedColumns: ["id"]
           },
         ]
@@ -673,6 +689,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      realtors: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

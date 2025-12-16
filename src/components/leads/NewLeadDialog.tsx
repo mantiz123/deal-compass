@@ -7,16 +7,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreateLead } from "@/hooks/useLeads";
-import { Loader2, Home, DollarSign, AlertTriangle } from "lucide-react";
+import { useRealtors, useCreateRealtor } from "@/hooks/useRealtors";
+import { Loader2, Home, DollarSign, AlertTriangle, UserPlus, Users } from "lucide-react";
 
 interface NewLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+type LeadMode = "normal" | "realtor-referral";
+
 export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
   const createLead = useCreateLead();
+  const { data: realtors = [] } = useRealtors();
+  const createRealtor = useCreateRealtor();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Mode
+  const [mode, setMode] = useState<LeadMode>("normal");
+  
+  // Realtor Referral fields
+  const [selectedRealtorId, setSelectedRealtorId] = useState<string>("");
+  const [newRealtorName, setNewRealtorName] = useState("");
+  const [newRealtorEmail, setNewRealtorEmail] = useState("");
+  const [newRealtorPhone, setNewRealtorPhone] = useState("");
+  const [listingPrice, setListingPrice] = useState("");
+  const [referralCommission, setReferralCommission] = useState("");
+  const [showNewRealtorForm, setShowNewRealtorForm] = useState(false);
   
   // Basic Info
   const [address, setAddress] = useState("");
@@ -63,6 +80,14 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
   const [source, setSource] = useState("");
 
   const resetForm = () => {
+    setMode("normal");
+    setSelectedRealtorId("");
+    setNewRealtorName("");
+    setNewRealtorEmail("");
+    setNewRealtorPhone("");
+    setListingPrice("");
+    setReferralCommission("");
+    setShowNewRealtorForm(false);
     setAddress("");
     setCity("");
     setState("AL");
@@ -95,16 +120,42 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
     setSource("");
   };
 
+  const handleCreateRealtor = async () => {
+    if (!newRealtorName) return null;
+    
+    const result = await createRealtor.mutateAsync({
+      name: newRealtorName,
+      email: newRealtorEmail || undefined,
+      phone: newRealtorPhone || undefined,
+    });
+    
+    setShowNewRealtorForm(false);
+    setNewRealtorName("");
+    setNewRealtorEmail("");
+    setNewRealtorPhone("");
+    setSelectedRealtorId(result.id);
+    
+    return result.id;
+  };
+
   const handleSubmit = async () => {
     if (!address || !city || !zipCode) return;
     
     setIsSubmitting(true);
     
-    const arvNum = arv ? parseFloat(arv) : undefined;
-    const repairNum = repairCost ? parseFloat(repairCost) : undefined;
-    const mao = arvNum && repairNum ? (arvNum * 0.7) - repairNum : undefined;
-    
     try {
+      let realtorId = selectedRealtorId;
+      
+      // If creating new realtor in referral mode
+      if (mode === "realtor-referral" && showNewRealtorForm && newRealtorName) {
+        const newId = await handleCreateRealtor();
+        if (newId) realtorId = newId;
+      }
+      
+      const arvNum = arv ? parseFloat(arv) : undefined;
+      const repairNum = repairCost ? parseFloat(repairCost) : undefined;
+      const mao = arvNum && repairNum ? (arvNum * 0.7) - repairNum : undefined;
+
       await createLead.mutateAsync({
         property: {
           address,
@@ -138,7 +189,10 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
           neighborhood_vacancy_rate: neighborhoodVacancyRate ? parseFloat(neighborhoodVacancyRate) : null,
           price_growth_3yr: priceGrowth3yr ? parseFloat(priceGrowth3yr) : null,
         },
-        source: source || undefined,
+        source: mode === "realtor-referral" ? "Realtor Referral" : (source || undefined),
+        referred_by_realtor_id: mode === "realtor-referral" ? realtorId : undefined,
+        referral_commission: mode === "realtor-referral" && referralCommission ? parseFloat(referralCommission) : undefined,
+        listing_price: mode === "realtor-referral" && listingPrice ? parseFloat(listingPrice) : undefined,
       });
       
       resetForm();
@@ -153,21 +207,235 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl flex items-center gap-2">
-            <Home className="h-5 w-5 text-primary" />
-            Nuevo Lead - 20 Variables PIW
+            {mode === "realtor-referral" ? (
+              <>
+                <Users className="h-5 w-5 text-primary" />
+                Referral de Realtor
+              </>
+            ) : (
+              <>
+                <Home className="h-5 w-5 text-primary" />
+                Nuevo Lead - 20 Variables PIW
+              </>
+            )}
           </DialogTitle>
           <DialogDescription>
-            Ingresa los datos de la propiedad. Cuantas más variables completes, más preciso será el PIW-Score.
+            {mode === "realtor-referral" 
+              ? "Ingreso rápido para propiedades referidas por Realtors" 
+              : "Ingresa los datos de la propiedad. Cuantas más variables completes, más preciso será el PIW-Score."}
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="basic">Básico</TabsTrigger>
-            <TabsTrigger value="motivation">Motivación</TabsTrigger>
-            <TabsTrigger value="financial">Financiero</TabsTrigger>
-            <TabsTrigger value="closing">Cierre</TabsTrigger>
-          </TabsList>
+        {/* Mode Toggle */}
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={mode === "normal" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setMode("normal")}
+            className="flex-1"
+          >
+            <Home className="h-4 w-4 mr-2" />
+            Lead Completo
+          </Button>
+          <Button
+            variant={mode === "realtor-referral" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setMode("realtor-referral")}
+            className="flex-1"
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Referral de Realtor
+          </Button>
+        </div>
+
+        {/* Realtor Referral Mode - Simplified Form */}
+        {mode === "realtor-referral" ? (
+          <div className="space-y-4">
+            {/* Realtor Selection */}
+            <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-sm font-medium">Realtor Referente</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowNewRealtorForm(!showNewRealtorForm)}
+                >
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  {showNewRealtorForm ? "Seleccionar existente" : "Nuevo Realtor"}
+                </Button>
+              </div>
+              
+              {showNewRealtorForm ? (
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label htmlFor="newRealtorName" className="text-xs">Nombre *</Label>
+                    <Input
+                      id="newRealtorName"
+                      value={newRealtorName}
+                      onChange={(e) => setNewRealtorName(e.target.value)}
+                      placeholder="John Smith"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="newRealtorEmail" className="text-xs">Email</Label>
+                    <Input
+                      id="newRealtorEmail"
+                      type="email"
+                      value={newRealtorEmail}
+                      onChange={(e) => setNewRealtorEmail(e.target.value)}
+                      placeholder="realtor@email.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="newRealtorPhone" className="text-xs">Teléfono</Label>
+                    <Input
+                      id="newRealtorPhone"
+                      value={newRealtorPhone}
+                      onChange={(e) => setNewRealtorPhone(e.target.value)}
+                      placeholder="(205) 555-1234"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <Select value={selectedRealtorId} onValueChange={setSelectedRealtorId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar Realtor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {realtors.map((realtor) => (
+                      <SelectItem key={realtor.id} value={realtor.id}>
+                        {realtor.name} {realtor.company && `(${realtor.company})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* Property Info - Simplified */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="refAddress">Dirección *</Label>
+                <Input
+                  id="refAddress"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="1234 Oak Street"
+                />
+              </div>
+              <div>
+                <Label htmlFor="refCity">Ciudad *</Label>
+                <Input
+                  id="refCity"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Birmingham"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="refState">Estado</Label>
+                  <Input
+                    id="refState"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    placeholder="AL"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="refZip">ZIP *</Label>
+                  <Input
+                    id="refZip"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                    placeholder="35201"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Seller Info */}
+            <div>
+              <Label htmlFor="refOwnerName">Nombre del Vendedor</Label>
+              <Input
+                id="refOwnerName"
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                placeholder="Nombre del propietario"
+              />
+            </div>
+
+            {/* Financial - Simplified */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="refListingPrice">Precio de Lista</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    id="refListingPrice"
+                    type="number"
+                    className="pl-7"
+                    value={listingPrice}
+                    onChange={(e) => setListingPrice(e.target.value)}
+                    placeholder="150,000"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="refCommission">Comisión de Referral</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    id="refCommission"
+                    type="number"
+                    className="pl-7"
+                    value={referralCommission}
+                    onChange={(e) => setReferralCommission(e.target.value)}
+                    placeholder="1,500"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Típicamente 1% del precio de venta
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Indicators */}
+            <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
+              <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-accent" />
+                Indicadores Rápidos (Opcional)
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">90+ días en MLS</Label>
+                  <Switch checked={isAbsenteeOwner} onCheckedChange={setIsAbsenteeOwner} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Necesita reparaciones +$50K</Label>
+                  <Switch checked={taxDelinquent} onCheckedChange={setTaxDelinquent} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Urgencia &lt;30 días</Label>
+                  <Switch checked={isForeclosure} onCheckedChange={setIsForeclosure} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Probate/Herencia</Label>
+                  <Switch checked={isProbate} onCheckedChange={setIsProbate} />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Normal Mode - Full Form */
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="basic">Básico</TabsTrigger>
+              <TabsTrigger value="motivation">Motivación</TabsTrigger>
+              <TabsTrigger value="financial">Financiero</TabsTrigger>
+              <TabsTrigger value="closing">Cierre</TabsTrigger>
+            </TabsList>
 
           {/* Basic Info Tab */}
           <TabsContent value="basic" className="space-y-4 mt-4">
@@ -564,6 +832,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
             </div>
           </TabsContent>
         </Tabs>
+        )}
 
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -571,13 +840,15 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={!address || !city || !zipCode || isSubmitting}
+            disabled={!address || !city || !zipCode || isSubmitting || (mode === "realtor-referral" && !selectedRealtorId && !newRealtorName)}
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Guardando...
               </>
+            ) : mode === "realtor-referral" ? (
+              "Crear Referral"
             ) : (
               "Crear Lead"
             )}
