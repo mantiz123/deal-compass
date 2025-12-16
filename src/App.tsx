@@ -13,6 +13,7 @@ import Campaigns from "./pages/Campaigns";
 import Deals from "./pages/Deals";
 import Properties from "./pages/Properties";
 import Realtors from "./pages/Realtors";
+import Import from "./pages/Import";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/deals" element={<Deals />} />
             <Route path="/properties" element={<Properties />} />
             <Route path="/realtors" element={<Realtors />} />
+            <Route path="/import" element={<Import />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

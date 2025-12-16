@@ -15,12 +15,14 @@ import {
   LogOut,
   Mail,
   UserCheck,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Importar", href: "/import", icon: Upload },
   { name: "Leads", href: "/leads", icon: Target },
   { name: "Pipeline", href: "/pipeline", icon: Zap },
   { name: "Buyers", href: "/buyers", icon: Users },
