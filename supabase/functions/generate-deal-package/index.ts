@@ -291,13 +291,13 @@ serve(async (req) => {
     y -= 20;
 
     const indicators = [];
-    if (property?.is_absentee_owner) indicators.push("✓ Absentee Owner");
-    if (property?.tax_delinquent) indicators.push("✓ Tax Delinquent");
-    if (property?.is_foreclosure) indicators.push("✓ Foreclosure");
-    if (property?.is_probate) indicators.push("✓ Probate");
-    if (property?.mailing_address_different) indicators.push("✓ Different Mailing Address");
-    if (property?.equity_percent && property.equity_percent > 50) indicators.push(`✓ High Equity (${property.equity_percent}%)`);
-    if (property?.owner_tenure_years && property.owner_tenure_years > 10) indicators.push(`✓ Long Ownership (${property.owner_tenure_years} years)`);
+    if (property?.is_absentee_owner) indicators.push("[X] Absentee Owner");
+    if (property?.tax_delinquent) indicators.push("[X] Tax Delinquent");
+    if (property?.is_foreclosure) indicators.push("[X] Foreclosure");
+    if (property?.is_probate) indicators.push("[X] Probate");
+    if (property?.mailing_address_different) indicators.push("[X] Different Mailing Address");
+    if (property?.equity_percent && property.equity_percent > 50) indicators.push(`[X] High Equity (${property.equity_percent}%)`);
+    if (property?.owner_tenure_years && property.owner_tenure_years > 10) indicators.push(`[X] Long Ownership (${property.owner_tenure_years} years)`);
 
     if (indicators.length > 0) {
       col = 0;

@@ -92,7 +92,7 @@ export function DealPackageGenerator({
             <FileText className="h-5 w-5 text-primary" />
             Generar Deal Package
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="deal-package-description">
             Genera un PDF profesional con todos los datos del deal para enviar a compradores.
           </DialogDescription>
         </DialogHeader>
