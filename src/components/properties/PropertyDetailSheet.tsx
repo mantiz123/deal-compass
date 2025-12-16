@@ -71,19 +71,19 @@ export function PropertyDetailSheet({ property, open, onOpenChange }: PropertyDe
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <SheetTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-primary" />
-                Detalles de Propiedad
-              </SheetTitle>
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={() => setShowEditDialog(true)}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => setShowDeleteDialog(true)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
+            <SheetTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Detalles de Propiedad
+            </SheetTitle>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
+                <Edit className="h-4 w-4 mr-1" />
+                Editar
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowDeleteDialog(true)}>
+                <Trash2 className="h-4 w-4 mr-1 text-destructive" />
+                Eliminar
+              </Button>
             </div>
           </SheetHeader>
 
