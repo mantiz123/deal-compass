@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Sparkles, Check, AlertCircle, Home, DollarSign, MapPin } from 'lucide-react';
+import { Loader2, Sparkles, Check, AlertCircle, Home, DollarSign, MapPin, GraduationCap, TrendingUp, Brain } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUpdateProperty } from '@/hooks/useProperties';
@@ -35,6 +35,22 @@ interface ParsedMarketData {
   tax_assessed_value: number | null;
   days_on_market: number | null;
   zestimate: number | null;
+  crime_index: number | null;
+  median_price_sqft: number | null;
+}
+
+interface SchoolDetail {
+  name: string;
+  type: string;
+  rating: number;
+  distance: string | null;
+}
+
+interface OfferAnalysis {
+  suggested_offer_min: number | null;
+  suggested_offer_max: number | null;
+  motivation_level: 'high' | 'medium' | 'low';
+  reasoning: string;
 }
 
 interface ParsedComp {
@@ -48,14 +64,17 @@ interface ParsedComp {
 interface ParsedData {
   property: ParsedProperty;
   market_data: ParsedMarketData;
+  school_details?: SchoolDetail[];
   price_history: Array<{ date: string | null; event: string; price: number }>;
   comps: ParsedComp[];
   seller_motivation_signals: string[];
   listing_description: string | null;
+  offer_analysis?: OfferAnalysis;
 }
 
 interface ListingDataParserProps {
   propertyId: string;
+  leadId?: string;
   currentProperty?: {
     bedrooms?: number | null;
     bathrooms?: number | null;
@@ -66,11 +85,19 @@ interface ListingDataParserProps {
     walkability_score?: number | null;
     school_rating?: number | null;
     days_on_market_avg?: number | null;
+    crime_index?: number | null;
   };
   onDataApplied?: () => void;
+  onRecalculatePIW?: () => void;
 }
 
-export function ListingDataParser({ propertyId, currentProperty, onDataApplied }: ListingDataParserProps) {
+export function ListingDataParser({ 
+  propertyId, 
+  leadId,
+  currentProperty, 
+  onDataApplied,
+  onRecalculatePIW 
+}: ListingDataParserProps) {
   const [open, setOpen] = useState(false);
   const [rawText, setRawText] = useState('');
   const [isParsing, setIsParsing] = useState(false);
@@ -78,6 +105,7 @@ export function ListingDataParser({ propertyId, currentProperty, onDataApplied }
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
   const [selectedComps, setSelectedComps] = useState<Set<number>>(new Set());
   const [isApplying, setIsApplying] = useState(false);
+  const [recalculatePIW, setRecalculatePIW] = useState(true);
 
   const updateProperty = useUpdateProperty();
   const addComp = useAddPropertyComp();
@@ -181,6 +209,9 @@ export function ListingDataParser({ propertyId, currentProperty, onDataApplied }
       if (selectedFields.has('market.days_on_market') && parsedData.market_data.days_on_market) {
         propertyUpdate.days_on_market_avg = parsedData.market_data.days_on_market;
       }
+      if (selectedFields.has('market.crime_index') && parsedData.market_data.crime_index) {
+        propertyUpdate.crime_index = parsedData.market_data.crime_index;
+      }
 
       // Update property if there are fields to update
       if (Object.keys(propertyUpdate).length > 0) {
@@ -204,6 +235,13 @@ export function ListingDataParser({ propertyId, currentProperty, onDataApplied }
       }
 
       toast.success('Datos aplicados correctamente');
+      
+      // Trigger PIW recalculation if enabled and callback provided
+      if (recalculatePIW && onRecalculatePIW) {
+        toast.info('Recalculando PIW Score...');
+        onRecalculatePIW();
+      }
+
       setOpen(false);
       setRawText('');
       setParsedData(null);
@@ -219,6 +257,12 @@ export function ListingDataParser({ propertyId, currentProperty, onDataApplied }
   const formatCurrency = (value: number | null) => {
     if (value === null) return '-';
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  };
+
+  const motivationColors = {
+    high: 'text-red-500 bg-red-500/10',
+    medium: 'text-amber-500 bg-amber-500/10',
+    low: 'text-green-500 bg-green-500/10',
   };
 
   return (
@@ -272,6 +316,40 @@ export function ListingDataParser({ propertyId, currentProperty, onDataApplied }
           <ScrollArea className="h-[400px] pr-4">
             {parsedData ? (
               <div className="space-y-4">
+                {/* Offer Analysis - Most Important! */}
+                {parsedData.offer_analysis && (
+                  <Card className="border-primary/50 bg-primary/5">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        Análisis de Oferta (IA)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Motivación:</span>
+                        <Badge className={motivationColors[parsedData.offer_analysis.motivation_level]}>
+                          {parsedData.offer_analysis.motivation_level === 'high' ? '🔥 ALTA' : 
+                           parsedData.offer_analysis.motivation_level === 'medium' ? '⚡ MEDIA' : '❄️ BAJA'}
+                        </Badge>
+                      </div>
+                      {(parsedData.offer_analysis.suggested_offer_min || parsedData.offer_analysis.suggested_offer_max) && (
+                        <div className="p-3 bg-success/10 rounded-lg border border-success/30">
+                          <p className="text-xs text-muted-foreground mb-1">Rango de Oferta Sugerido</p>
+                          <p className="text-lg font-bold text-success">
+                            {formatCurrency(parsedData.offer_analysis.suggested_offer_min)} - {formatCurrency(parsedData.offer_analysis.suggested_offer_max)}
+                          </p>
+                        </div>
+                      )}
+                      {parsedData.offer_analysis.reasoning && (
+                        <p className="text-xs text-muted-foreground">
+                          {parsedData.offer_analysis.reasoning}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Property Data */}
                 <Card>
                   <CardHeader className="py-3">
@@ -366,7 +444,7 @@ export function ListingDataParser({ propertyId, currentProperty, onDataApplied }
                     {parsedData.market_data.school_rating !== null && (
                       <FieldRow
                         label="Rating Escuelas"
-                        value={`${parsedData.market_data.school_rating}/10`}
+                        value={`${parsedData.market_data.school_rating.toFixed(1)}/10`}
                         current={currentProperty?.school_rating}
                         field="market.school_rating"
                         selected={selectedFields.has('market.school_rating')}
@@ -383,8 +461,43 @@ export function ListingDataParser({ propertyId, currentProperty, onDataApplied }
                         onToggle={toggleField}
                       />
                     )}
+                    {parsedData.market_data.crime_index !== null && (
+                      <FieldRow
+                        label="Índice Crimen"
+                        value={parsedData.market_data.crime_index}
+                        current={currentProperty?.crime_index}
+                        field="market.crime_index"
+                        selected={selectedFields.has('market.crime_index')}
+                        onToggle={toggleField}
+                      />
+                    )}
                   </CardContent>
                 </Card>
+
+                {/* School Details */}
+                {parsedData.school_details && parsedData.school_details.length > 0 && (
+                  <Card>
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4" />
+                        Escuelas Cercanas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {parsedData.school_details.map((school, i) => (
+                        <div key={i} className="flex items-center justify-between text-xs p-2 rounded bg-muted/30">
+                          <div>
+                            <p className="font-medium">{school.name}</p>
+                            <p className="text-muted-foreground capitalize">{school.type} {school.distance && `• ${school.distance}`}</p>
+                          </div>
+                          <Badge variant={school.rating >= 7 ? 'default' : school.rating >= 4 ? 'secondary' : 'outline'}>
+                            {school.rating}/10
+                          </Badge>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Motivation Signals */}
                 {parsedData.seller_motivation_signals?.length > 0 && (
@@ -442,6 +555,20 @@ export function ListingDataParser({ propertyId, currentProperty, onDataApplied }
                       ))}
                     </CardContent>
                   </Card>
+                )}
+
+                {/* PIW Recalculation Option */}
+                {onRecalculatePIW && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30">
+                    <Checkbox
+                      checked={recalculatePIW}
+                      onCheckedChange={(checked) => setRecalculatePIW(checked === true)}
+                    />
+                    <div className="flex items-center gap-2 text-sm">
+                      <Brain className="h-4 w-4 text-primary" />
+                      <span>Recalcular PIW Score después de aplicar</span>
+                    </div>
+                  </div>
                 )}
 
                 {/* Apply Button */}

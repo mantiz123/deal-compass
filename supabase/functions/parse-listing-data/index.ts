@@ -50,13 +50,23 @@ Return a JSON object with this exact structure:
     "price_per_sqft": "number or null"
   },
   "market_data": {
-    "estimated_monthly_rent": "number or null",
-    "walkability_score": "number (0-100) or null",
-    "school_rating": "number (1-10 average) or null",
+    "estimated_monthly_rent": "number or null (look for Rent Zestimate or similar)",
+    "walkability_score": "number (0-100) or null (look for Walk Score)",
+    "school_rating": "number (1-10) or null (AVERAGE of all school ratings found - elementary, middle, high)",
     "tax_assessed_value": "number or null",
     "days_on_market": "number or null",
-    "zestimate": "number or null"
+    "zestimate": "number or null",
+    "crime_index": "number or null (if mentioned)",
+    "median_price_sqft": "number or null (extract from price per sqft data)"
   },
+  "school_details": [
+    {
+      "name": "string",
+      "type": "elementary|middle|high",
+      "rating": "number (1-10)",
+      "distance": "string or null"
+    }
+  ],
   "price_history": [
     {
       "date": "YYYY-MM-DD or null",
@@ -76,7 +86,13 @@ Return a JSON object with this exact structure:
   "seller_motivation_signals": [
     "string descriptions of any motivation indicators found (AS-IS, investor special, quick sale, etc.)"
   ],
-  "listing_description": "string or null"
+  "listing_description": "string or null",
+  "offer_analysis": {
+    "suggested_offer_min": "number or null (calculate: listing_price * 0.6 for distressed, * 0.75 for normal)",
+    "suggested_offer_max": "number or null (calculate: listing_price * 0.8 for distressed, * 0.9 for normal)", 
+    "motivation_level": "high|medium|low (based on signals found)",
+    "reasoning": "string explaining the offer range based on signals found"
+  }
 }
 
 Important rules:
@@ -84,7 +100,10 @@ Important rules:
 - For comps, use "Nearby homes" or "Similar homes" sections
 - Convert all prices to numbers (remove $, commas)
 - For property_type, map to: single_family, multi_family, condo, townhouse, land, commercial
-- Look for motivation signals like: AS-IS, investor special, handyman special, foreclosure, estate sale, motivated seller, price reduced, etc.
+- Look for motivation signals like: AS-IS, investor special, handyman special, foreclosure, estate sale, motivated seller, price reduced, quick sale, cash only, etc.
+- For school_rating: Calculate the AVERAGE of all school ratings found (e.g., if elementary=2, middle=4, high=2, average = 2.67)
+- For offer_analysis: If motivation signals indicate distress (AS-IS, foreclosure, investor special), use lower multipliers
+- For median_price_sqft: Look for "$/sqft" or "price per square foot" values
 - Return valid JSON only, no markdown or extra text`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
