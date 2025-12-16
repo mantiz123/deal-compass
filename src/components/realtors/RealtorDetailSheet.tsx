@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useRealtors } from "@/hooks/useRealtors";
 import { useRealtorReferrals, useRealtorStats } from "@/hooks/useRealtorStats";
 import {
@@ -7,6 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -25,10 +27,14 @@ import {
   DollarSign,
   Clock,
   CheckCircle2,
-  MapPin
+  MapPin,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { EditRealtorDialog } from "./EditRealtorDialog";
+import { DeleteRealtorDialog } from "./DeleteRealtorDialog";
 
 interface RealtorDetailSheetProps {
   realtorId: string | null;
@@ -60,6 +66,9 @@ export function RealtorDetailSheet({
   const { data: realtors } = useRealtors();
   const { data: referrals, isLoading: referralsLoading } = useRealtorReferrals(realtorId);
   const { data: stats } = useRealtorStats();
+  
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const realtor = realtors?.find((r) => r.id === realtorId);
   const realtorStats = stats?.realtorDetails?.find((r) => r.id === realtorId);
@@ -79,18 +88,37 @@ export function RealtorDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Users className="h-8 w-8 text-primary" />
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Users className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <SheetTitle className="text-2xl">{realtor.name}</SheetTitle>
+                <Badge
+                  variant={realtor.is_active ? "default" : "secondary"}
+                  className={realtor.is_active ? "bg-success/20 text-success" : ""}
+                >
+                  {realtor.is_active ? "Activo" : "Inactivo"}
+                </Badge>
+              </div>
             </div>
-            <div>
-              <SheetTitle className="text-2xl">{realtor.name}</SheetTitle>
-              <Badge
-                variant={realtor.is_active ? "default" : "secondary"}
-                className={realtor.is_active ? "bg-success/20 text-success" : ""}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setEditOpen(true)}
               >
-                {realtor.is_active ? "Activo" : "Inactivo"}
-              </Badge>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="text-destructive hover:bg-destructive/10"
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </SheetHeader>
@@ -237,6 +265,21 @@ export function RealtorDetailSheet({
           </Card>
         </div>
       </SheetContent>
+
+      {/* Edit Dialog */}
+      <EditRealtorDialog
+        realtor={realtor}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
+
+      {/* Delete Dialog */}
+      <DeleteRealtorDialog
+        realtor={realtor}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onDeleted={() => onOpenChange(false)}
+      />
     </Sheet>
   );
 }
