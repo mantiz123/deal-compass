@@ -12,6 +12,7 @@ import Tracking from "./pages/Tracking";
 import Campaigns from "./pages/Campaigns";
 import Deals from "./pages/Deals";
 import Properties from "./pages/Properties";
+import Realtors from "./pages/Realtors";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/campaigns" element={<Campaigns />} />
             <Route path="/deals" element={<Deals />} />
             <Route path="/properties" element={<Properties />} />
+            <Route path="/realtors" element={<Realtors />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

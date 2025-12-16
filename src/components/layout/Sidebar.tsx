@@ -14,6 +14,7 @@ import {
   MessageSquare,
   LogOut,
   Mail,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +24,7 @@ const navigation = [
   { name: "Leads", href: "/leads", icon: Target },
   { name: "Pipeline", href: "/pipeline", icon: Zap },
   { name: "Buyers", href: "/buyers", icon: Users },
+  { name: "Realtors", href: "/realtors", icon: UserCheck },
   { name: "Tracking", href: "/tracking", icon: Mail },
   { name: "Campaigns", href: "/campaigns", icon: MessageSquare },
   { name: "Deals", href: "/deals", icon: FileText },
