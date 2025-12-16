@@ -10,6 +10,12 @@ import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { useLeads, useCalculatePIWScore, Lead } from "@/hooks/useLeads";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Search,
   Filter,
   Upload,
@@ -297,28 +303,66 @@ const Leads = () => {
                           )}
                         </td>
                         <td className="p-4">
-                          <div className="flex gap-1 flex-wrap max-w-[150px]">
-                            {lead.property?.is_absentee_owner && (
-                              <Badge variant="info" className="text-[10px]">
-                                Ausente
-                              </Badge>
-                            )}
-                            {lead.property?.tax_delinquent && (
-                              <Badge variant="warning" className="text-[10px]">
-                                Deuda Imp.
-                              </Badge>
-                            )}
-                            {lead.property?.is_foreclosure && (
-                              <Badge variant="accent" className="text-[10px]">
-                                Ejecución
-                              </Badge>
-                            )}
-                            {lead.property?.is_probate && (
-                              <Badge variant="glow" className="text-[10px]">
-                                Sucesión
-                              </Badge>
-                            )}
-                          </div>
+                          <TooltipProvider>
+                            <div className="flex gap-1 flex-wrap max-w-[150px]">
+                              {lead.property?.is_absentee_owner && (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="info" className="text-[10px]">
+                                      Ausente
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-[200px] text-xs">
+                                      El propietario no vive en la propiedad. Mayor probabilidad de motivación para vender.
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {lead.property?.tax_delinquent && (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="warning" className="text-[10px]">
+                                      Deuda Imp.
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-[200px] text-xs">
+                                      Propiedad con impuestos atrasados. Indica urgencia financiera del propietario.
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {lead.property?.is_foreclosure && (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="accent" className="text-[10px]">
+                                      Ejecución
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-[200px] text-xs">
+                                      Propiedad en proceso de ejecución hipotecaria. Alta motivación para venta rápida.
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {lead.property?.is_probate && (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="glow" className="text-[10px]">
+                                      Sucesión
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-[200px] text-xs">
+                                      Propiedad heredada en proceso de sucesión. Herederos suelen preferir venta rápida.
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </TooltipProvider>
                         </td>
                         <td className="p-4">
                           <Badge variant={statusConfig[lead.status]?.variant || 'secondary'}>
