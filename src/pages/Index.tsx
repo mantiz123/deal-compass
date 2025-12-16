@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Layout } from "@/components/layout/Layout";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { LeadsTable } from "@/components/dashboard/LeadsTable";
+import { LeadsDelDia } from "@/components/dashboard/LeadsDelDia";
 import { PipelinePreview } from "@/components/dashboard/PipelinePreview";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
@@ -93,6 +94,11 @@ const Index = () => {
             />
           </>
         )}
+      </div>
+
+      {/* Leads del Día - Full Width */}
+      <div className="mb-6">
+        <LeadsDelDia />
       </div>
 
       {/* Main Content Grid */}
