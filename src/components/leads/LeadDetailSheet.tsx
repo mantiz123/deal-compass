@@ -17,6 +17,8 @@ import { LeadTimeline } from './LeadTimeline';
 import { LeadDocuments } from './LeadDocuments';
 import { NewInteractionDialog } from './NewInteractionDialog';
 import { AIPropertyInsights } from './AIPropertyInsights';
+import { PropertyCompsManager } from './PropertyCompsManager';
+import { MarketDataInput } from './MarketDataInput';
 import { DealPackageGenerator } from './DealPackageGenerator';
 import { useInteractions } from '@/hooks/useInteractions';
 import { useUpdateProperty } from '@/hooks/useProperties';
@@ -569,6 +571,20 @@ export function LeadDetailSheet({
                   </div>
                 </Card>
               </div>
+
+              {/* Property Comps */}
+              {property && (
+                <PropertyCompsManager 
+                  propertyId={property.id} 
+                  propertySqft={property.sqft || null}
+                  currentArv={property.arv ? Number(property.arv) : null}
+                />
+              )}
+
+              {/* Market Data */}
+              {property && (
+                <MarketDataInput property={property as any} />
+              )}
             </TabsContent>
 
             {/* Documents Tab */}
