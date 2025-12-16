@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -36,18 +37,118 @@ export interface PropertyAnalysis {
   executive_summary: string;
 }
 
+export interface SavedAnalysis {
+  id: string;
+  lead_id: string;
+  property_id: string;
+  analysis: PropertyAnalysis;
+  executive_summary: string | null;
+  deal_verdict: string | null;
+  opportunity_score: number | null;
+  risk_level: string | null;
+  motivation_level: string | null;
+  offer_min: number | null;
+  offer_max: number | null;
+  offer_optimal: number | null;
+  created_at: string;
+  created_by: string | null;
+}
+
 export interface AnalysisResult {
   success: boolean;
   analysis: PropertyAnalysis;
   generated_at: string;
 }
 
+// Hook to fetch saved analyses for a lead
+export function usePropertyAnalyses(leadId: string | undefined) {
+  return useQuery({
+    queryKey: ['property-analyses', leadId],
+    queryFn: async () => {
+      if (!leadId) return [];
+      
+      const { data, error } = await supabase
+        .from('property_analyses')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as unknown as SavedAnalysis[];
+    },
+    enabled: !!leadId,
+  });
+}
+
+// Hook to fetch the latest analysis for a lead
+export function useLatestPropertyAnalysis(leadId: string | undefined) {
+  return useQuery({
+    queryKey: ['property-analysis-latest', leadId],
+    queryFn: async () => {
+      if (!leadId) return null;
+      
+      const { data, error } = await supabase
+        .from('property_analyses')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as unknown as SavedAnalysis | null;
+    },
+    enabled: !!leadId,
+  });
+}
+
+// Hook for generating and saving analysis
 export function usePropertyAnalysis() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<PropertyAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const analyzeProperty = async (property: any, lead: any) => {
+  const saveAnalysis = useMutation({
+    mutationFn: async ({
+      leadId,
+      propertyId,
+      analysis,
+    }: {
+      leadId: string;
+      propertyId: string;
+      analysis: PropertyAnalysis;
+    }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase
+        .from('property_analyses')
+        .insert({
+          lead_id: leadId,
+          property_id: propertyId,
+          analysis: analysis as any,
+          executive_summary: analysis.executive_summary,
+          deal_verdict: analysis.recommendations.deal_verdict,
+          opportunity_score: analysis.investment_analysis.opportunity_score,
+          risk_level: analysis.investment_analysis.risk_level,
+          motivation_level: analysis.seller_motivation.motivation_level,
+          offer_min: analysis.recommendations.offer_range.min,
+          offer_max: analysis.recommendations.offer_range.max,
+          offer_optimal: analysis.recommendations.offer_range.optimal,
+          created_by: userData.user?.id || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['property-analyses', variables.leadId] });
+      queryClient.invalidateQueries({ queryKey: ['property-analysis-latest', variables.leadId] });
+    },
+  });
+
+  const analyzeProperty = async (property: any, lead: any): Promise<AnalysisResult | null> => {
     setIsAnalyzing(true);
     setError(null);
     
@@ -72,8 +173,16 @@ export function usePropertyAnalysis() {
         return null;
       }
 
-      setAnalysis(data.analysis);
-      toast.success('Análisis de IA completado');
+      // Save to database
+      if (lead.id && property.id) {
+        await saveAnalysis.mutateAsync({
+          leadId: lead.id,
+          propertyId: property.id,
+          analysis: data.analysis,
+        });
+      }
+
+      toast.success('Análisis de IA completado y guardado');
       return data as AnalysisResult;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al analizar propiedad';
@@ -85,16 +194,10 @@ export function usePropertyAnalysis() {
     }
   };
 
-  const clearAnalysis = () => {
-    setAnalysis(null);
-    setError(null);
-  };
-
   return {
     analyzeProperty,
-    clearAnalysis,
     isAnalyzing,
-    analysis,
-    error
+    error,
+    isSaving: saveAnalysis.isPending,
   };
 }

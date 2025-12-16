@@ -709,6 +709,72 @@ export type Database = {
         }
         Relationships: []
       }
+      property_analyses: {
+        Row: {
+          analysis: Json
+          created_at: string
+          created_by: string | null
+          deal_verdict: string | null
+          executive_summary: string | null
+          id: string
+          lead_id: string
+          motivation_level: string | null
+          offer_max: number | null
+          offer_min: number | null
+          offer_optimal: number | null
+          opportunity_score: number | null
+          property_id: string
+          risk_level: string | null
+        }
+        Insert: {
+          analysis: Json
+          created_at?: string
+          created_by?: string | null
+          deal_verdict?: string | null
+          executive_summary?: string | null
+          id?: string
+          lead_id: string
+          motivation_level?: string | null
+          offer_max?: number | null
+          offer_min?: number | null
+          offer_optimal?: number | null
+          opportunity_score?: number | null
+          property_id: string
+          risk_level?: string | null
+        }
+        Update: {
+          analysis?: Json
+          created_at?: string
+          created_by?: string | null
+          deal_verdict?: string | null
+          executive_summary?: string | null
+          id?: string
+          lead_id?: string
+          motivation_level?: string | null
+          offer_max?: number | null
+          offer_min?: number | null
+          offer_optimal?: number | null
+          opportunity_score?: number | null
+          property_id?: string
+          risk_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_analyses_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_analyses_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_images: {
         Row: {
           created_at: string
