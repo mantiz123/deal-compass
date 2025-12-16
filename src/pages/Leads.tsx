@@ -53,6 +53,9 @@ const Leads = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showNewLeadDialog, setShowNewLeadDialog] = useState(false);
   const [calculatingId, setCalculatingId] = useState<string | null>(null);
+  const [isBatchCalculating, setIsBatchCalculating] = useState(false);
+
+  const pendingLeads = leads?.filter(l => l.piw_score === null && l.property) || [];
 
   const handleCalculateScore = async (lead: Lead) => {
     if (!lead.property) return;
@@ -65,6 +68,26 @@ const Leads = () => {
       });
     } finally {
       setCalculatingId(null);
+    }
+  };
+
+  const handleBatchCalculate = async () => {
+    if (pendingLeads.length === 0) return;
+    
+    setIsBatchCalculating(true);
+    try {
+      for (const lead of pendingLeads) {
+        if (lead.property) {
+          setCalculatingId(lead.id);
+          await calculateScore.mutateAsync({
+            leadId: lead.id,
+            propertyData: lead.property,
+          });
+        }
+      }
+    } finally {
+      setCalculatingId(null);
+      setIsBatchCalculating(false);
     }
   };
 
@@ -106,6 +129,26 @@ const Leads = () => {
               <Upload className="mr-2 h-4 w-4" />
               Importar CSV
             </Button>
+            {pendingLeads.length > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={handleBatchCalculate}
+                disabled={isBatchCalculating}
+                className="border-accent/50 text-accent hover:bg-accent/10"
+              >
+                {isBatchCalculating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Calculando ({pendingLeads.length})...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="mr-2 h-4 w-4" />
+                    Calcular Todos ({pendingLeads.length})
+                  </>
+                )}
+              </Button>
+            )}
             <Button onClick={() => setShowNewLeadDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Nuevo Lead
