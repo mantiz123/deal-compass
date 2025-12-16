@@ -59,6 +59,18 @@ Return a JSON object with this exact structure:
     "crime_index": "number or null (if mentioned)",
     "median_price_sqft": "number or null (extract from price per sqft data)"
   },
+  "repair_estimate": {
+    "estimated_repair_cost": "number - calculate based on factors below",
+    "repair_level": "cosmetic|moderate|heavy|gut_rehab",
+    "cost_per_sqft": "number - the $/sqft used for calculation",
+    "confidence": "high|medium|low",
+    "factors": ["array of strings explaining why this estimate"],
+    "breakdown": {
+      "condition_factor": "number 0-1 (1=worst condition)",
+      "age_factor": "number 0-1 (1=oldest)",
+      "keywords_found": ["list of condition keywords found"]
+    }
+  },
   "school_details": [
     {
       "name": "string",
@@ -95,15 +107,43 @@ Return a JSON object with this exact structure:
   }
 }
 
+REPAIR COST ESTIMATION RULES:
+Use this formula: estimated_repair_cost = sqft * cost_per_sqft
+
+Determine cost_per_sqft based on these factors:
+
+1. CONDITION KEYWORDS (check listing description):
+   - Gut rehab keywords: "gut", "tear down", "total renovation", "shell", "uninhabitable" → $50-70/sqft
+   - Heavy rehab keywords: "AS-IS", "investor special", "handyman special", "fixer", "needs work", "TLC", "potential", "bring contractor", "cash only", "sold as-is" → $35-50/sqft
+   - Moderate rehab keywords: "needs updating", "dated", "original", "estate sale", "cosmetic", "minor repairs" → $20-35/sqft
+   - Cosmetic only: "move-in ready with updates needed", "light updating" → $10-20/sqft
+   - No condition keywords: assume $15-25/sqft
+
+2. AGE FACTOR (year_built):
+   - Built before 1950: add $5-10/sqft (old systems, lead, asbestos risk)
+   - Built 1950-1970: add $3-5/sqft
+   - Built 1970-1990: add $0-3/sqft
+   - Built after 1990: no addition
+
+3. PRICE SIGNALS:
+   - If listing_price < $50/sqft (for the area), likely needs significant work
+   - Multiple price drops indicate motivation and possibly hidden issues
+
+4. CONFIDENCE LEVEL:
+   - High: Multiple clear condition keywords found
+   - Medium: Some keywords or age-based estimate
+   - Low: No keywords, estimate based on age alone
+
 Important rules:
 - Extract ONLY data that is explicitly present in the text
-- For comps, use "Nearby homes" or "Similar homes" sections
+- For comps, use "Nearby homes" or "Similar homes" sections - ONLY include properties with actual addresses (not just land parcels)
 - Convert all prices to numbers (remove $, commas)
 - For property_type, map to: single_family, multi_family, condo, townhouse, land, commercial
 - Look for motivation signals like: AS-IS, investor special, handyman special, foreclosure, estate sale, motivated seller, price reduced, quick sale, cash only, etc.
 - For school_rating: Calculate the AVERAGE of all school ratings found (e.g., if elementary=2, middle=4, high=2, average = 2.67)
 - For offer_analysis: If motivation signals indicate distress (AS-IS, foreclosure, investor special), use lower multipliers
 - For median_price_sqft: Look for "$/sqft" or "price per square foot" values
+- For repair_estimate: ALWAYS provide an estimate even if no keywords found - use age and price signals
 - Return valid JSON only, no markdown or extra text`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
