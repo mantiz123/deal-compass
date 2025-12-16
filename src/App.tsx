@@ -16,6 +16,7 @@ import Realtors from "./pages/Realtors";
 import Payments from "./pages/Payments";
 import Import from "./pages/Import";
 import Auth from "./pages/Auth";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/realtors" element={<Realtors />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/import" element={<Import />} />
+            <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
