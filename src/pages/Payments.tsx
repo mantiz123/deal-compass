@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PaymentsTable } from '@/components/payments/PaymentsTable';
 import { NewPaymentDialog } from '@/components/payments/NewPaymentDialog';
+import { MonthlyIncomeChart } from '@/components/payments/MonthlyIncomeChart';
 import { usePaymentStats } from '@/hooks/usePayments';
 import { 
   Plus, 
@@ -114,6 +115,9 @@ export default function Payments() {
             </div>
           </Card>
         </div>
+
+        {/* Monthly Income Chart */}
+        <MonthlyIncomeChart />
 
         {/* Payments Table */}
         <PaymentsTable />
