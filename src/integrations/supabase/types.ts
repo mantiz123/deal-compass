@@ -935,6 +935,68 @@ export type Database = {
         }
         Relationships: []
       }
+      seller_conversations: {
+        Row: {
+          ai_adjusted_score: number | null
+          ai_adjustment_reason: string | null
+          conversation_date: string
+          created_at: string
+          created_by: string | null
+          id: string
+          key_objection: string | null
+          lead_id: string
+          main_pain: string
+          notes: string | null
+          our_offer_discussed: number | null
+          previous_piw_score: number | null
+          price_flexibility: Database["public"]["Enums"]["price_flexibility"]
+          seller_asking_price: number | null
+          urgency_level: Database["public"]["Enums"]["seller_urgency_level"]
+        }
+        Insert: {
+          ai_adjusted_score?: number | null
+          ai_adjustment_reason?: string | null
+          conversation_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_objection?: string | null
+          lead_id: string
+          main_pain: string
+          notes?: string | null
+          our_offer_discussed?: number | null
+          previous_piw_score?: number | null
+          price_flexibility: Database["public"]["Enums"]["price_flexibility"]
+          seller_asking_price?: number | null
+          urgency_level: Database["public"]["Enums"]["seller_urgency_level"]
+        }
+        Update: {
+          ai_adjusted_score?: number | null
+          ai_adjustment_reason?: string | null
+          conversation_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_objection?: string | null
+          lead_id?: string
+          main_pain?: string
+          notes?: string | null
+          our_offer_discussed?: number | null
+          previous_piw_score?: number | null
+          price_flexibility?: Database["public"]["Enums"]["price_flexibility"]
+          seller_asking_price?: number | null
+          urgency_level?: Database["public"]["Enums"]["seller_urgency_level"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -998,6 +1060,11 @@ export type Database = {
         | "cerrado"
       payment_method: "cash" | "check" | "wire" | "zelle" | "venmo" | "other"
       payment_status: "pending" | "paid" | "cancelled"
+      price_flexibility:
+        | "very_flexible"
+        | "somewhat_flexible"
+        | "firm"
+        | "unrealistic"
       property_type:
         | "single_family"
         | "multi_family"
@@ -1005,6 +1072,7 @@ export type Database = {
         | "townhouse"
         | "land"
         | "commercial"
+      seller_urgency_level: "desperate" | "high" | "moderate" | "low" | "none"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1143,6 +1211,12 @@ export const Constants = {
       ],
       payment_method: ["cash", "check", "wire", "zelle", "venmo", "other"],
       payment_status: ["pending", "paid", "cancelled"],
+      price_flexibility: [
+        "very_flexible",
+        "somewhat_flexible",
+        "firm",
+        "unrealistic",
+      ],
       property_type: [
         "single_family",
         "multi_family",
@@ -1151,6 +1225,7 @@ export const Constants = {
         "land",
         "commercial",
       ],
+      seller_urgency_level: ["desperate", "high", "moderate", "low", "none"],
     },
   },
 } as const
