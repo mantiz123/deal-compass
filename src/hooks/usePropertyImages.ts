@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { compressImage } from '@/lib/imageCompression';
 
 export interface PropertyImage {
   id: string;
@@ -47,13 +48,16 @@ export function useUploadPropertyImage() {
       file: File; 
       isPrimary?: boolean;
     }) => {
-      const fileExt = file.name.split('.').pop();
+      // Compress image before upload
+      const compressedFile = await compressImage(file);
+      
+      const fileExt = compressedFile.name.split('.').pop() || 'jpg';
       const fileName = `${propertyId}/${Date.now()}.${fileExt}`;
       
       // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('property-images')
-        .upload(fileName, file);
+        .upload(fileName, compressedFile);
 
       if (uploadError) throw uploadError;
 
