@@ -23,44 +23,81 @@ export const useCSVImport = () => {
   return useMutation({
     mutationFn: async ({ rows, mappings, source, calculatePIW }: ImportOptions): Promise<ImportResult> => {
       const result: ImportResult = { success: 0, failed: 0, errors: [] };
-      const batchSize = 50; // Process in batches to avoid timeouts
+      let skippedDuplicates = 0;
+      let piwCalculated = 0;
+      const batchSize = 50;
       
       for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);
         
         for (const row of batch) {
           try {
-            // Transform CSV row to property data
             const propertyData = transformRow(row, mappings);
             
-            // Validate required fields
             if (!propertyData.address || !propertyData.city || !propertyData.state || !propertyData.zip_code) {
               result.failed++;
-              result.errors.push(`Fila ${i + batch.indexOf(row) + 2}: Faltan campos requeridos (dirección, ciudad, estado, o código postal)`);
+              result.errors.push(`Fila ${i + batch.indexOf(row) + 2}: Faltan campos requeridos`);
               continue;
             }
             
-            // Combine first and last name if both exist
+            // Check for duplicate property by address + zip_code
+            const normalizedAddress = propertyData.address.trim().toUpperCase();
+            const { data: existingProperty } = await supabase
+              .from('properties')
+              .select('id')
+              .ilike('address', normalizedAddress)
+              .eq('zip_code', propertyData.zip_code)
+              .maybeSingle();
+            
+            if (existingProperty) {
+              // Property exists - check if lead needs PIW score
+              if (calculatePIW) {
+                const { data: existingLead } = await supabase
+                  .from('leads')
+                  .select('id, piw_score')
+                  .eq('property_id', existingProperty.id)
+                  .maybeSingle();
+                
+                if (existingLead && existingLead.piw_score === null) {
+                  // Fetch full property data for PIW calculation
+                  const { data: fullProperty } = await supabase
+                    .from('properties')
+                    .select('*')
+                    .eq('id', existingProperty.id)
+                    .single();
+                  
+                  if (fullProperty) {
+                    try {
+                      await supabase.functions.invoke('calculate-piw-score', {
+                        body: { leadId: existingLead.id, propertyData: fullProperty },
+                      });
+                      piwCalculated++;
+                    } catch (e) {
+                      console.warn(`PIW recalc failed for ${existingLead.id}:`, e);
+                    }
+                  }
+                }
+              }
+              skippedDuplicates++;
+              continue;
+            }
+            
+            // Combine first and last name
             let ownerName = propertyData.owner_name || null;
             if (propertyData.owner_first_name || propertyData.owner_last_name) {
               ownerName = [propertyData.owner_first_name, propertyData.owner_last_name]
-                .filter(Boolean)
-                .join(' ')
-                .trim() || null;
+                .filter(Boolean).join(' ').trim() || null;
             }
             
-            // Handle tenure - could be in months or years
             const tenureYears = propertyData.owner_tenure_months || propertyData.owner_tenure_years || null;
             
-            // Handle absentee owner - can come from is_absentee_owner or owner_occupied (inverse)
             let isAbsentee = false;
             if (propertyData.is_absentee_owner !== undefined && propertyData.is_absentee_owner !== null) {
               isAbsentee = propertyData.is_absentee_owner;
             } else if (propertyData.owner_occupied !== undefined && propertyData.owner_occupied !== null) {
-              isAbsentee = propertyData.owner_occupied; // Already inverted in transform
+              isAbsentee = propertyData.owner_occupied;
             }
             
-            // Create property
             const { data: property, error: propertyError } = await supabase
               .from('properties')
               .insert({
@@ -101,14 +138,9 @@ export const useCSVImport = () => {
               continue;
             }
             
-            // Create lead
             const { data: lead, error: leadError } = await supabase
               .from('leads')
-              .insert({
-                property_id: property.id,
-                source: source,
-                status: 'captacion',
-              })
+              .insert({ property_id: property.id, source: source, status: 'captacion' })
               .select()
               .single();
             
@@ -118,19 +150,11 @@ export const useCSVImport = () => {
               continue;
             }
             
-            // Calculate PIW Score if enabled
             if (calculatePIW && lead) {
               try {
-                const { error: piwError } = await supabase.functions.invoke('calculate-piw-score', {
-                  body: {
-                    leadId: lead.id,
-                    propertyData: property,
-                  },
+                await supabase.functions.invoke('calculate-piw-score', {
+                  body: { leadId: lead.id, propertyData: property },
                 });
-                
-                if (piwError) {
-                  console.warn(`PIW Score calculation failed for lead ${lead.id}:`, piwError);
-                }
               } catch (piwError) {
                 console.warn('PIW Score calculation error:', piwError);
               }
@@ -144,21 +168,34 @@ export const useCSVImport = () => {
         }
       }
       
+      // Include duplicates info in result
+      (result as any).skippedDuplicates = skippedDuplicates;
+      (result as any).piwCalculated = piwCalculated;
+      
       return result;
     },
-    onSuccess: (result) => {
+    onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       
-      if (result.success > 0) {
+      const parts: string[] = [];
+      if (result.success > 0) parts.push(`${result.success} nuevos leads importados`);
+      if (result.skippedDuplicates > 0) parts.push(`${result.skippedDuplicates} duplicados omitidos`);
+      if (result.piwCalculated > 0) parts.push(`${result.piwCalculated} PIW-Scores calculados`);
+      if (result.failed > 0) parts.push(`${result.failed} fallaron`);
+      
+      if (result.success > 0 || result.piwCalculated > 0) {
         toast({
           title: 'Importación completada',
-          description: `${result.success} leads importados exitosamente${result.failed > 0 ? `, ${result.failed} fallaron` : ''}`,
+          description: parts.join(', '),
         });
-      }
-      
-      if (result.failed > 0 && result.success === 0) {
+      } else if (result.skippedDuplicates > 0 && result.failed === 0) {
+        toast({
+          title: 'Sin cambios',
+          description: `${result.skippedDuplicates} propiedades ya existían en el sistema`,
+        });
+      } else if (result.failed > 0) {
         toast({
           title: 'Error en importación',
           description: `Todos los ${result.failed} registros fallaron`,
