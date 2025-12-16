@@ -123,8 +123,8 @@ export const useCSVImport = () => {
               try {
                 const { error: piwError } = await supabase.functions.invoke('calculate-piw-score', {
                   body: {
-                    lead_id: lead.id,
-                    property_data: property,
+                    leadId: lead.id,
+                    propertyData: property,
                   },
                 });
                 
