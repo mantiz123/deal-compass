@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -9,12 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { PIWScoreGauge } from '@/components/dashboard/PIWScoreGauge';
 import { LeadTimeline } from './LeadTimeline';
 import { LeadDocuments } from './LeadDocuments';
 import { NewInteractionDialog } from './NewInteractionDialog';
 import { useInteractions } from '@/hooks/useInteractions';
+import { useUpdateProperty } from '@/hooks/useProperties';
+import { useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   MapPin,
@@ -32,6 +36,9 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle,
+  Calculator,
+  Save,
+  TrendingUp,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -62,6 +69,21 @@ export function LeadDetailSheet({
 }: LeadDetailSheetProps) {
   const [showNewInteraction, setShowNewInteraction] = useState(false);
   const { data: interactions, isLoading: loadingInteractions } = useInteractions(lead?.id || '');
+  const updateProperty = useUpdateProperty();
+  const queryClient = useQueryClient();
+  
+  // Editable financial fields
+  const [repairCost, setRepairCost] = useState<string>('');
+  const [medianPriceSqft, setMedianPriceSqft] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Reset form when lead changes
+  useEffect(() => {
+    if (lead?.property) {
+      setRepairCost(lead.property.repair_cost?.toString() || '');
+      setMedianPriceSqft('');
+    }
+  }, [lead?.property?.id]);
 
   if (!lead) return null;
 
@@ -71,6 +93,48 @@ export function LeadDetailSheet({
     (lead.piw_score || 0) >= 80 ? 'hot' : 
     (lead.piw_score || 0) >= 50 ? 'warm' : 'cold'
   );
+
+  // Calculate ARV from median $/sqft if provided
+  const sqft = property?.sqft || 0;
+  const currentArv = property?.arv ? Number(property.arv) : 0;
+  const calculatedArv = medianPriceSqft && sqft 
+    ? sqft * parseFloat(medianPriceSqft) 
+    : currentArv;
+  
+  // Calculate MAO: ARV × 70% - Repair Cost
+  const repairCostNum = parseFloat(repairCost) || 0;
+  const calculatedMao = calculatedArv > 0 
+    ? Math.round(calculatedArv * 0.7 - repairCostNum)
+    : 0;
+
+  const handleSaveFinancials = async () => {
+    if (!property?.id) return;
+    
+    setIsSaving(true);
+    try {
+      const updates: Record<string, number | null> = {
+        repair_cost: repairCostNum || null,
+        mao: calculatedMao > 0 ? calculatedMao : null,
+      };
+      
+      // Update ARV if calculated from median $/sqft
+      if (medianPriceSqft && calculatedArv > 0) {
+        updates.arv = calculatedArv;
+      }
+
+      await updateProperty.mutateAsync({
+        id: property.id,
+        ...updates,
+      });
+      
+      // Invalidate leads query to refresh data
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const hasChanges = repairCost !== (property?.repair_cost?.toString() || '') || medianPriceSqft !== '';
 
   return (
     <>
@@ -222,23 +286,28 @@ export function LeadDetailSheet({
                   <DollarSign className="h-4 w-4" />
                   Información Financiera
                 </h3>
-                <Card variant="glass" className="p-4">
+                <Card variant="glass" className="p-4 space-y-4">
+                  {/* Display Values */}
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-muted-foreground">ARV</p>
-                      <p className="font-medium text-lg">{property?.arv ? `$${Number(property.arv).toLocaleString()}` : 'N/A'}</p>
+                      <p className="text-muted-foreground">ARV {medianPriceSqft && <span className="text-accent">(calculado)</span>}</p>
+                      <p className="font-medium text-lg">
+                        {calculatedArv > 0 ? `$${Math.round(calculatedArv).toLocaleString()}` : 'N/A'}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">MAO</p>
-                      <p className="font-medium text-lg text-success">{property?.mao ? `$${Number(property.mao).toLocaleString()}` : 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Costo Reparación</p>
-                      <p className="font-medium">{property?.repair_cost ? `$${Number(property.repair_cost).toLocaleString()}` : 'N/A'}</p>
+                      <p className="text-muted-foreground">MAO {(repairCost || medianPriceSqft) && calculatedMao > 0 && <span className="text-accent">(calculado)</span>}</p>
+                      <p className="font-medium text-lg text-success">
+                        {calculatedMao > 0 ? `$${calculatedMao.toLocaleString()}` : 'N/A'}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Equity</p>
                       <p className="font-medium">{property?.equity_percent ? `${property.equity_percent}%` : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Superficie</p>
+                      <p className="font-medium">{sqft ? `${sqft.toLocaleString()} sqft` : 'N/A'}</p>
                     </div>
                     {lead.offer_amount && (
                       <div>
@@ -251,6 +320,85 @@ export function LeadDetailSheet({
                         <p className="text-muted-foreground">Fee Cesión</p>
                         <p className="font-medium text-success">${Number(lead.assignment_fee).toLocaleString()}</p>
                       </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Editable Fields */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calculator className="h-4 w-4" />
+                      <span>Calculadora de Comps y MAO</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="medianPriceSqft" className="text-xs flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          Median $/SqFt (Mercado)
+                        </Label>
+                        <Input
+                          id="medianPriceSqft"
+                          type="number"
+                          placeholder="ej: 105"
+                          value={medianPriceSqft}
+                          onChange={(e) => setMedianPriceSqft(e.target.value)}
+                          className="bg-secondary/50"
+                        />
+                        {medianPriceSqft && sqft > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            ARV = {sqft.toLocaleString()} × ${medianPriceSqft} = <span className="text-accent font-medium">${Math.round(calculatedArv).toLocaleString()}</span>
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="repairCost" className="text-xs flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          Costo Reparación
+                        </Label>
+                        <Input
+                          id="repairCost"
+                          type="number"
+                          placeholder="ej: 25000"
+                          value={repairCost}
+                          onChange={(e) => setRepairCost(e.target.value)}
+                          className="bg-secondary/50"
+                        />
+                      </div>
+                    </div>
+
+                    {/* MAO Calculation Display */}
+                    {calculatedArv > 0 && (
+                      <Card className="p-3 bg-success/10 border-success/30">
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Fórmula MAO: ARV × 70% - Reparaciones
+                        </div>
+                        <div className="text-sm">
+                          ${Math.round(calculatedArv).toLocaleString()} × 0.70 - ${repairCostNum.toLocaleString()} = 
+                          <span className="text-success font-bold text-lg ml-2">
+                            ${calculatedMao > 0 ? calculatedMao.toLocaleString() : '0'}
+                          </span>
+                        </div>
+                      </Card>
+                    )}
+
+                    {/* Save Button */}
+                    {hasChanges && (
+                      <Button 
+                        onClick={handleSaveFinancials} 
+                        disabled={isSaving}
+                        className="w-full"
+                        size="sm"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="mr-2 h-4 w-4" />
+                        )}
+                        Guardar Cambios
+                      </Button>
                     )}
                   </div>
                 </Card>
