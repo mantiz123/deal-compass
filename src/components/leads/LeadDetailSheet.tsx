@@ -20,6 +20,7 @@ import { AIPropertyInsights } from './AIPropertyInsights';
 import { PropertyCompsManager } from './PropertyCompsManager';
 import { MarketDataInput } from './MarketDataInput';
 import { DealPackageGenerator } from './DealPackageGenerator';
+import { ListingDataParser } from './ListingDataParser';
 import { useInteractions } from '@/hooks/useInteractions';
 import { useUpdateProperty } from '@/hooks/useProperties';
 import { useQueryClient } from '@tanstack/react-query';
@@ -571,6 +572,31 @@ export function LeadDetailSheet({
                   </div>
                 </Card>
               </div>
+
+              {/* Import from Listing */}
+              {property && (
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Enriquecer Datos
+                  </h3>
+                  <ListingDataParser 
+                    propertyId={property.id}
+                    currentProperty={{
+                      bedrooms: property.bedrooms,
+                      bathrooms: property.bathrooms ? Number(property.bathrooms) : null,
+                      sqft: property.sqft,
+                      year_built: property.year_built,
+                      lot_size: property.lot_size ? Number(property.lot_size) : null,
+                      estimated_monthly_rent: property.estimated_monthly_rent ? Number(property.estimated_monthly_rent) : null,
+                      walkability_score: property.walkability_score,
+                      school_rating: property.school_rating ? Number(property.school_rating) : null,
+                      days_on_market_avg: property.days_on_market_avg,
+                    }}
+                    onDataApplied={() => queryClient.invalidateQueries({ queryKey: ['leads'] })}
+                  />
+                </div>
+              )}
 
               {/* Property Comps */}
               {property && (
