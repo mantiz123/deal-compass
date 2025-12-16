@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { KanbanColumn } from './KanbanColumn';
-import { KanbanCard } from './KanbanCard';
+import { KanbanCardOverlay } from './KanbanCard';
 import { useLeads, useUpdateLeadStatus, type Lead, type LeadStatus } from '@/hooks/useLeads';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -144,7 +144,7 @@ export function KanbanBoard({ onAddDeal }: KanbanBoardProps) {
       <DragOverlay>
         {activeLead ? (
           <div className="rotate-3 scale-105">
-            <KanbanCard lead={activeLead} />
+            <KanbanCardOverlay lead={activeLead} />
           </div>
         ) : null}
       </DragOverlay>
