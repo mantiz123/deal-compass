@@ -582,6 +582,7 @@ export function LeadDetailSheet({
                   </h3>
                   <ListingDataParser 
                     propertyId={property.id}
+                    leadId={lead.id}
                     currentProperty={{
                       bedrooms: property.bedrooms,
                       bathrooms: property.bathrooms ? Number(property.bathrooms) : null,
@@ -592,8 +593,10 @@ export function LeadDetailSheet({
                       walkability_score: property.walkability_score,
                       school_rating: property.school_rating ? Number(property.school_rating) : null,
                       days_on_market_avg: property.days_on_market_avg,
+                      crime_index: property.crime_index ? Number(property.crime_index) : null,
                     }}
                     onDataApplied={() => queryClient.invalidateQueries({ queryKey: ['leads'] })}
+                    onRecalculatePIW={onRecalculate}
                   />
                 </div>
               )}
