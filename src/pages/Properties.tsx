@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useProperties, usePropertyStats, Property } from '@/hooks/useProperties';
 import { PropertyDetailSheet } from '@/components/properties/PropertyDetailSheet';
 import { NewPropertyDialog } from '@/components/properties/NewPropertyDialog';
+import { PropertyThumbnail } from '@/components/properties/PropertyThumbnail';
 import {
   Search,
   Plus,
@@ -286,6 +287,7 @@ const Properties = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border text-left text-sm text-muted-foreground">
+                    <th className="p-4 font-medium w-12"></th>
                     <th className="p-4 font-medium">Dirección</th>
                     <th className="p-4 font-medium">Tipo</th>
                     <th className="p-4 font-medium">Características</th>
@@ -303,6 +305,9 @@ const Properties = () => {
                       style={{ animationDelay: `${index * 30}ms` }}
                       onClick={() => setSelectedProperty(property)}
                     >
+                      <td className="p-4">
+                        <PropertyThumbnail propertyId={property.id} className="h-10 w-10" />
+                      </td>
                       <td className="p-4">
                         <div className="flex items-start gap-2">
                           <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />

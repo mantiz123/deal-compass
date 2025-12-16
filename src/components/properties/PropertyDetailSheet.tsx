@@ -3,8 +3,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Property, useDeleteProperty } from '@/hooks/useProperties';
+import { PropertyImageGallery } from './PropertyImageGallery';
 import { EditPropertyDialog } from './EditPropertyDialog';
 import {
   Building2,
@@ -88,6 +88,8 @@ export function PropertyDetailSheet({ property, open, onOpenChange }: PropertyDe
           </SheetHeader>
 
           <div className="space-y-6">
+            {/* Images */}
+            <PropertyImageGallery propertyId={property.id} editable />
             {/* Address */}
             <Card variant="glass" className="p-4">
               <div className="flex items-start gap-3">
