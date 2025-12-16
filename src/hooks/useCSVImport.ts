@@ -40,6 +40,26 @@ export const useCSVImport = () => {
               continue;
             }
             
+            // Combine first and last name if both exist
+            let ownerName = propertyData.owner_name || null;
+            if (propertyData.owner_first_name || propertyData.owner_last_name) {
+              ownerName = [propertyData.owner_first_name, propertyData.owner_last_name]
+                .filter(Boolean)
+                .join(' ')
+                .trim() || null;
+            }
+            
+            // Handle tenure - could be in months or years
+            const tenureYears = propertyData.owner_tenure_months || propertyData.owner_tenure_years || null;
+            
+            // Handle absentee owner - can come from is_absentee_owner or owner_occupied (inverse)
+            let isAbsentee = false;
+            if (propertyData.is_absentee_owner !== undefined && propertyData.is_absentee_owner !== null) {
+              isAbsentee = propertyData.is_absentee_owner;
+            } else if (propertyData.owner_occupied !== undefined && propertyData.owner_occupied !== null) {
+              isAbsentee = propertyData.owner_occupied; // Already inverted in transform
+            }
+            
             // Create property
             const { data: property, error: propertyError } = await supabase
               .from('properties')
@@ -48,9 +68,10 @@ export const useCSVImport = () => {
                 city: propertyData.city,
                 state: propertyData.state,
                 zip_code: propertyData.zip_code,
-                owner_name: propertyData.owner_name || null,
+                owner_name: ownerName,
                 owner_phone: propertyData.owner_phone || null,
                 owner_email: propertyData.owner_email || null,
+                owner_type: propertyData.owner_type || null,
                 property_type: propertyData.property_type || 'single_family',
                 bedrooms: propertyData.bedrooms || null,
                 bathrooms: propertyData.bathrooms || null,
@@ -59,8 +80,8 @@ export const useCSVImport = () => {
                 year_built: propertyData.year_built || null,
                 arv: propertyData.arv || null,
                 equity_percent: propertyData.equity_percent || null,
-                owner_tenure_years: propertyData.owner_tenure_years || null,
-                is_absentee_owner: propertyData.is_absentee_owner || false,
+                owner_tenure_years: tenureYears,
+                is_absentee_owner: isAbsentee,
                 tax_delinquent: propertyData.tax_delinquent || false,
                 is_foreclosure: propertyData.is_foreclosure || false,
                 is_probate: propertyData.is_probate || false,

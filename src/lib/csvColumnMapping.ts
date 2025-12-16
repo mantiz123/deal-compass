@@ -9,9 +9,9 @@ export interface PropertyField {
   transform?: (value: string) => any;
 }
 
-// Normalize string for comparison: lowercase, remove spaces/underscores/dashes
+// Normalize string for comparison: lowercase, remove spaces/underscores/dashes/parentheses
 const normalize = (str: string): string => {
-  return str.toLowerCase().replace(/[\s_\-\.]/g, '').trim();
+  return str.toLowerCase().replace(/[\s_\-\.\(\)#]/g, '').trim();
 };
 
 // Property fields with their aliases for intelligent matching
@@ -41,9 +41,15 @@ export const propertyFields: PropertyField[] = [
     required: true,
   },
   {
-    key: 'owner_name',
+    key: 'owner_first_name',
     label: 'Nombre del Propietario',
-    aliases: ['ownername', 'owner', 'ownerfullname', 'owner1name', 'propietario', 'nombre', 'mailname'],
+    aliases: ['owner1firstname', 'ownerfirstname', 'firstname', 'ownername', 'owner', 'propietario'],
+    required: false,
+  },
+  {
+    key: 'owner_last_name',
+    label: 'Apellido del Propietario',
+    aliases: ['owner1lastname', 'ownerlastname', 'lastname', 'apellido'],
     required: false,
   },
   {
@@ -65,7 +71,7 @@ export const propertyFields: PropertyField[] = [
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
-      if (normalized.includes('single') || normalized.includes('sfr') || normalized.includes('sfd')) return 'single_family';
+      if (normalized.includes('single') || normalized.includes('sfr') || normalized.includes('sfd') || normalized.includes('singlefamilyresidence')) return 'single_family';
       if (normalized.includes('multi') || normalized.includes('duplex') || normalized.includes('triplex')) return 'multi_family';
       if (normalized.includes('condo')) return 'condo';
       if (normalized.includes('town')) return 'townhouse';
@@ -91,14 +97,14 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'sqft',
     label: 'Pies Cuadrados',
-    aliases: ['sqft', 'squarefeet', 'sqfeet', 'livingarea', 'buildingarea', 'grossarea', 'area', 'size'],
+    aliases: ['sqft', 'squarefeet', 'sqfeet', 'livingsquarefeet', 'livingarea', 'buildingarea', 'grossarea', 'area', 'size'],
     required: false,
     transform: (value: string) => parseInt(value.replace(/,/g, '')) || null,
   },
   {
     key: 'lot_size',
-    label: 'Tamaño del Lote',
-    aliases: ['lotsize', 'lotsqft', 'lotarea', 'landarea', 'acreage', 'acres', 'lotacres'],
+    label: 'Tamaño del Lote (Acres)',
+    aliases: ['lotacres', 'lotsize', 'lotsqft', 'lotarea', 'landarea', 'acreage', 'acres'],
     required: false,
     transform: (value: string) => parseFloat(value.replace(/,/g, '')) || null,
   },
@@ -122,7 +128,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'equity_percent',
     label: 'Porcentaje de Equity',
-    aliases: ['equity', 'equitypercent', 'equitypct', 'ltv', 'loantovalue'],
+    aliases: ['estimatedequitypercent', 'equitypercent', 'equity', 'equitypct', 'ltv', 'loantovalue'],
     required: false,
     transform: (value: string) => {
       const num = parseFloat(value.replace(/%/g, ''));
@@ -130,21 +136,44 @@ export const propertyFields: PropertyField[] = [
     },
   },
   {
-    key: 'owner_tenure_years',
-    label: 'Años de Tenencia',
-    aliases: ['tenure', 'ownertenure', 'yearsinproperty', 'yearsowned', 'ownershipyears'],
+    key: 'owner_tenure_months',
+    label: 'Tiempo de Tenencia (Meses)',
+    aliases: ['ownershiplengthmonths', 'tenuremonths', 'ownertenure', 'monthsowned'],
     required: false,
-    transform: (value: string) => parseInt(value) || null,
+    transform: (value: string) => {
+      const months = parseInt(value);
+      return !isNaN(months) ? Math.floor(months / 12) : null; // Convert to years
+    },
+  },
+  {
+    key: 'owner_type',
+    label: 'Tipo de Propietario',
+    aliases: ['ownertype', 'ownershiptype', 'entitytype'],
+    required: false,
   },
   {
     key: 'is_absentee_owner',
     label: 'Propietario Ausente',
-    aliases: ['absentee', 'absenteeowner', 'outofstate', 'outofarea', 'owneroccupied', 'ausente'],
+    aliases: ['absentee', 'absenteeowner', 'outofstate', 'outofarea', 'ausente', 'vacant'],
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
+      // Handle "1" as absentee/vacant, "0" or empty as owner-occupied
       if (normalized === 'yes' || normalized === 'y' || normalized === 'true' || normalized === '1' || normalized === 'absentee') return true;
-      if (normalized === 'no' || normalized === 'n' || normalized === 'false' || normalized === '0' || normalized === 'owneroccupied') return false;
+      if (normalized === 'no' || normalized === 'n' || normalized === 'false' || normalized === '0' || normalized === '') return false;
+      return null;
+    },
+  },
+  {
+    key: 'owner_occupied',
+    label: 'Ocupado por Propietario',
+    aliases: ['owneroccupied', 'owneroccupancy', 'occupied'],
+    required: false,
+    transform: (value: string) => {
+      // This is inverse - if owner occupied, then NOT absentee
+      const normalized = normalize(value);
+      if (normalized === 'yes' || normalized === 'y' || normalized === 'true' || normalized === '1') return false; // Owner occupied = NOT absentee
+      if (normalized === 'no' || normalized === 'n' || normalized === 'false' || normalized === '0' || normalized === '') return true; // NOT owner occupied = IS absentee
       return null;
     },
   },
@@ -192,7 +221,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'last_sale_price',
     label: 'Último Precio de Venta',
-    aliases: ['lastsaleprice', 'saleprice', 'soldprice', 'lastprice', 'precioventa'],
+    aliases: ['lastsaleamount', 'lastsaleprice', 'saleprice', 'soldprice', 'lastprice', 'precioventa', 'saleamount'],
     required: false,
     transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
   },
