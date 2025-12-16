@@ -18,6 +18,7 @@ import Payments from "./pages/Payments";
 import Import from "./pages/Import";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
+import Guide from "./pages/Guide";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/guide" element={<Guide />} />
               <Route path="/pipeline" element={<Pipeline />} />
               <Route path="/leads" element={<Leads />} />
               <Route path="/buyers" element={<Buyers />} />
