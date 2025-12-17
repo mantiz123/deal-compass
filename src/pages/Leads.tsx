@@ -8,6 +8,7 @@ import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { PropertyComparisonSheet } from "@/components/leads/PropertyComparisonSheet";
+import { ArchiveLeadDialog } from "@/components/leads/ArchiveLeadDialog";
 import { useLeads, useCalculatePIWScore, Lead } from "@/hooks/useLeads";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -31,6 +32,7 @@ import {
   AlertTriangle,
   Home,
   Loader2,
+  Archive,
 } from "lucide-react";
 
 const statusConfig: Record<string, { label: string; variant: "accent" | "warning" | "secondary" | "glow" }> = {
@@ -55,6 +57,8 @@ const Leads = () => {
   const [showNewLeadDialog, setShowNewLeadDialog] = useState(false);
   const [calculatingId, setCalculatingId] = useState<string | null>(null);
   const [isBatchCalculating, setIsBatchCalculating] = useState(false);
+  const [archiveLeadId, setArchiveLeadId] = useState<string | null>(null);
+  const [archiveAddress, setArchiveAddress] = useState<string>('');
 
   const pendingLeads = leads?.filter(l => l.piw_score === null && l.property) || [];
 
@@ -108,6 +112,9 @@ const Leads = () => {
   };
 
   const filteredLeads = leads?.filter(lead => {
+    // Filter out archived leads
+    if (lead.archived_at) return false;
+    
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
@@ -599,6 +606,23 @@ const Leads = () => {
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                               <Mail className="h-4 w-4" />
                             </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-warning hover:text-warning hover:bg-warning/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setArchiveLeadId(lead.id);
+                                    setArchiveAddress(lead.property?.address || '');
+                                  }}
+                                >
+                                  <Archive className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Kill Fast - Archivar lead</TooltipContent>
+                            </Tooltip>
                           </div>
                         </td>
                       </tr>
@@ -625,6 +649,19 @@ const Leads = () => {
         onOpenChange={(open) => !open && setSelectedLead(null)}
         onRecalculate={() => selectedLead && handleCalculateScore(selectedLead)}
         isCalculating={calculatingId === selectedLead?.id}
+      />
+
+      {/* Archive Lead Dialog */}
+      <ArchiveLeadDialog
+        leadId={archiveLeadId}
+        leadAddress={archiveAddress}
+        open={!!archiveLeadId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setArchiveLeadId(null);
+            setArchiveAddress('');
+          }
+        }}
       />
     </Layout>
   );
