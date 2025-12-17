@@ -18,23 +18,31 @@ export type Database = {
         Row: {
           ai_match_score: number | null
           avg_close_time_days: number | null
+          avg_response_time_hours: number | null
+          close_ratio: number | null
           company_name: string | null
           contact_name: string
           created_at: string
           deals_closed: number | null
+          deals_responded: number | null
           email: string | null
           id: string
           is_active: boolean | null
+          last_deal_date: string | null
+          liquidity_score: number | null
           max_arv: number | null
           max_repair_level: string | null
           min_arv: number | null
           notes: string | null
           phone: string | null
+          preferred_cities: string[] | null
+          preferred_discount_percent: number | null
           preferred_property_types:
             | Database["public"]["Enums"]["property_type"][]
             | null
           preferred_zip_codes: string[] | null
           tier: Database["public"]["Enums"]["buyer_tier"]
+          total_deals_offered: number | null
           total_volume: number | null
           updated_at: string
           user_id: string | null
@@ -42,23 +50,31 @@ export type Database = {
         Insert: {
           ai_match_score?: number | null
           avg_close_time_days?: number | null
+          avg_response_time_hours?: number | null
+          close_ratio?: number | null
           company_name?: string | null
           contact_name: string
           created_at?: string
           deals_closed?: number | null
+          deals_responded?: number | null
           email?: string | null
           id?: string
           is_active?: boolean | null
+          last_deal_date?: string | null
+          liquidity_score?: number | null
           max_arv?: number | null
           max_repair_level?: string | null
           min_arv?: number | null
           notes?: string | null
           phone?: string | null
+          preferred_cities?: string[] | null
+          preferred_discount_percent?: number | null
           preferred_property_types?:
             | Database["public"]["Enums"]["property_type"][]
             | null
           preferred_zip_codes?: string[] | null
           tier?: Database["public"]["Enums"]["buyer_tier"]
+          total_deals_offered?: number | null
           total_volume?: number | null
           updated_at?: string
           user_id?: string | null
@@ -66,23 +82,31 @@ export type Database = {
         Update: {
           ai_match_score?: number | null
           avg_close_time_days?: number | null
+          avg_response_time_hours?: number | null
+          close_ratio?: number | null
           company_name?: string | null
           contact_name?: string
           created_at?: string
           deals_closed?: number | null
+          deals_responded?: number | null
           email?: string | null
           id?: string
           is_active?: boolean | null
+          last_deal_date?: string | null
+          liquidity_score?: number | null
           max_arv?: number | null
           max_repair_level?: string | null
           min_arv?: number | null
           notes?: string | null
           phone?: string | null
+          preferred_cities?: string[] | null
+          preferred_discount_percent?: number | null
           preferred_property_types?:
             | Database["public"]["Enums"]["property_type"][]
             | null
           preferred_zip_codes?: string[] | null
           tier?: Database["public"]["Enums"]["buyer_tier"]
+          total_deals_offered?: number | null
           total_volume?: number | null
           updated_at?: string
           user_id?: string | null
@@ -410,10 +434,14 @@ export type Database = {
       }
       leads: {
         Row: {
+          archive_notes: string | null
+          archive_reason: Database["public"]["Enums"]["archive_reason"] | null
+          archived_at: string | null
           assigned_agent_id: string | null
           assignment_fee: number | null
           closing_date: string | null
           created_at: string
+          days_without_activity: number | null
           id: string
           last_contact_at: string | null
           listing_price: number | null
@@ -429,10 +457,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archive_notes?: string | null
+          archive_reason?: Database["public"]["Enums"]["archive_reason"] | null
+          archived_at?: string | null
           assigned_agent_id?: string | null
           assignment_fee?: number | null
           closing_date?: string | null
           created_at?: string
+          days_without_activity?: number | null
           id?: string
           last_contact_at?: string | null
           listing_price?: number | null
@@ -448,10 +480,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archive_notes?: string | null
+          archive_reason?: Database["public"]["Enums"]["archive_reason"] | null
+          archived_at?: string | null
           assigned_agent_id?: string | null
           assignment_fee?: number | null
           closing_date?: string | null
           created_at?: string
+          days_without_activity?: number | null
           id?: string
           last_contact_at?: string | null
           listing_price?: number | null
@@ -1020,6 +1056,15 @@ export type Database = {
       }
     }
     Views: {
+      dead_leads_analytics: {
+        Row: {
+          archive_reason: Database["public"]["Enums"]["archive_reason"] | null
+          avg_days_stale: number | null
+          avg_piw_score: number | null
+          count: number | null
+        }
+        Relationships: []
+      }
       property_comps_summary: {
         Row: {
           avg_price_per_sqft: number | null
@@ -1051,6 +1096,15 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "agent" | "buyer"
+      archive_reason:
+        | "price_too_high"
+        | "not_motivated"
+        | "legal_issues"
+        | "no_response"
+        | "title_problems"
+        | "property_condition"
+        | "lost_to_competitor"
+        | "other"
       buyer_tier: "platinum" | "gold" | "silver" | "bronze"
       lead_status:
         | "captacion"
@@ -1201,6 +1255,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "agent", "buyer"],
+      archive_reason: [
+        "price_too_high",
+        "not_motivated",
+        "legal_issues",
+        "no_response",
+        "title_problems",
+        "property_condition",
+        "lost_to_competitor",
+        "other",
+      ],
       buyer_tier: ["platinum", "gold", "silver", "bronze"],
       lead_status: [
         "captacion",
