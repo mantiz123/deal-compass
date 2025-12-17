@@ -12,8 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
 import { useBuyers, type Buyer } from "@/hooks/useBuyers";
 import { useBuyerStats } from "@/hooks/useBuyerMatchmaking";
+import { useRecalculateAllBuyerLiquidity } from "@/hooks/useBuyerLiquidity";
 import { NewBuyerDialog } from "@/components/buyers/NewBuyerDialog";
 import { EditBuyerDialog } from "@/components/buyers/EditBuyerDialog";
 import { DeleteBuyerDialog } from "@/components/buyers/DeleteBuyerDialog";
@@ -35,6 +37,9 @@ import {
   Trash2,
   UserX,
   Eye,
+  Droplets,
+  RefreshCw,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +53,7 @@ const tierConfig: Record<string, { label: string; color: string }> = {
 const Buyers = () => {
   const { data: buyers, isLoading, error } = useBuyers();
   const { data: stats } = useBuyerStats();
+  const recalculateLiquidity = useRecalculateAllBuyerLiquidity();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
@@ -55,7 +61,15 @@ const Buyers = () => {
   const [deleteBuyer, setDeleteBuyer] = useState<Buyer | null>(null);
   const [viewBuyer, setViewBuyer] = useState<Buyer | null>(null);
 
-  const filteredBuyers = buyers?.filter(buyer => {
+  // Sort buyers by liquidity score (descending), then by deals closed
+  const sortedBuyers = buyers?.slice().sort((a, b) => {
+    const aScore = (a as any).liquidity_score || 0;
+    const bScore = (b as any).liquidity_score || 0;
+    if (bScore !== aScore) return bScore - aScore;
+    return (b.deals_closed || 0) - (a.deals_closed || 0);
+  });
+
+  const filteredBuyers = sortedBuyers?.filter(buyer => {
     // Filter by search term
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
@@ -71,6 +85,14 @@ const Buyers = () => {
     
     return true;
   });
+
+  const getLiquidityColor = (score: number | null): string => {
+    if (!score) return 'text-muted-foreground';
+    if (score >= 80) return 'text-success';
+    if (score >= 60) return 'text-accent';
+    if (score >= 40) return 'text-warning';
+    return 'text-destructive';
+  };
 
   const formatARVRange = (buyer: Buyer) => {
     if (!buyer.min_arv && !buyer.max_arv) return 'Sin especificar';
@@ -95,10 +117,23 @@ const Buyers = () => {
               Gestiona tu red de cash buyers con matchmaking impulsado por IA
             </p>
           </div>
-          <Button onClick={() => setShowNewDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Buyer
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => recalculateLiquidity.mutate()}
+              disabled={recalculateLiquidity.isPending}
+            >
+              <RefreshCw className={cn(
+                "mr-2 h-4 w-4",
+                recalculateLiquidity.isPending && "animate-spin"
+              )} />
+              Recalcular Liquidity
+            </Button>
+            <Button onClick={() => setShowNewDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Buyer
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -264,13 +299,43 @@ const Buyers = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* AI Match Score Placeholder */}
+                {/* Liquidity Score */}
                 <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-3">
-                  <span className="text-sm text-muted-foreground">Deals Cerrados</span>
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Droplets className="h-3 w-3" />
+                    Liquidity Score
+                  </span>
                   <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-primary" />
-                    <span className="text-lg font-bold text-primary">
-                      {buyer.deals_closed || 0}
+                    <span className={cn(
+                      "text-lg font-bold",
+                      getLiquidityColor((buyer as any).liquidity_score)
+                    )}>
+                      {(buyer as any).liquidity_score || '-'}
+                    </span>
+                    {(buyer as any).liquidity_score && (
+                      <Progress 
+                        value={(buyer as any).liquidity_score} 
+                        className="w-12 h-2"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Close Ratio & Deals */}
+                <div className="flex items-center justify-between rounded-lg bg-secondary/30 p-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">Ratio Cierre:</span>
+                    <span className="font-medium">
+                      {(buyer as any).close_ratio 
+                        ? `${Math.round(Number((buyer as any).close_ratio))}%` 
+                        : '-'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Zap className="h-3 w-3 text-primary" />
+                    <span className="font-bold text-primary">
+                      {buyer.deals_closed || 0} deals
                     </span>
                   </div>
                 </div>

@@ -5,6 +5,9 @@ import { LeadsTable } from "@/components/dashboard/LeadsTable";
 import { LeadsDelDia } from "@/components/dashboard/LeadsDelDia";
 import { PipelinePreview } from "@/components/dashboard/PipelinePreview";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
+import { DeadLeadsAnalytics } from "@/components/dashboard/DeadLeadsAnalytics";
+import { BuyerLiquidityWidget } from "@/components/dashboard/BuyerLiquidityWidget";
+import { StaleLeadsAlert } from "@/components/dashboard/StaleLeadsAlert";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useAuth } from "@/contexts/AuthContext";
 import { Target, Users, DollarSign, TrendingUp, Zap, Plus } from "lucide-react";
@@ -96,6 +99,11 @@ const Index = () => {
         )}
       </div>
 
+      {/* Stale Leads Alert */}
+      <div className="mb-6">
+        <StaleLeadsAlert />
+      </div>
+
       {/* Leads del Día - Full Width */}
       <div className="mb-6">
         <LeadsDelDia />
@@ -108,9 +116,11 @@ const Index = () => {
           <LeadsTable />
         </div>
 
-        {/* Right Column - Pipeline & Activity */}
+        {/* Right Column - Pipeline, Liquidity & Dead Leads */}
         <div className="space-y-6">
           <PipelinePreview />
+          <BuyerLiquidityWidget />
+          <DeadLeadsAnalytics />
           <ActivityFeed />
         </div>
       </div>
