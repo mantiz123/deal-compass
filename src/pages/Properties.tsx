@@ -60,6 +60,7 @@ const Properties = () => {
     state: stateFilter,
   });
   const { data: stats, isLoading: statsLoading } = usePropertyStats();
+  const propsPagination = usePagination(properties, { pageSize: 25 });
 
   const clearFilters = () => {
     setSearchTerm('');
