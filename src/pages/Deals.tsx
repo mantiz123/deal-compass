@@ -347,7 +347,7 @@ const Deals = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredDeals.map((deal, index) => {
+                  {dealsPagination.paginatedItems.map((deal, index) => {
                     const status = getStatus(deal);
                     const StatusIcon = status.icon;
                     
