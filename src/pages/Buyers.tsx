@@ -88,6 +88,8 @@ const Buyers = () => {
     return true;
   });
 
+  const buyersPagination = usePagination(filteredBuyers, { pageSize: 24 });
+
   const getLiquidityColor = (score: number | null): string => {
     if (!score) return 'text-muted-foreground';
     if (score >= 80) return 'text-success';
