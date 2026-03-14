@@ -635,6 +635,7 @@ const Leads = () => {
               </table>
             </div>
             </TooltipProvider>
+            <DataPagination {...leadsPagination} />
           </CardContent>
         </Card>
       )}
