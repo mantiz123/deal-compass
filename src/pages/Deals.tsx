@@ -423,6 +423,7 @@ const Deals = () => {
                 </tbody>
               </table>
             </div>
+            <DataPagination {...dealsPagination} />
           </CardContent>
         </Card>
       )}

@@ -438,6 +438,7 @@ const Buyers = () => {
             </Card>
           ))}
         </div>
+        <DataPagination {...buyersPagination} />
       )}
 
       {/* Dialogs & Sheets */}

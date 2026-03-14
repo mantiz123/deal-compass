@@ -387,6 +387,7 @@ const Properties = () => {
                 </tbody>
               </table>
             </div>
+            <DataPagination {...propsPagination} />
           </CardContent>
         </Card>
       )}
