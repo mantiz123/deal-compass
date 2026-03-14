@@ -94,6 +94,8 @@ const Deals = () => {
     });
   }, [deals, searchTerm, statusFilter, buyerFilter, dateFrom, dateTo]);
 
+  const dealsPagination = usePagination(filteredDeals, { pageSize: 25 });
+
   const clearFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
