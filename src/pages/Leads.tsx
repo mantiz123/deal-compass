@@ -138,25 +138,26 @@ const Leads = () => {
     <Layout>
       {/* Header */}
       <div className="mb-8 animate-slide-up">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Leads</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">Leads</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Gestiona y califica tus leads con el scoring PIW impulsado por IA
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            <Button variant="outline" size="sm" className="hidden sm:flex">
               <Download className="mr-2 h-4 w-4" />
               Exportar
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" size="sm" className="hidden sm:flex">
               <Upload className="mr-2 h-4 w-4" />
               Importar CSV
             </Button>
             {pendingLeads.length > 0 && (
               <Button 
                 variant="outline" 
+                size="sm"
                 onClick={handleBatchCalculate}
                 disabled={isBatchCalculating}
                 className="border-accent/50 text-accent hover:bg-accent/10"
@@ -174,7 +175,7 @@ const Leads = () => {
                 )}
               </Button>
             )}
-            <Button onClick={() => setShowNewLeadDialog(true)}>
+            <Button size="sm" onClick={() => setShowNewLeadDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Nuevo Lead
             </Button>
