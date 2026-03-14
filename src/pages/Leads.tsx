@@ -126,6 +126,9 @@ const Leads = () => {
     );
   })?.sort((a, b) => calculateSpread(b) - calculateSpread(a)); // Sort by spread DESC
 
+  const leadsPagination = usePagination(filteredLeads, { pageSize: 25 });
+  const paginatedLeads = leadsPagination.paginatedItems;
+
   const getPriority = (lead: Lead): string => {
     const factors = lead.piw_score_factors as any;
     return factors?.priority || (
