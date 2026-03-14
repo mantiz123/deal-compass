@@ -114,16 +114,17 @@ const Buyers = () => {
     <Layout>
       {/* Header */}
       <div className="mb-8 animate-slide-up">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Buyers Network</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">Buyers Network</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Gestiona tu red de cash buyers con matchmaking impulsado por IA
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => recalculateLiquidity.mutate()}
               disabled={recalculateLiquidity.isPending}
             >
@@ -131,9 +132,9 @@ const Buyers = () => {
                 "mr-2 h-4 w-4",
                 recalculateLiquidity.isPending && "animate-spin"
               )} />
-              Recalcular Liquidity
+              Recalcular
             </Button>
-            <Button onClick={() => setShowNewDialog(true)}>
+            <Button size="sm" onClick={() => setShowNewDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Buyer
             </Button>

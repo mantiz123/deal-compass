@@ -110,8 +110,8 @@ const Deals = () => {
     <Layout>
       {/* Header */}
       <div className="mb-8 animate-slide-up">
-        <h1 className="text-3xl font-bold">Deal Packages</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold">Deal Packages</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">
           Gestiona todos los deal packages enviados a compradores
         </p>
       </div>
