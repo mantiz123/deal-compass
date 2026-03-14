@@ -281,7 +281,7 @@ const Buyers = () => {
       {/* Buyers Grid */}
       {!isLoading && !error && filteredBuyers && filteredBuyers.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredBuyers.map((buyer, index) => (
+          {buyersPagination.paginatedItems.map((buyer, index) => (
             <Card
               key={buyer.id}
               variant="interactive"
