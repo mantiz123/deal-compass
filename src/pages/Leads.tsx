@@ -185,7 +185,7 @@ const Leads = () => {
 
       {/* Stats Summary */}
       {leads && leads.length > 0 && (
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <Card variant="glass" className="p-4">
             <div className="text-2xl font-bold text-primary">{leads.length}</div>
             <div className="text-sm text-muted-foreground">Total Leads</div>
