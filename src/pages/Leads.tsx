@@ -383,7 +383,7 @@ const Leads = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredLeads.map((lead, index) => {
+                  {paginatedLeads.map((lead, index) => {
                     const priority = getPriority(lead);
                     const factors = lead.piw_score_factors as any;
                     
