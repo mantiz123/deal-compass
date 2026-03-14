@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDealPackageNotifications } from "@/hooks/useDealPackageNotifications";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2 } from "lucide-react";
 
 interface LayoutProps {
@@ -13,6 +14,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   // Enable realtime notifications for deal packages
   useDealPackageNotifications();
@@ -38,9 +40,9 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className="pl-64 transition-all duration-300">
+      <div className={isMobile ? "pl-0" : "pl-64 transition-all duration-300"}>
         <Header />
-        <main className="p-6">{children}</main>
+        <main className="p-3 sm:p-6">{children}</main>
       </div>
     </div>
   );
