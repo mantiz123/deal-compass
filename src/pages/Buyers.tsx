@@ -280,165 +280,167 @@ const Buyers = () => {
 
       {/* Buyers Grid */}
       {!isLoading && !error && filteredBuyers && filteredBuyers.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {buyersPagination.paginatedItems.map((buyer, index) => (
-            <Card
-              key={buyer.id}
-              variant="interactive"
-              className="animate-fade-in cursor-pointer"
-              style={{ animationDelay: `${index * 50}ms` }}
-              onClick={() => setViewBuyer(buyer)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-base">
-                      {buyer.company_name || buyer.contact_name}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">{buyer.contact_name}</p>
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {buyersPagination.paginatedItems.map((buyer, index) => (
+              <Card
+                key={buyer.id}
+                variant="interactive"
+                className="animate-fade-in cursor-pointer"
+                style={{ animationDelay: `${index * 50}ms` }}
+                onClick={() => setViewBuyer(buyer)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-base">
+                        {buyer.company_name || buyer.contact_name}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">{buyer.contact_name}</p>
+                    </div>
+                    <Badge className={tierConfig[buyer.tier]?.color || tierConfig.bronze.color}>
+                      {tierConfig[buyer.tier]?.label || 'Bronze'}
+                    </Badge>
                   </div>
-                  <Badge className={tierConfig[buyer.tier]?.color || tierConfig.bronze.color}>
-                    {tierConfig[buyer.tier]?.label || 'Bronze'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Liquidity Score */}
-                <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-3">
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Droplets className="h-3 w-3" />
-                    Liquidity Score
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "text-lg font-bold",
-                      getLiquidityColor((buyer as any).liquidity_score)
-                    )}>
-                      {(buyer as any).liquidity_score || '-'}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Liquidity Score */}
+                  <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-3">
+                    <span className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Droplets className="h-3 w-3" />
+                      Liquidity Score
                     </span>
-                    {(buyer as any).liquidity_score && (
-                      <Progress 
-                        value={(buyer as any).liquidity_score} 
-                        className="w-12 h-2"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Close Ratio & Deals */}
-                <div className="flex items-center justify-between rounded-lg bg-secondary/30 p-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <TrendingUp className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-muted-foreground">Ratio Cierre:</span>
-                    <span className="font-medium">
-                      {(buyer as any).close_ratio 
-                        ? `${Math.round(Number((buyer as any).close_ratio))}%` 
-                        : '-'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Zap className="h-3 w-3 text-primary" />
-                    <span className="font-bold text-primary">
-                      {buyer.deals_closed || 0} deals
-                    </span>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="space-y-2 text-sm">
-                  {buyer.preferred_zip_codes && buyer.preferred_zip_codes.length > 0 && (
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Zips:</span>
+                      <span className={cn(
+                        "text-lg font-bold",
+                        getLiquidityColor((buyer as any).liquidity_score)
+                      )}>
+                        {(buyer as any).liquidity_score || '-'}
+                      </span>
+                      {(buyer as any).liquidity_score && (
+                        <Progress 
+                          value={(buyer as any).liquidity_score} 
+                          className="w-12 h-2"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Close Ratio & Deals */}
+                  <div className="flex items-center justify-between rounded-lg bg-secondary/30 p-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">Ratio Cierre:</span>
                       <span className="font-medium">
-                        {buyer.preferred_zip_codes.slice(0, 3).join(", ")}
-                        {buyer.preferred_zip_codes.length > 3 && '...'}
+                        {(buyer as any).close_ratio 
+                          ? `${Math.round(Number((buyer as any).close_ratio))}%` 
+                          : '-'}
                       </span>
                     </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Home className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Tipos:</span>
-                    <span className="font-medium">
-                      {formatPropertyTypes(buyer.preferred_property_types).join(", ")}
-                    </span>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Zap className="h-3 w-3 text-primary" />
+                      <span className="font-bold text-primary">
+                        {buyer.deals_closed || 0} deals
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">ARV:</span>
-                    <span className="font-medium">{formatARVRange(buyer)}</span>
-                  </div>
-                </div>
 
-                {/* Actions */}
-                <div className="flex items-center justify-between border-t border-border pt-3">
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-success">
-                      {buyer.avg_close_time_days || '-'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Días Promedio</p>
+                  {/* Details */}
+                  <div className="space-y-2 text-sm">
+                    {buyer.preferred_zip_codes && buyer.preferred_zip_codes.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">Zips:</span>
+                        <span className="font-medium">
+                          {buyer.preferred_zip_codes.slice(0, 3).join(", ")}
+                          {buyer.preferred_zip_codes.length > 3 && '...'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Home className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Tipos:</span>
+                      <span className="font-medium">
+                        {formatPropertyTypes(buyer.preferred_property_types).join(", ")}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">ARV:</span>
+                      <span className="font-medium">{formatARVRange(buyer)}</span>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    {buyer.phone && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => window.open(`tel:${buyer.phone}`)}
-                      >
-                        <Phone className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {buyer.email && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => window.open(`mailto:${buyer.email}`)}
-                      >
-                        <Mail className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setViewBuyer(buyer); }}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver Detalles
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditBuyer(buyer); }}>
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={(e) => { e.stopPropagation(); setDeleteBuyer(buyer); }}
-                          className="text-destructive focus:text-destructive"
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between border-t border-border pt-3">
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-success">
+                        {buyer.avg_close_time_days || '-'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Días Promedio</p>
+                    </div>
+                    <div className="flex gap-1">
+                      {buyer.phone && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => window.open(`tel:${buyer.phone}`)}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          <Phone className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {buyer.email && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => window.open(`mailto:${buyer.email}`)}
+                        >
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setViewBuyer(buyer); }}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalles
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditBuyer(buyer); }}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={(e) => { e.stopPropagation(); setDeleteBuyer(buyer); }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
-                </div>
 
-                {/* Inactive indicator */}
-                {!buyer.is_active && (
-                  <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 text-sm text-muted-foreground">
-                    <UserX className="h-4 w-4" />
-                    <span>Inactivo</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <DataPagination {...buyersPagination} />
+                  {/* Inactive indicator */}
+                  {!buyer.is_active && (
+                    <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 text-sm text-muted-foreground">
+                      <UserX className="h-4 w-4" />
+                      <span>Inactivo</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <DataPagination {...buyersPagination} />
+        </>
       )}
 
       {/* Dialogs & Sheets */}
