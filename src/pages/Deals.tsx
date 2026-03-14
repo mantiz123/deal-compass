@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { usePagination } from '@/hooks/usePagination';
+import { DataPagination } from '@/components/ui/data-pagination';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -92,6 +94,8 @@ const Deals = () => {
     });
   }, [deals, searchTerm, statusFilter, buyerFilter, dateFrom, dateTo]);
 
+  const dealsPagination = usePagination(filteredDeals, { pageSize: 25 });
+
   const clearFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
@@ -106,8 +110,8 @@ const Deals = () => {
     <Layout>
       {/* Header */}
       <div className="mb-8 animate-slide-up">
-        <h1 className="text-3xl font-bold">Deal Packages</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold">Deal Packages</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">
           Gestiona todos los deal packages enviados a compradores
         </p>
       </div>
@@ -343,7 +347,7 @@ const Deals = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredDeals.map((deal, index) => {
+                  {dealsPagination.paginatedItems.map((deal, index) => {
                     const status = getStatus(deal);
                     const StatusIcon = status.icon;
                     
@@ -419,6 +423,7 @@ const Deals = () => {
                 </tbody>
               </table>
             </div>
+            <DataPagination {...dealsPagination} />
           </CardContent>
         </Card>
       )}

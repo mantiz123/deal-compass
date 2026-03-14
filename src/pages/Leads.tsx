@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
+import { usePagination } from "@/hooks/usePagination";
+import { DataPagination } from "@/components/ui/data-pagination";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -124,6 +126,9 @@ const Leads = () => {
     );
   })?.sort((a, b) => calculateSpread(b) - calculateSpread(a)); // Sort by spread DESC
 
+  const leadsPagination = usePagination(filteredLeads, { pageSize: 25 });
+  const paginatedLeads = leadsPagination.paginatedItems;
+
   const getPriority = (lead: Lead): string => {
     const factors = lead.piw_score_factors as any;
     return factors?.priority || (
@@ -136,25 +141,26 @@ const Leads = () => {
     <Layout>
       {/* Header */}
       <div className="mb-8 animate-slide-up">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Leads</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">Leads</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Gestiona y califica tus leads con el scoring PIW impulsado por IA
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            <Button variant="outline" size="sm" className="hidden sm:flex">
               <Download className="mr-2 h-4 w-4" />
               Exportar
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" size="sm" className="hidden sm:flex">
               <Upload className="mr-2 h-4 w-4" />
               Importar CSV
             </Button>
             {pendingLeads.length > 0 && (
               <Button 
                 variant="outline" 
+                size="sm"
                 onClick={handleBatchCalculate}
                 disabled={isBatchCalculating}
                 className="border-accent/50 text-accent hover:bg-accent/10"
@@ -172,7 +178,7 @@ const Leads = () => {
                 )}
               </Button>
             )}
-            <Button onClick={() => setShowNewLeadDialog(true)}>
+            <Button size="sm" onClick={() => setShowNewLeadDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Nuevo Lead
             </Button>
@@ -182,7 +188,7 @@ const Leads = () => {
 
       {/* Stats Summary */}
       {leads && leads.length > 0 && (
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <Card variant="glass" className="p-4">
             <div className="text-2xl font-bold text-primary">{leads.length}</div>
             <div className="text-sm text-muted-foreground">Total Leads</div>
@@ -206,7 +212,7 @@ const Leads = () => {
       <Card variant="glass" className="mb-6">
         <CardContent className="py-4">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="relative flex-1 min-w-[300px]">
+            <div className="relative flex-1 min-w-0 sm:min-w-[300px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar por dirección, propietario o ciudad..."
@@ -380,7 +386,7 @@ const Leads = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredLeads.map((lead, index) => {
+                  {paginatedLeads.map((lead, index) => {
                     const priority = getPriority(lead);
                     const factors = lead.piw_score_factors as any;
                     
@@ -632,6 +638,7 @@ const Leads = () => {
               </table>
             </div>
             </TooltipProvider>
+            <DataPagination {...leadsPagination} />
           </CardContent>
         </Card>
       )}

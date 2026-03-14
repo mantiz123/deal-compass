@@ -26,24 +26,24 @@ const Index = () => {
     <Layout>
       {/* Hero Section */}
       <div className="mb-8 animate-slide-up">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold">Bienvenido, {userName}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold">Bienvenido, {userName}</h1>
               <Badge variant="glow" className="animate-pulse-glow">
                 <Zap className="mr-1 h-3 w-3" />
                 AI Active
               </Badge>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm sm:text-base">
               Aquí está el resumen de tu pipeline de wholesaling hoy.
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" asChild>
+          <div className="flex gap-2 sm:gap-3">
+            <Button variant="outline" size="sm" asChild>
               <Link to="/leads">Import Leads</Link>
             </Button>
-            <Button asChild>
+            <Button size="sm" asChild>
               <Link to="/leads">
                 <Plus className="mr-2 h-4 w-4" />
                 Nuevo Lead
