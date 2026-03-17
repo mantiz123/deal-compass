@@ -17,6 +17,7 @@ import Realtors from "./pages/Realtors";
 import Payments from "./pages/Payments";
 import Import from "./pages/Import";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Settings from "./pages/Settings";
 import Guide from "./pages/Guide";
 import NotFound from "./pages/NotFound";
