@@ -144,17 +144,35 @@ const Leads = () => {
   };
 
   const filteredLeads = leads?.filter(lead => {
-    // Filter out archived leads
     if (lead.archived_at) return false;
     
-    if (!searchTerm) return true;
-    const search = searchTerm.toLowerCase();
-    return (
-      lead.property?.address?.toLowerCase().includes(search) ||
-      lead.property?.city?.toLowerCase().includes(search) ||
-      lead.property?.owner_name?.toLowerCase().includes(search)
-    );
-  })?.sort((a, b) => calculateSpread(b) - calculateSpread(a)); // Sort by spread DESC
+    // Status filter
+    if (statusFilter !== "all" && lead.status !== statusFilter) return false;
+    
+    // Source filter
+    if (sourceFilter !== "all" && lead.source !== sourceFilter) return false;
+    
+    // City filter
+    if (cityFilter !== "all" && lead.property?.city !== cityFilter) return false;
+    
+    // PIW score range filter
+    if (piwRange[0] > 0 || piwRange[1] < 100) {
+      const score = lead.piw_score ?? -1;
+      if (score < piwRange[0] || score > piwRange[1]) return false;
+    }
+    
+    // Text search
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      return (
+        lead.property?.address?.toLowerCase().includes(search) ||
+        lead.property?.city?.toLowerCase().includes(search) ||
+        lead.property?.owner_name?.toLowerCase().includes(search)
+      );
+    }
+    
+    return true;
+  })?.sort((a, b) => calculateSpread(b) - calculateSpread(a));
 
   const leadsPagination = usePagination(filteredLeads, { pageSize: 25 });
   const paginatedLeads = leadsPagination.paginatedItems;
