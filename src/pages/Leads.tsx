@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { usePagination } from "@/hooks/usePagination";
 import { DataPagination } from "@/components/ui/data-pagination";
@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
@@ -55,12 +57,40 @@ const Leads = () => {
   const { data: leads, isLoading, error } = useLeads();
   const calculateScore = useCalculatePIWScore();
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
+  const [piwRange, setPiwRange] = useState<[number, number]>([0, 100]);
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showNewLeadDialog, setShowNewLeadDialog] = useState(false);
   const [calculatingId, setCalculatingId] = useState<string | null>(null);
   const [isBatchCalculating, setIsBatchCalculating] = useState(false);
   const [archiveLeadId, setArchiveLeadId] = useState<string | null>(null);
   const [archiveAddress, setArchiveAddress] = useState<string>('');
+
+  // Extract unique sources and cities for filter dropdowns
+  const uniqueSources = useMemo(() => {
+    if (!leads) return [];
+    const sources = [...new Set(leads.map(l => l.source).filter(Boolean))] as string[];
+    return sources.sort();
+  }, [leads]);
+
+  const uniqueCities = useMemo(() => {
+    if (!leads) return [];
+    const cities = [...new Set(leads.map(l => l.property?.city).filter(Boolean))] as string[];
+    return cities.sort();
+  }, [leads]);
+
+  const hasActiveFilters = statusFilter !== "all" || sourceFilter !== "all" || cityFilter !== "all" || piwRange[0] > 0 || piwRange[1] < 100;
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setSourceFilter("all");
+    setCityFilter("all");
+    setPiwRange([0, 100]);
+    setSearchTerm("");
+  };
 
   const pendingLeads = leads?.filter(l => l.piw_score === null && l.property) || [];
 
@@ -114,17 +144,35 @@ const Leads = () => {
   };
 
   const filteredLeads = leads?.filter(lead => {
-    // Filter out archived leads
     if (lead.archived_at) return false;
     
-    if (!searchTerm) return true;
-    const search = searchTerm.toLowerCase();
-    return (
-      lead.property?.address?.toLowerCase().includes(search) ||
-      lead.property?.city?.toLowerCase().includes(search) ||
-      lead.property?.owner_name?.toLowerCase().includes(search)
-    );
-  })?.sort((a, b) => calculateSpread(b) - calculateSpread(a)); // Sort by spread DESC
+    // Status filter
+    if (statusFilter !== "all" && lead.status !== statusFilter) return false;
+    
+    // Source filter
+    if (sourceFilter !== "all" && lead.source !== sourceFilter) return false;
+    
+    // City filter
+    if (cityFilter !== "all" && lead.property?.city !== cityFilter) return false;
+    
+    // PIW score range filter
+    if (piwRange[0] > 0 || piwRange[1] < 100) {
+      const score = lead.piw_score ?? -1;
+      if (score < piwRange[0] || score > piwRange[1]) return false;
+    }
+    
+    // Text search
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      return (
+        lead.property?.address?.toLowerCase().includes(search) ||
+        lead.property?.city?.toLowerCase().includes(search) ||
+        lead.property?.owner_name?.toLowerCase().includes(search)
+      );
+    }
+    
+    return true;
+  })?.sort((a, b) => calculateSpread(b) - calculateSpread(a));
 
   const leadsPagination = usePagination(filteredLeads, { pageSize: 25 });
   const paginatedLeads = leadsPagination.paginatedItems;
@@ -210,7 +258,7 @@ const Leads = () => {
 
       {/* Filters */}
       <Card variant="glass" className="mb-6">
-        <CardContent className="py-4">
+        <CardContent className="py-4 space-y-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-0 sm:min-w-[300px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -222,11 +270,94 @@ const Leads = () => {
               />
             </div>
             <PropertyComparisonSheet />
-            <Button variant="outline">
+            <Button 
+              variant={showFilters ? "default" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+            >
               <Filter className="mr-2 h-4 w-4" />
               Filtros
+              {hasActiveFilters && (
+                <Badge variant="accent" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                  !
+                </Badge>
+              )}
             </Button>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                Limpiar filtros
+              </Button>
+            )}
           </div>
+
+          {showFilters && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-border">
+              {/* Status Filter */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Estado</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="bg-secondary/50">
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="captacion">Captación</SelectItem>
+                    <SelectItem value="contacto">Contacto</SelectItem>
+                    <SelectItem value="bajo_contrato">Bajo Contrato</SelectItem>
+                    <SelectItem value="cesion">Cesión</SelectItem>
+                    <SelectItem value="cerrado">Cerrado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Source Filter */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Fuente</label>
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger className="bg-secondary/50">
+                    <SelectValue placeholder="Todas las fuentes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las fuentes</SelectItem>
+                    {uniqueSources.map(source => (
+                      <SelectItem key={source} value={source}>{source}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* City Filter */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Ciudad</label>
+                <Select value={cityFilter} onValueChange={setCityFilter}>
+                  <SelectTrigger className="bg-secondary/50">
+                    <SelectValue placeholder="Todas las ciudades" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las ciudades</SelectItem>
+                    {uniqueCities.map(city => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* PIW Score Range */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  PIW Score: {piwRange[0]} – {piwRange[1]}
+                </label>
+                <div className="pt-2 px-1">
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={piwRange}
+                    onValueChange={(val) => setPiwRange(val as [number, number])}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
