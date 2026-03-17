@@ -157,40 +157,24 @@ export default function Auth() {
 
         {/* Auth Card */}
         <Card className="border-border/50 bg-card/80 backdrop-blur">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-xl">Acceso a la Plataforma</CardTitle>
-            <CardDescription>
-              Ingresa tus credenciales para continuar
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="signup">Registrarse</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
+          {showForgotPassword ? (
+            <>
+              <CardHeader className="text-center pb-2">
+                <CardTitle className="text-xl">Recuperar Contraseña</CardTitle>
+                <CardDescription>
+                  Te enviaremos un enlace para restablecer tu contraseña
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="forgot-email">Email</Label>
                     <Input
-                      id="login-email"
+                      id="forgot-email"
                       type="email"
                       placeholder="tu@email.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Contraseña</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
                       required
                     />
                   </div>
@@ -198,14 +182,84 @@ export default function Auth() {
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Ingresando...
+                        Enviando...
                       </>
                     ) : (
-                      'Ingresar'
+                      'Enviar enlace de recuperación'
                     )}
                   </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setShowForgotPassword(false)}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Volver al login
+                  </Button>
                 </form>
-              </TabsContent>
+              </CardContent>
+            </>
+          ) : (
+            <>
+              <CardHeader className="text-center pb-2">
+                <CardTitle className="text-xl">Acceso a la Plataforma</CardTitle>
+                <CardDescription>
+                  Ingresa tus credenciales para continuar
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="login" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
+                    <TabsTrigger value="signup">Registrarse</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="login">
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="login-email">Email</Label>
+                        <Input
+                          id="login-email"
+                          type="email"
+                          placeholder="tu@email.com"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="login-password">Contraseña</Label>
+                          <button
+                            type="button"
+                            className="text-xs text-primary hover:underline"
+                            onClick={() => setShowForgotPassword(true)}
+                          >
+                            ¿Olvidaste tu contraseña?
+                          </button>
+                        </div>
+                        <Input
+                          id="login-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Ingresando...
+                          </>
+                        ) : (
+                          'Ingresar'
+                        )}
+                      </Button>
+                    </form>
+                  </TabsContent>
 
               <TabsContent value="signup">
                 <form onSubmit={handleSignup} className="space-y-4">
