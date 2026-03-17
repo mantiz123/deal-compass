@@ -69,6 +69,29 @@ const Leads = () => {
   const [archiveLeadId, setArchiveLeadId] = useState<string | null>(null);
   const [archiveAddress, setArchiveAddress] = useState<string>('');
 
+  // Extract unique sources and cities for filter dropdowns
+  const uniqueSources = useMemo(() => {
+    if (!leads) return [];
+    const sources = [...new Set(leads.map(l => l.source).filter(Boolean))] as string[];
+    return sources.sort();
+  }, [leads]);
+
+  const uniqueCities = useMemo(() => {
+    if (!leads) return [];
+    const cities = [...new Set(leads.map(l => l.property?.city).filter(Boolean))] as string[];
+    return cities.sort();
+  }, [leads]);
+
+  const hasActiveFilters = statusFilter !== "all" || sourceFilter !== "all" || cityFilter !== "all" || piwRange[0] > 0 || piwRange[1] < 100;
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setSourceFilter("all");
+    setCityFilter("all");
+    setPiwRange([0, 100]);
+    setSearchTerm("");
+  };
+
   const pendingLeads = leads?.filter(l => l.piw_score === null && l.property) || [];
 
   const handleCalculateScore = async (lead: Lead) => {
