@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { usePagination } from "@/hooks/usePagination";
 import { DataPagination } from "@/components/ui/data-pagination";
@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
