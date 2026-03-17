@@ -70,6 +70,30 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      emailSchema.parse(forgotEmail);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast({ title: 'Error', description: err.errors[0].message, variant: 'destructive' });
+        return;
+      }
+    }
+    setIsLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/auth/reset`,
+    });
+    setIsLoading(false);
+    if (error) {
+      toast({ title: 'Error', description: 'No se pudo enviar el enlace. Intenta de nuevo.', variant: 'destructive' });
+    } else {
+      toast({ title: '📧 Email enviado', description: 'Revisa tu bandeja para el enlace de recuperación.' });
+      setShowForgotPassword(false);
+      setForgotEmail('');
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
