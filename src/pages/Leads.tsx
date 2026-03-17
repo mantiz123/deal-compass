@@ -57,6 +57,11 @@ const Leads = () => {
   const { data: leads, isLoading, error } = useLeads();
   const calculateScore = useCalculatePIWScore();
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
+  const [piwRange, setPiwRange] = useState<[number, number]>([0, 100]);
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showNewLeadDialog, setShowNewLeadDialog] = useState(false);
   const [calculatingId, setCalculatingId] = useState<string | null>(null);
