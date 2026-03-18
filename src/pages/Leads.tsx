@@ -168,12 +168,14 @@ const Leads = () => {
               variant="outline"
               size="sm"
               className="hidden sm:flex"
-              disabled={isExporting || !filteredLeads?.length}
-              onClick={() => {
+              disabled={isExporting || !totalCount}
+              onClick={async () => {
                 setIsExporting(true);
                 try {
+                  const { data: exportData } = await fetchExport();
+                  const exportLeads = exportData || [];
                   const headers = ['Nombre', 'Dirección', 'Teléfono', 'PIW Score', 'ARV', 'MAO', 'Spread', 'Estado', 'Días sin actividad'];
-                  const rows = (filteredLeads || []).map(lead => {
+                  const rows = exportLeads.map(lead => {
                     const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
                     const mao = lead.property?.mao ? Number(lead.property.mao) : (arv > 0 ? Math.round(arv * 0.7 - (Number(lead.property?.repair_cost) || 0)) : 0);
                     const acquisition = Number(lead.offer_amount) || Number(lead.listing_price) || Number(lead.property?.last_sale_price) || 0;
