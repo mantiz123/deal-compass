@@ -61,6 +61,7 @@ const Properties = () => {
     state: stateFilter,
   });
   const { data: stats, isLoading: statsLoading } = usePropertyStats();
+  const [isExporting, setIsExporting] = useState(false);
   const propsPagination = usePagination(properties, { pageSize: 25 });
 
   const clearFilters = () => {
