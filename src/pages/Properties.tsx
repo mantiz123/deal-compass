@@ -27,8 +27,10 @@ import {
   Bed,
   Bath,
   Ruler,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { generateCSV, downloadCSV, todayDateString } from '@/lib/csvExport';
 
 const US_STATES = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
@@ -60,6 +62,7 @@ const Properties = () => {
     state: stateFilter,
   });
   const { data: stats, isLoading: statsLoading } = usePropertyStats();
+  const [isExporting, setIsExporting] = useState(false);
   const propsPagination = usePagination(properties, { pageSize: 25 });
 
   const clearFilters = () => {
@@ -82,8 +85,37 @@ const Properties = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 sm:gap-3">
-            <Button variant="outline" size="sm" className="hidden sm:flex">
-              <Download className="mr-2 h-4 w-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden sm:flex"
+              disabled={isExporting || !properties?.length}
+              onClick={() => {
+                setIsExporting(true);
+                try {
+                  const headers = ['Dirección', 'Ciudad', 'Estado', 'ZIP', 'Tipo', 'Habitaciones', 'Baños', 'Sqft', 'ARV', 'MAO', 'Propietario', 'Teléfono', 'Email'];
+                  const rows = (properties || []).map(p => [
+                    p.address,
+                    p.city,
+                    p.state,
+                    p.zip_code,
+                    propertyTypeLabels[p.property_type] || p.property_type,
+                    String(p.bedrooms ?? ''),
+                    String(p.bathrooms ?? ''),
+                    String(p.sqft ?? ''),
+                    p.arv ? String(p.arv) : '',
+                    p.mao ? String(p.mao) : '',
+                    p.owner_name || '',
+                    p.owner_phone || '',
+                    p.owner_email || '',
+                  ]);
+                  downloadCSV(generateCSV(headers, rows), `properties_export_${todayDateString()}.csv`);
+                } finally {
+                  setIsExporting(false);
+                }
+              }}
+            >
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               Exportar
             </Button>
             <Button variant="outline" size="sm" className="hidden sm:flex">
