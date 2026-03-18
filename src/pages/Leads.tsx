@@ -199,8 +199,40 @@ const Leads = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 sm:gap-3">
-            <Button variant="outline" size="sm" className="hidden sm:flex">
-              <Download className="mr-2 h-4 w-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden sm:flex"
+              disabled={isExporting || !filteredLeads?.length}
+              onClick={() => {
+                setIsExporting(true);
+                try {
+                  const headers = ['Nombre', 'Dirección', 'Teléfono', 'PIW Score', 'ARV', 'MAO', 'Spread', 'Estado', 'Días sin actividad'];
+                  const rows = (filteredLeads || []).map(lead => {
+                    const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
+                    const mao = lead.property?.mao ? Number(lead.property.mao) : (arv > 0 ? Math.round(arv * 0.7 - (Number(lead.property?.repair_cost) || 0)) : 0);
+                    const acquisition = Number(lead.offer_amount) || Number(lead.listing_price) || Number(lead.property?.last_sale_price) || 0;
+                    const spread = mao > 0 && acquisition > 0 ? mao - acquisition : 0;
+                    const statusLabel = statusConfig[lead.status]?.label || lead.status;
+                    return [
+                      lead.property?.owner_name || '',
+                      lead.property?.address || '',
+                      lead.property?.owner_phone || '',
+                      String(lead.piw_score ?? ''),
+                      arv ? String(arv) : '',
+                      mao ? String(mao) : '',
+                      spread ? String(spread) : '',
+                      statusLabel,
+                      String(lead.days_without_activity ?? ''),
+                    ];
+                  });
+                  downloadCSV(generateCSV(headers, rows), `leads_export_${todayDateString()}.csv`);
+                } finally {
+                  setIsExporting(false);
+                }
+              }}
+            >
+              {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               Exportar
             </Button>
             <Button variant="outline" size="sm" className="hidden sm:flex">
