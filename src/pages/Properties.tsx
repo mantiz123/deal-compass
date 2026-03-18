@@ -74,6 +74,7 @@ const Properties = () => {
     setSearchTerm('');
     setPropertyTypeFilter('all');
     setStateFilter('all');
+    pagination.resetPage();
   };
 
   const hasActiveFilters = searchTerm || propertyTypeFilter !== 'all' || stateFilter !== 'all';
