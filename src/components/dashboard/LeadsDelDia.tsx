@@ -9,8 +9,9 @@ import { Phone, Mail, ChevronRight, Flame, DollarSign, TrendingUp, CheckCircle, 
 import { format, isToday } from 'date-fns';
 
 export const LeadsDelDia = () => {
-  const { data: leads, isLoading } = useLeads();
+  const { data: result, isLoading } = useLeads();
   const markContacted = useMarkLeadContacted();
+  const leads = result?.data;
 
   // Calculate spread and filter/sort leads
   const leadsWithSpread = leads

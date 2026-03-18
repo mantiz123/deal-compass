@@ -24,7 +24,8 @@ const getPriority = (lead: Lead): string => {
 };
 
 export function LeadsTable() {
-  const { data: leads, isLoading } = useLeads();
+  const { data: result, isLoading } = useLeads();
+  const leads = result?.data;
   
   // Get top 5 leads by PIW score
   const topLeads = leads

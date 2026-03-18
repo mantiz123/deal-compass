@@ -230,7 +230,8 @@ export const PropertyComparisonSheet = () => {
   const [leadId1, setLeadId1] = useState<string>('');
   const [leadId2, setLeadId2] = useState<string>('');
   
-  const { data: leads, isLoading: leadsLoading } = useLeads();
+  const { data: result, isLoading: leadsLoading } = useLeads();
+  const leads = result?.data;
   
   const lead1 = leads?.find(l => l.id === leadId1) || null;
   const lead2 = leads?.find(l => l.id === leadId2) || null;
