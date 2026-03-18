@@ -339,7 +339,7 @@ const Properties = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {propsPagination.paginatedItems.map((property, index) => (
+                  {properties.map((property, index) => (
                     <tr
                       key={property.id}
                       className="group hover:bg-secondary/30 transition-colors cursor-pointer animate-fade-in"
