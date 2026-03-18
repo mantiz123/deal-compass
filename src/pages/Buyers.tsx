@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { usePagination } from "@/hooks/usePagination";
+import { useServerPagination } from "@/hooks/useServerPagination";
 import { DataPagination } from "@/components/ui/data-pagination";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,9 +53,6 @@ const tierConfig: Record<string, { label: string; color: string }> = {
 };
 
 const Buyers = () => {
-  const { data: buyers, isLoading, error } = useBuyers();
-  const { data: stats } = useBuyerStats();
-  const recalculateLiquidity = useRecalculateAllBuyerLiquidity();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
@@ -63,32 +60,24 @@ const Buyers = () => {
   const [deleteBuyer, setDeleteBuyer] = useState<Buyer | null>(null);
   const [viewBuyer, setViewBuyer] = useState<Buyer | null>(null);
 
-  // Sort buyers by liquidity score (descending), then by deals closed
-  const sortedBuyers = buyers?.slice().sort((a, b) => {
-    const aScore = (a as any).liquidity_score || 0;
-    const bScore = (b as any).liquidity_score || 0;
-    if (bScore !== aScore) return bScore - aScore;
-    return (b.deals_closed || 0) - (a.deals_closed || 0);
+  const { data: stats } = useBuyerStats();
+  const recalculateLiquidity = useRecalculateAllBuyerLiquidity();
+  const pagination = useServerPagination(24);
+
+  const { data: result, isLoading, error } = useBuyers({
+    search: searchTerm || undefined,
+    tier: selectedTier,
+    from: pagination.from,
+    to: pagination.to,
   });
 
-  const filteredBuyers = sortedBuyers?.filter(buyer => {
-    // Filter by search term
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      const matchesSearch =
-        buyer.contact_name?.toLowerCase().includes(search) ||
-        buyer.company_name?.toLowerCase().includes(search) ||
-        buyer.preferred_zip_codes?.some(zip => zip.includes(search));
-      if (!matchesSearch) return false;
-    }
-    
-    // Filter by tier
-    if (selectedTier && buyer.tier !== selectedTier) return false;
-    
-    return true;
-  });
+  const buyers = result?.data || [];
+  const totalCount = result?.count ?? 0;
+  const buyersPagination = pagination.paginationProps(totalCount);
 
-  const buyersPagination = usePagination(filteredBuyers, { pageSize: 24 });
+  // Reset page on filter change
+  const handleSearchChange = (val: string) => { setSearchTerm(val); pagination.resetPage(); };
+  const handleTierChange = (tier: string | null) => { setSelectedTier(tier); pagination.resetPage(); };
 
   const getLiquidityColor = (score: number | null): string => {
     if (!score) return 'text-muted-foreground';
@@ -208,7 +197,7 @@ const Buyers = () => {
                 placeholder="Buscar por nombre, empresa o ZIP code..."
                 className="pl-10 bg-secondary/50"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
             <div className="flex gap-2">
@@ -220,7 +209,7 @@ const Buyers = () => {
                     config.color,
                     selectedTier === key && "ring-2 ring-primary"
                   )}
-                  onClick={() => setSelectedTier(selectedTier === key ? null : key)}
+                  onClick={() => handleTierChange(selectedTier === key ? null : key)}
                 >
                   {config.label}
                 </Badge>
@@ -263,7 +252,7 @@ const Buyers = () => {
       )}
 
       {/* Empty State */}
-      {!isLoading && !error && buyers?.length === 0 && (
+      {!isLoading && !error && totalCount === 0 && (
         <Card variant="glass">
           <CardContent className="p-12 text-center">
             <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
@@ -280,10 +269,10 @@ const Buyers = () => {
       )}
 
       {/* Buyers Grid */}
-      {!isLoading && !error && filteredBuyers && filteredBuyers.length > 0 && (
+      {!isLoading && !error && buyers.length > 0 && (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {buyersPagination.paginatedItems.map((buyer, index) => (
+            {buyers.map((buyer, index) => (
               <Card
                 key={buyer.id}
                 variant="interactive"

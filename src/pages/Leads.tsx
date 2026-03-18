@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { usePagination } from "@/hooks/usePagination";
+import { useServerPagination } from "@/hooks/useServerPagination";
 import { DataPagination } from "@/components/ui/data-pagination";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { PropertyComparisonSheet } from "@/components/leads/PropertyComparisonSheet";
 import { ArchiveLeadDialog } from "@/components/leads/ArchiveLeadDialog";
-import { useLeads, useCalculatePIWScore, Lead } from "@/hooks/useLeads";
+import { useLeads, useLeadsExport, useLeadFilterOptions, useCalculatePIWScore, Lead } from "@/hooks/useLeads";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -55,7 +55,6 @@ const priorityConfig: Record<string, { label: string; variant: "accent" | "warni
 };
 
 const Leads = () => {
-  const { data: leads, isLoading, error } = useLeads();
   const calculateScore = useCalculatePIWScore();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -71,18 +70,32 @@ const Leads = () => {
   const [archiveAddress, setArchiveAddress] = useState<string>('');
   const [isExporting, setIsExporting] = useState(false);
 
-  // Extract unique sources and cities for filter dropdowns
-  const uniqueSources = useMemo(() => {
-    if (!leads) return [];
-    const sources = [...new Set(leads.map(l => l.source).filter(Boolean))] as string[];
-    return sources.sort();
-  }, [leads]);
+  const pagination = useServerPagination(25);
+  const { data: filterOptions } = useLeadFilterOptions();
 
-  const uniqueCities = useMemo(() => {
-    if (!leads) return [];
-    const cities = [...new Set(leads.map(l => l.property?.city).filter(Boolean))] as string[];
-    return cities.sort();
-  }, [leads]);
+  const filters = useMemo(() => ({
+    status: statusFilter,
+    source: sourceFilter,
+    city: cityFilter,
+    search: searchTerm || undefined,
+    piwMin: piwRange[0],
+    piwMax: piwRange[1],
+  }), [statusFilter, sourceFilter, cityFilter, searchTerm, piwRange]);
+
+  const { data: result, isLoading, error } = useLeads({
+    filters,
+    from: pagination.from,
+    to: pagination.to,
+  });
+
+  const leads = result?.data || [];
+  const totalCount = result?.count ?? 0;
+  const leadsPagination = pagination.paginationProps(totalCount);
+
+  const { refetch: fetchExport } = useLeadsExport(filters);
+
+  const uniqueSources = filterOptions?.sources || [];
+  const uniqueCities = filterOptions?.cities || [];
 
   const hasActiveFilters = statusFilter !== "all" || sourceFilter !== "all" || cityFilter !== "all" || piwRange[0] > 0 || piwRange[1] < 100;
 
@@ -92,9 +105,10 @@ const Leads = () => {
     setCityFilter("all");
     setPiwRange([0, 100]);
     setSearchTerm("");
+    pagination.resetPage();
   };
 
-  const pendingLeads = leads?.filter(l => l.piw_score === null && l.property) || [];
+  const pendingLeads = leads.filter(l => l.piw_score === null && l.property);
 
   const handleCalculateScore = async (lead: Lead) => {
     if (!lead.property) return;
@@ -130,55 +144,6 @@ const Leads = () => {
     }
   };
 
-  // Helper function to calculate spread for sorting
-  const calculateSpread = (lead: Lead): number => {
-    const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
-    const repairCost = lead.property?.repair_cost ? Number(lead.property.repair_cost) : 0;
-    const savedMao = lead.property?.mao ? Number(lead.property.mao) : 0;
-    const mao = savedMao || (arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0);
-    
-    const offerAmount = lead.offer_amount ? Number(lead.offer_amount) : 0;
-    const listingPrice = lead.listing_price ? Number(lead.listing_price) : 0;
-    const lastSalePrice = lead.property?.last_sale_price ? Number(lead.property.last_sale_price) : 0;
-    
-    const acquisitionCost = offerAmount || listingPrice || lastSalePrice;
-    return mao > 0 && acquisitionCost > 0 ? mao - acquisitionCost : -Infinity;
-  };
-
-  const filteredLeads = leads?.filter(lead => {
-    if (lead.archived_at) return false;
-    
-    // Status filter
-    if (statusFilter !== "all" && lead.status !== statusFilter) return false;
-    
-    // Source filter
-    if (sourceFilter !== "all" && lead.source !== sourceFilter) return false;
-    
-    // City filter
-    if (cityFilter !== "all" && lead.property?.city !== cityFilter) return false;
-    
-    // PIW score range filter
-    if (piwRange[0] > 0 || piwRange[1] < 100) {
-      const score = lead.piw_score ?? -1;
-      if (score < piwRange[0] || score > piwRange[1]) return false;
-    }
-    
-    // Text search
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      return (
-        lead.property?.address?.toLowerCase().includes(search) ||
-        lead.property?.city?.toLowerCase().includes(search) ||
-        lead.property?.owner_name?.toLowerCase().includes(search)
-      );
-    }
-    
-    return true;
-  })?.sort((a, b) => calculateSpread(b) - calculateSpread(a));
-
-  const leadsPagination = usePagination(filteredLeads, { pageSize: 25 });
-  const paginatedLeads = leadsPagination.paginatedItems;
-
   const getPriority = (lead: Lead): string => {
     const factors = lead.piw_score_factors as any;
     return factors?.priority || (
@@ -203,12 +168,14 @@ const Leads = () => {
               variant="outline"
               size="sm"
               className="hidden sm:flex"
-              disabled={isExporting || !filteredLeads?.length}
-              onClick={() => {
+              disabled={isExporting || !totalCount}
+              onClick={async () => {
                 setIsExporting(true);
                 try {
+                  const { data: exportData } = await fetchExport();
+                  const exportLeads = exportData || [];
                   const headers = ['Nombre', 'Dirección', 'Teléfono', 'PIW Score', 'ARV', 'MAO', 'Spread', 'Estado', 'Días sin actividad'];
-                  const rows = (filteredLeads || []).map(lead => {
+                  const rows = exportLeads.map(lead => {
                     const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
                     const mao = lead.property?.mao ? Number(lead.property.mao) : (arv > 0 ? Math.round(arv * 0.7 - (Number(lead.property?.repair_cost) || 0)) : 0);
                     const acquisition = Number(lead.offer_amount) || Number(lead.listing_price) || Number(lead.property?.last_sale_price) || 0;
@@ -269,10 +236,10 @@ const Leads = () => {
       </div>
 
       {/* Stats Summary */}
-      {leads && leads.length > 0 && (
+      {totalCount > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <Card variant="glass" className="p-4">
-            <div className="text-2xl font-bold text-primary">{leads.length}</div>
+            <div className="text-2xl font-bold text-primary">{totalCount}</div>
             <div className="text-sm text-muted-foreground">Total Leads</div>
           </Card>
           <Card variant="glass" className="p-4">
@@ -427,7 +394,7 @@ const Leads = () => {
       )}
 
       {/* Empty State */}
-      {!isLoading && !error && leads?.length === 0 && (
+      {!isLoading && !error && totalCount === 0 && (
         <Card variant="glass">
           <CardContent className="p-12 text-center">
             <Home className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
@@ -444,7 +411,7 @@ const Leads = () => {
       )}
 
       {/* Leads Table */}
-      {!isLoading && !error && filteredLeads && filteredLeads.length > 0 && (
+      {!isLoading && !error && leads.length > 0 && (
         <Card variant="glass">
           <CardContent className="p-0">
             <TooltipProvider>
@@ -551,7 +518,7 @@ const Leads = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {paginatedLeads.map((lead, index) => {
+                  {leads.map((lead, index) => {
                     const priority = getPriority(lead);
                     const factors = lead.piw_score_factors as any;
                     

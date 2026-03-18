@@ -47,7 +47,8 @@ export function DealPackageTracker() {
   const queryClient = useQueryClient();
   const { data: packages, isLoading: packagesLoading } = useDealPackageTracking();
   const { data: stats, isLoading: statsLoading } = useDealPackageStats();
-  const { data: buyers } = useBuyers();
+  const { data: buyersResult } = useBuyers();
+  const buyers = buyersResult?.data;
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Filters

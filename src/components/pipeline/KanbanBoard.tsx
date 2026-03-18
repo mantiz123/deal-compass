@@ -29,7 +29,8 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ onAddDeal }: KanbanBoardProps) {
-  const { data: leads, isLoading } = useLeads();
+  const { data: result, isLoading } = useLeads();
+  const leads = result?.data;
   const updateStatus = useUpdateLeadStatus();
   
   const [activeId, setActiveId] = useState<string | null>(null);

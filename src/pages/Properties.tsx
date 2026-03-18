@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { usePagination } from '@/hooks/usePagination';
+import { useServerPagination } from '@/hooks/useServerPagination';
 import { DataPagination } from '@/components/ui/data-pagination';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,19 +56,25 @@ const Properties = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
 
-  const { data: properties, isLoading } = useProperties({
+  const pagination = useServerPagination(25);
+  const { data: result, isLoading } = useProperties({
     search: searchTerm,
     propertyType: propertyTypeFilter,
     state: stateFilter,
+    from: pagination.from,
+    to: pagination.to,
   });
+  const properties = result?.data || [];
+  const totalCount = result?.count ?? 0;
+  const propsPagination = pagination.paginationProps(totalCount);
   const { data: stats, isLoading: statsLoading } = usePropertyStats();
   const [isExporting, setIsExporting] = useState(false);
-  const propsPagination = usePagination(properties, { pageSize: 25 });
 
   const clearFilters = () => {
     setSearchTerm('');
     setPropertyTypeFilter('all');
     setStateFilter('all');
+    pagination.resetPage();
   };
 
   const hasActiveFilters = searchTerm || propertyTypeFilter !== 'all' || stateFilter !== 'all';
@@ -333,7 +339,7 @@ const Properties = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {propsPagination.paginatedItems.map((property, index) => (
+                  {properties.map((property, index) => (
                     <tr
                       key={property.id}
                       className="group hover:bg-secondary/30 transition-colors cursor-pointer animate-fade-in"
