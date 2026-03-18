@@ -62,9 +62,8 @@ const Buyers = () => {
 
   const { data: stats } = useBuyerStats();
   const recalculateLiquidity = useRecalculateAllBuyerLiquidity();
+  const pagination = useServerPagination(24);
 
-  // Server-side pagination
-  const pagination = useServerPagination(0, { pageSize: 24 });
   const { data: result, isLoading, error } = useBuyers({
     search: searchTerm || undefined,
     tier: selectedTier,
@@ -74,26 +73,11 @@ const Buyers = () => {
 
   const buyers = result?.data || [];
   const totalCount = result?.count ?? 0;
+  const buyersPagination = pagination.paginationProps(totalCount);
 
-  // Update pagination total when count changes
-  const paginationWithCount = useServerPagination(totalCount, { pageSize: 24 });
-  
   // Reset page on filter change
-  useEffect(() => {
-    paginationWithCount.resetPage();
-  }, [searchTerm, selectedTier]);
-
-  // Re-query with correct pagination
-  const { data: pagedResult, isLoading: pagedLoading } = useBuyers({
-    search: searchTerm || undefined,
-    tier: selectedTier,
-    from: paginationWithCount.from,
-    to: paginationWithCount.to,
-  });
-  
-  const pagedBuyers = pagedResult?.data || [];
-  const pagedCount = pagedResult?.count ?? 0;
-  const finalPagination = useServerPagination(pagedCount, { pageSize: 24 });
+  const handleSearchChange = (val: string) => { setSearchTerm(val); pagination.resetPage(); };
+  const handleTierChange = (tier: string | null) => { setSelectedTier(tier); pagination.resetPage(); };
 
   const getLiquidityColor = (score: number | null): string => {
     if (!score) return 'text-muted-foreground';
