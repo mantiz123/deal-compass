@@ -8,44 +8,36 @@ export type Property = Tables<'properties'>;
 export function useProperties(options?: {
   search?: string;
   propertyType?: string;
-  city?: string;
   state?: string;
-  hasLead?: boolean;
+  from?: number;
+  to?: number;
 }) {
   return useQuery({
     queryKey: ['properties', options],
-    queryFn: async (): Promise<Property[]> => {
+    queryFn: async (): Promise<{ data: Property[]; count: number }> => {
       let query = supabase
         .from('properties')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false });
 
       if (options?.propertyType && options.propertyType !== 'all') {
-        query = query.eq('property_type', options.propertyType as 'single_family' | 'multi_family' | 'condo' | 'townhouse' | 'land' | 'commercial');
-      }
-      if (options?.city) {
-        query = query.ilike('city', `%${options.city}%`);
+        query = query.eq('property_type', options.propertyType as any);
       }
       if (options?.state && options.state !== 'all') {
         query = query.eq('state', options.state);
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      // Apply search filter client-side
-      let filtered = data;
       if (options?.search) {
-        const search = options.search.toLowerCase();
-        filtered = data.filter(p => 
-          p.address.toLowerCase().includes(search) ||
-          p.city.toLowerCase().includes(search) ||
-          p.owner_name?.toLowerCase().includes(search) ||
-          p.zip_code.includes(search)
+        query = query.or(
+          `address.ilike.%${options.search}%,city.ilike.%${options.search}%,owner_name.ilike.%${options.search}%,zip_code.ilike.%${options.search}%`
         );
       }
-      
-      return filtered;
+      if (options?.from !== undefined && options?.to !== undefined) {
+        query = query.range(options.from, options.to);
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+      return { data: data || [], count: count ?? 0 };
     },
   });
 }
@@ -82,14 +74,12 @@ export function usePropertyStats() {
       const withLeads = data.filter(p => (p.lead as any[])?.length > 0).length;
       const totalArv = data.reduce((sum, p) => sum + (p.arv || 0), 0);
       const avgArv = total > 0 ? totalArv / total : 0;
-      
-      // Property type distribution
+
       const typeDistribution = data.reduce((acc, p) => {
         acc[p.property_type] = (acc[p.property_type] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
-      // State distribution
       const stateDistribution = data.reduce((acc, p) => {
         acc[p.state] = (acc[p.state] || 0) + 1;
         return acc;
@@ -150,13 +140,19 @@ export function useUpdateProperty() {
     mutationFn: async ({ id, ...data }: TablesUpdate<'properties'> & { id: string }) => {
       const { data: property, error } = await supabase
         .from('properties')
+        .select()
+        .eq('id', id)
+        .single();
+
+      const { data: updated, error: updateError } = await supabase
+        .from('properties')
         .update(data)
         .eq('id', id)
         .select()
         .single();
 
-      if (error) throw error;
-      return property;
+      if (updateError) throw updateError;
+      return updated;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });

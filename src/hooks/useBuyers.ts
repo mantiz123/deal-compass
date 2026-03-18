@@ -6,18 +6,36 @@ import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase
 export type Buyer = Tables<'buyers'>;
 export type BuyerTier = Buyer['tier'];
 
-export function useBuyers() {
+export function useBuyers(options?: {
+  search?: string;
+  tier?: string | null;
+  from?: number;
+  to?: number;
+}) {
   return useQuery({
-    queryKey: ['buyers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryKey: ['buyers', options?.search, options?.tier, options?.from, options?.to],
+    queryFn: async (): Promise<{ data: Buyer[]; count: number }> => {
+      let query = supabase
         .from('buyers')
-        .select('*')
-        .order('tier', { ascending: true })
+        .select('*', { count: 'exact' })
+        .order('liquidity_score', { ascending: false, nullsFirst: false })
         .order('deals_closed', { ascending: false });
 
+      if (options?.tier) {
+        query = query.eq('tier', options.tier as any);
+      }
+      if (options?.search) {
+        query = query.or(
+          `contact_name.ilike.%${options.search}%,company_name.ilike.%${options.search}%`
+        );
+      }
+      if (options?.from !== undefined && options?.to !== undefined) {
+        query = query.range(options.from, options.to);
+      }
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return data;
+      return { data: data || [], count: count ?? 0 };
     },
   });
 }
