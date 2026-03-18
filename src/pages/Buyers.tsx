@@ -197,7 +197,7 @@ const Buyers = () => {
                 placeholder="Buscar por nombre, empresa o ZIP code..."
                 className="pl-10 bg-secondary/50"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
             <div className="flex gap-2">
