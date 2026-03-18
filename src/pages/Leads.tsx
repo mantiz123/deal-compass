@@ -38,6 +38,7 @@ import {
   Loader2,
   Archive,
 } from "lucide-react";
+import { generateCSV, downloadCSV, todayDateString } from "@/lib/csvExport";
 
 const statusConfig: Record<string, { label: string; variant: "accent" | "warning" | "secondary" | "glow" }> = {
   captacion: { label: "Captación", variant: "secondary" },
