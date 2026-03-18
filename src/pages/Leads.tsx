@@ -411,7 +411,7 @@ const Leads = () => {
       )}
 
       {/* Leads Table */}
-      {!isLoading && !error && filteredLeads && filteredLeads.length > 0 && (
+      {!isLoading && !error && leads.length > 0 && (
         <Card variant="glass">
           <CardContent className="p-0">
             <TooltipProvider>
