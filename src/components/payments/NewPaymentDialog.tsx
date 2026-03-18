@@ -47,7 +47,8 @@ export function NewPaymentDialog({
 }: NewPaymentDialogProps) {
   const createPayment = useCreatePayment();
   const { data: realtors } = useRealtors();
-  const { data: leads } = useLeads();
+  const { data: leadsResult } = useLeads();
+  const leads = leadsResult?.data;
 
   const [formData, setFormData] = useState({
     realtor_id: defaultRealtorId || '',
