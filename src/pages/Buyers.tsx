@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useServerPagination } from "@/hooks/useServerPagination";
 import { DataPagination } from "@/components/ui/data-pagination";
 import { Layout } from "@/components/layout/Layout";
