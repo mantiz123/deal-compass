@@ -69,6 +69,7 @@ const Leads = () => {
   const [isBatchCalculating, setIsBatchCalculating] = useState(false);
   const [archiveLeadId, setArchiveLeadId] = useState<string | null>(null);
   const [archiveAddress, setArchiveAddress] = useState<string>('');
+  const [isExporting, setIsExporting] = useState(false);
 
   // Extract unique sources and cities for filter dropdowns
   const uniqueSources = useMemo(() => {
