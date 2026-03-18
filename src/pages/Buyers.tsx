@@ -209,7 +209,7 @@ const Buyers = () => {
                     config.color,
                     selectedTier === key && "ring-2 ring-primary"
                   )}
-                  onClick={() => setSelectedTier(selectedTier === key ? null : key)}
+                  onClick={() => handleTierChange(selectedTier === key ? null : key)}
                 >
                   {config.label}
                 </Badge>
