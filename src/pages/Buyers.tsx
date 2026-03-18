@@ -252,7 +252,7 @@ const Buyers = () => {
       )}
 
       {/* Empty State */}
-      {!isLoading && !error && buyers?.length === 0 && (
+      {!isLoading && !error && totalCount === 0 && (
         <Card variant="glass">
           <CardContent className="p-12 text-center">
             <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
