@@ -46,7 +46,8 @@ type StatusFilter = 'all' | 'sent' | 'opened' | 'clicked' | 'responded';
 const Deals = () => {
   const { data: deals, isLoading } = useDeals();
   const { data: stats, isLoading: statsLoading } = useDealStats();
-  const { data: buyers } = useBuyers();
+  const { data: buyersResult } = useBuyers();
+  const buyers = buyersResult?.data;
   
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
