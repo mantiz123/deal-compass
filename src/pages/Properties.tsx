@@ -56,14 +56,19 @@ const Properties = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showNewDialog, setShowNewDialog] = useState(false);
 
-  const { data: properties, isLoading } = useProperties({
+  const pagination = useServerPagination(25);
+  const { data: result, isLoading } = useProperties({
     search: searchTerm,
     propertyType: propertyTypeFilter,
     state: stateFilter,
+    from: pagination.from,
+    to: pagination.to,
   });
+  const properties = result?.data || [];
+  const totalCount = result?.count ?? 0;
+  const propsPagination = pagination.paginationProps(totalCount);
   const { data: stats, isLoading: statsLoading } = usePropertyStats();
   const [isExporting, setIsExporting] = useState(false);
-  const propsPagination = usePagination(properties, { pageSize: 25 });
 
   const clearFilters = () => {
     setSearchTerm('');
