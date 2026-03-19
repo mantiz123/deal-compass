@@ -91,11 +91,35 @@ export const useCSVImport = () => {
             
             const tenureYears = propertyData.owner_tenure_months || propertyData.owner_tenure_years || null;
             
+            // Compute ownership_months (raw months, not converted)
+            const ownershipMonthsRaw = propertyData.ownership_months || null;
+            // If we have raw months but tenure was converted to years, keep raw months for PIW
+            const tenureForDb = ownershipMonthsRaw ? Math.floor(ownershipMonthsRaw / 12) : tenureYears;
+            
             let isAbsentee = false;
             if (propertyData.is_absentee_owner !== undefined && propertyData.is_absentee_owner !== null) {
               isAbsentee = propertyData.is_absentee_owner;
             } else if (propertyData.owner_occupied !== undefined && propertyData.owner_occupied !== null) {
               isAbsentee = propertyData.owner_occupied;
+            }
+            
+            // Auto-detect absentee type from mailing state/city vs property state/city
+            let absenteeType: string | null = null;
+            const ownerMailingState = propertyData.owner_mailing_state?.trim().toUpperCase() || null;
+            const ownerMailingCity = propertyData.owner_mailing_city?.trim().toUpperCase() || null;
+            const propState = propertyData.state?.trim().toUpperCase() || null;
+            const propCity = propertyData.city?.trim().toUpperCase() || null;
+            
+            if (ownerMailingState && propState) {
+              if (ownerMailingState !== propState) {
+                absenteeType = 'out_of_state';
+                isAbsentee = true;
+              } else if (ownerMailingCity && propCity && ownerMailingCity !== propCity) {
+                absenteeType = 'local';
+                isAbsentee = true;
+              } else {
+                absenteeType = 'occupied';
+              }
             }
             
             const { data: property, error: propertyError } = await supabase
@@ -117,8 +141,13 @@ export const useCSVImport = () => {
                 year_built: propertyData.year_built || null,
                 arv: propertyData.arv || null,
                 equity_percent: propertyData.equity_percent || null,
-                owner_tenure_years: tenureYears,
+                owner_tenure_years: tenureForDb,
                 is_absentee_owner: isAbsentee,
+                absentee_type: absenteeType,
+                owner_mailing_state: propertyData.owner_mailing_state || null,
+                owner_mailing_city: propertyData.owner_mailing_city || null,
+                is_vacant: propertyData.is_vacant || false,
+                days_on_market: propertyData.days_on_market || null,
                 tax_delinquent: propertyData.tax_delinquent || false,
                 is_foreclosure: propertyData.is_foreclosure || false,
                 is_probate: propertyData.is_probate || false,
