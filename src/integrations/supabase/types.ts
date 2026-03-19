@@ -618,6 +618,7 @@ export type Database = {
       }
       properties: {
         Row: {
+          absentee_type: string | null
           active_liens_count: number | null
           address: string
           arv: number | null
@@ -628,6 +629,7 @@ export type Database = {
           crime_index: number | null
           data_fetched_at: string | null
           data_source: string | null
+          days_on_market: number | null
           days_on_market_avg: number | null
           equity_percent: number | null
           estimated_monthly_rent: number | null
@@ -636,6 +638,7 @@ export type Database = {
           is_absentee_owner: boolean | null
           is_foreclosure: boolean | null
           is_probate: boolean | null
+          is_vacant: boolean | null
           last_refinance_date: string | null
           last_sale_date: string | null
           last_sale_price: number | null
@@ -647,6 +650,8 @@ export type Database = {
           neighborhood_vacancy_rate: number | null
           notes: string | null
           owner_email: string | null
+          owner_mailing_city: string | null
+          owner_mailing_state: string | null
           owner_name: string | null
           owner_phone: string | null
           owner_tenure_years: number | null
@@ -667,6 +672,7 @@ export type Database = {
           zip_code: string
         }
         Insert: {
+          absentee_type?: string | null
           active_liens_count?: number | null
           address: string
           arv?: number | null
@@ -677,6 +683,7 @@ export type Database = {
           crime_index?: number | null
           data_fetched_at?: string | null
           data_source?: string | null
+          days_on_market?: number | null
           days_on_market_avg?: number | null
           equity_percent?: number | null
           estimated_monthly_rent?: number | null
@@ -685,6 +692,7 @@ export type Database = {
           is_absentee_owner?: boolean | null
           is_foreclosure?: boolean | null
           is_probate?: boolean | null
+          is_vacant?: boolean | null
           last_refinance_date?: string | null
           last_sale_date?: string | null
           last_sale_price?: number | null
@@ -696,6 +704,8 @@ export type Database = {
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
           owner_email?: string | null
+          owner_mailing_city?: string | null
+          owner_mailing_state?: string | null
           owner_name?: string | null
           owner_phone?: string | null
           owner_tenure_years?: number | null
@@ -716,6 +726,7 @@ export type Database = {
           zip_code: string
         }
         Update: {
+          absentee_type?: string | null
           active_liens_count?: number | null
           address?: string
           arv?: number | null
@@ -726,6 +737,7 @@ export type Database = {
           crime_index?: number | null
           data_fetched_at?: string | null
           data_source?: string | null
+          days_on_market?: number | null
           days_on_market_avg?: number | null
           equity_percent?: number | null
           estimated_monthly_rent?: number | null
@@ -734,6 +746,7 @@ export type Database = {
           is_absentee_owner?: boolean | null
           is_foreclosure?: boolean | null
           is_probate?: boolean | null
+          is_vacant?: boolean | null
           last_refinance_date?: string | null
           last_sale_date?: string | null
           last_sale_price?: number | null
@@ -745,6 +758,8 @@ export type Database = {
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
           owner_email?: string | null
+          owner_mailing_city?: string | null
+          owner_mailing_state?: string | null
           owner_name?: string | null
           owner_phone?: string | null
           owner_tenure_years?: number | null
