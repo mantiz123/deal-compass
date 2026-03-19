@@ -256,6 +256,42 @@ export const propertyFields: PropertyField[] = [
     required: false,
     transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
   },
+  {
+    key: 'owner_mailing_state',
+    label: 'Estado Correo del Propietario',
+    aliases: ['ownermailingstate', 'mailingstate', 'mailstate'],
+    required: false,
+  },
+  {
+    key: 'owner_mailing_city',
+    label: 'Ciudad Correo del Propietario',
+    aliases: ['ownermailingcity', 'mailingcity', 'mailcity'],
+    required: false,
+  },
+  {
+    key: 'is_vacant',
+    label: 'Vacante',
+    aliases: ['vacant', 'isvacant', 'vacante', 'vacancy'],
+    required: false,
+    transform: (value: string) => {
+      const normalized = normalize(value);
+      return normalized === 'yes' || normalized === 'y' || normalized === 'true' || normalized === '1';
+    },
+  },
+  {
+    key: 'ownership_months',
+    label: 'Tenencia en Meses',
+    aliases: ['ownershiplengthmonths', 'ownershipmonths', 'tenuremonths', 'monthsowned', 'ownershiplength'],
+    required: false,
+    transform: (value: string) => parseInt(value) || null,
+  },
+  {
+    key: 'days_on_market',
+    label: 'Días en el Mercado',
+    aliases: ['daysonmarket', 'dom', 'daysonmls', 'marketdays', 'cdom'],
+    required: false,
+    transform: (value: string) => parseInt(value) || null,
+  },
 ];
 
 export interface ColumnMapping {
