@@ -91,9 +91,14 @@ export function useLeadsExport(filters?: LeadFilters) {
   return useQuery({
     queryKey: ['leads-export', filters],
     queryFn: async (): Promise<Lead[]> => {
+      const hasSearch = !!filters?.search;
+      const selectStr = hasSearch
+        ? `*, property:properties!inner(*)`
+        : `*, property:properties(*)`;
+      
       let query = supabase
         .from('leads')
-        .select(`*, property:properties(*)`)
+        .select(selectStr)
         .order('created_at', { ascending: false });
 
       query = applyLeadFilters(query, filters);
