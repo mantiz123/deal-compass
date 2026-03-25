@@ -57,6 +57,7 @@ const priorityConfig: Record<string, { label: string; variant: "accent" | "warni
 
 const Leads = () => {
   const calculateScore = useCalculatePIWScore();
+  const batchRecalculate = useBatchRecalculatePIW();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
