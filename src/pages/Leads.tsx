@@ -224,11 +224,30 @@ const Leads = () => {
                 ) : (
                   <>
                     <Brain className="mr-2 h-4 w-4" />
-                    Calcular Todos ({pendingLeads.length})
+                    Calcular Nuevos ({pendingLeads.length})
                   </>
                 )}
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => batchRecalculate.mutate({ forceAll: true })}
+              disabled={batchRecalculate.isPending || !totalCount}
+              className="border-warning/50 text-warning hover:bg-warning/10"
+            >
+              {batchRecalculate.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Recalculando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Recalcular Todos
+                </>
+              )}
+            </Button>
             <Button size="sm" onClick={() => setShowNewLeadDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Nuevo Lead
