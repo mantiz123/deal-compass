@@ -537,41 +537,153 @@ export function LeadDetailSheet({
                 </Card>
               </div>
 
-              {/* Owner Info */}
+              {/* Owner Info & Contact */}
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Información del Propietario
+                  Contacto del Propietario
                 </h3>
                 <Card variant="glass" className="p-4">
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{property?.owner_name || 'Desconocido'}</span>
+                      {property?.owner_type && (
+                        <Badge variant="secondary" className="text-[10px]">{property.owner_type}</Badge>
+                      )}
                     </div>
-                    {property?.owner_phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <a href={`tel:${property.owner_phone}`} className="hover:text-primary">
-                          {property.owner_phone}
-                        </a>
-                      </div>
-                    )}
-                    {property?.owner_email && (
+                    
+                    {/* All Phones */}
+                    {(() => {
+                      const phones = [
+                        { num: property?.owner_phone, type: (property as any)?.phone_1_type, dnc: (property as any)?.phone_1_dnc, label: 'Tel 1' },
+                        { num: (property as any)?.phone_2, type: (property as any)?.phone_2_type, dnc: (property as any)?.phone_2_dnc, label: 'Tel 2' },
+                        { num: (property as any)?.phone_3, type: (property as any)?.phone_3_type, dnc: (property as any)?.phone_3_dnc, label: 'Tel 3' },
+                        { num: (property as any)?.phone_4, type: (property as any)?.phone_4_type, dnc: (property as any)?.phone_4_dnc, label: 'Tel 4' },
+                        { num: (property as any)?.phone_5, type: (property as any)?.phone_5_type, dnc: (property as any)?.phone_5_dnc, label: 'Tel 5' },
+                      ].filter(p => p.num);
+                      
+                      if (phones.length === 0) {
+                        return (
+                          <div className="flex items-center gap-2 p-2 rounded bg-destructive/10 border border-destructive/20">
+                            <Phone className="h-4 w-4 text-destructive" />
+                            <span className="text-destructive text-xs font-medium">Sin teléfono — Requiere skip-tracing</span>
+                          </div>
+                        );
+                      }
+                      
+                      return phones.map((p, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <a href={`tel:${p.num}`} className="hover:text-primary font-mono text-xs">{p.num}</a>
+                          {p.type && <Badge variant="secondary" className="text-[9px] px-1">{p.type}</Badge>}
+                          {p.dnc && <Badge variant="destructive" className="text-[9px] px-1">DNC</Badge>}
+                        </div>
+                      ));
+                    })()}
+
+                    {/* Email */}
+                    {property?.owner_email ? (
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
-                        <a href={`mailto:${property.owner_email}`} className="hover:text-primary">
-                          {property.owner_email}
-                        </a>
+                        <a href={`mailto:${property.owner_email}`} className="hover:text-primary text-xs">{property.owner_email}</a>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        <span className="text-xs">Sin email</span>
                       </div>
                     )}
+
+                    <Separator />
+                    
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <span>Tenencia: {property?.owner_tenure_years ? `${property.owner_tenure_years} años` : 'N/A'}</span>
                     </div>
+                    {(property as any)?.is_litigator && (
+                      <div className="flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="text-xs font-medium">⚠️ LITIGATOR — Precaución al contactar</span>
+                      </div>
+                    )}
+                    {(property as any)?.do_not_mail && (
+                      <div className="flex items-center gap-2 text-warning">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="text-xs font-medium">🚫 DO NOT MAIL</span>
+                      </div>
+                    )}
                   </div>
                 </Card>
               </div>
+
+              {/* Distress Signals Detail */}
+              {(() => {
+                const bkDate = (property as any)?.bk_date;
+                const divorceDate = (property as any)?.divorce_date;
+                const prefcDate = (property as any)?.prefc_recording_date;
+                const prefcBalance = (property as any)?.prefc_unpaid_balance;
+                const prefcDefault = (property as any)?.prefc_default_amount;
+                const prefcBid = (property as any)?.prefc_opening_bid;
+                const lienType = (property as any)?.lien_type;
+                const lienAmount = (property as any)?.lien_amount;
+                const mlsAgent = (property as any)?.mls_agent_name;
+                const mlsAgentPhone = (property as any)?.mls_agent_phone;
+                const mlsAgentEmail = (property as any)?.mls_agent_email;
+                const hasDistress = bkDate || divorceDate || prefcDate || lienType || mlsAgent;
+                
+                if (!hasDistress) return null;
+                
+                return (
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-warning" />
+                      Señales de Distress
+                    </h3>
+                    <Card variant="glass" className="p-4 space-y-3 text-sm">
+                      {prefcDate && (
+                        <div className="p-2 rounded bg-destructive/10 border border-destructive/20">
+                          <p className="text-xs font-semibold text-destructive">🔨 Pre-Foreclosure</p>
+                          <div className="grid grid-cols-2 gap-2 mt-1 text-xs">
+                            <div><span className="text-muted-foreground">Recording:</span> {format(new Date(prefcDate), "d MMM yyyy", { locale: es })}</div>
+                            {prefcBalance && <div><span className="text-muted-foreground">Balance:</span> ${Number(prefcBalance).toLocaleString()}</div>}
+                            {prefcDefault && <div><span className="text-muted-foreground">Default:</span> ${Number(prefcDefault).toLocaleString()}</div>}
+                            {prefcBid && <div><span className="text-muted-foreground">Opening Bid:</span> ${Number(prefcBid).toLocaleString()}</div>}
+                          </div>
+                        </div>
+                      )}
+                      {bkDate && (
+                        <div className="p-2 rounded bg-warning/10 border border-warning/20">
+                          <p className="text-xs font-semibold text-warning">⚖️ Bankruptcy</p>
+                          <p className="text-xs mt-1">Fecha: {format(new Date(bkDate), "d MMM yyyy", { locale: es })}</p>
+                        </div>
+                      )}
+                      {divorceDate && (
+                        <div className="p-2 rounded bg-accent/10 border border-accent/20">
+                          <p className="text-xs font-semibold text-accent">💔 Divorcio</p>
+                          <p className="text-xs mt-1">Fecha: {format(new Date(divorceDate), "d MMM yyyy", { locale: es })}</p>
+                        </div>
+                      )}
+                      {lienType && (
+                        <div className="p-2 rounded bg-warning/10 border border-warning/20">
+                          <p className="text-xs font-semibold text-warning">🔗 Lien: {lienType}</p>
+                          {lienAmount && <p className="text-xs mt-1">Monto: ${Number(lienAmount).toLocaleString()}</p>}
+                        </div>
+                      )}
+                      {mlsAgent && (
+                        <div className="p-2 rounded bg-primary/10 border border-primary/20">
+                          <p className="text-xs font-semibold text-primary">🏠 Agente MLS</p>
+                          <div className="text-xs mt-1 space-y-0.5">
+                            <p>{mlsAgent}</p>
+                            {mlsAgentPhone && <p><a href={`tel:${mlsAgentPhone}`} className="hover:text-primary">{mlsAgentPhone}</a></p>}
+                            {mlsAgentEmail && <p><a href={`mailto:${mlsAgentEmail}`} className="hover:text-primary">{mlsAgentEmail}</a></p>}
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  </div>
+                );
+              })()}
 
               {/* Auction Date Countdown */}
               {property?.is_foreclosure && (
