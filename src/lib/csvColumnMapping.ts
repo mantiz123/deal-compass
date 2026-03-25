@@ -361,9 +361,20 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'est_remaining_balance',
     label: 'Balance Restante Estimado',
-    aliases: ['estremainingbalanceofopenloans', 'remainingbalance', 'mortgagebalance', 'loanbalance', 'estremainingbalance'],
+    aliases: ['estremainingbalanceofopenloans', 'remainingbalance', 'mortgagebalance', 'loanbalance', 'estremainingbalance', 'openmortgagebalance', 'openmortgagebal'],
     required: false,
     transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
+  },
+  {
+    key: 'auction_date',
+    label: 'Fecha de Subasta',
+    aliases: ['auctiondate', 'foreclosuresaledate', 'saledate_foreclosure', 'trusteedatesale', 'sheriffsaledate'],
+    required: false,
+    transform: (value: string) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+    },
   },
 ];
 
