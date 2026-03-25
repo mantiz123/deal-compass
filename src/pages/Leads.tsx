@@ -605,6 +605,26 @@ const Leads = () => {
                           <p className="text-xs text-muted-foreground">
                             {lead.source || 'Sin fuente'}
                           </p>
+                          {(() => {
+                            const p = lead.property;
+                            const hasPhone = !!(p?.owner_phone || p?.phone_2 || p?.phone_3 || p?.phone_4 || p?.phone_5);
+                            const hasEmail = !!p?.owner_email;
+                            if (!hasPhone && !hasEmail) {
+                              return (
+                                <Badge variant="destructive" className="text-[9px] mt-1 px-1.5 py-0">
+                                  📵 SIN CONTACTO
+                                </Badge>
+                              );
+                            }
+                            if (!hasPhone) {
+                              return (
+                                <Badge variant="warning" className="text-[9px] mt-1 px-1.5 py-0">
+                                  📵 SIN TEL
+                                </Badge>
+                              );
+                            }
+                            return null;
+                          })()}
                         </td>
                         <td className="p-4">
                           {lead.piw_score !== null ? (
