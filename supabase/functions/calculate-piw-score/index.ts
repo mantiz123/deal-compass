@@ -383,7 +383,27 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
     lines.push(`- Eviction History: ${p.eviction_count} evictions (+8 pts burned-out landlord)`);
   }
   
-  if (p.last_refinance_date) lines.push(`- Last Refinance: ${p.last_refinance_date}`);
+  // Bankruptcy
+  if (p.bk_date) {
+    const bkDate = new Date(p.bk_date);
+    const yearsSinceBk = (Date.now() - bkDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceBk <= 2) {
+      lines.push(`- 🚨 BANKRUPTCY: ${p.bk_date} (${yearsSinceBk.toFixed(1)} years ago) (+12 pts - severe distress)`);
+    } else {
+      lines.push(`- Bankruptcy: ${p.bk_date} (${yearsSinceBk.toFixed(1)} years ago, older - reduced impact)`);
+    }
+  }
+  
+  // Divorce
+  if (p.divorce_date) {
+    const divDate = new Date(p.divorce_date);
+    const yearsSinceDiv = (Date.now() - divDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceDiv <= 2) {
+      lines.push(`- 🚨 DIVORCE: ${p.divorce_date} (${yearsSinceDiv.toFixed(1)} years ago) (+10 pts - forced sale likely)`);
+    } else {
+      lines.push(`- Divorce: ${p.divorce_date} (${yearsSinceDiv.toFixed(1)} years ago, older - reduced impact)`);
+    }
+  }
   if (p.mortgage_age_years != null) {
     lines.push(`- Mortgage Age: ${p.mortgage_age_years} years${p.mortgage_age_years > 15 ? ' (HIGH EQUITY likely)' : ''}`);
   }
@@ -484,6 +504,20 @@ function calculateFallbackScore(p: PropertyData): any {
   if (p.eviction_count && p.eviction_count > 0) sellerMotivation += 8;
   if (p.owner_type === 'corporation') sellerMotivation += 5;
   if (p.mailing_address_different) sellerMotivation += 3;
+  
+  // Bankruptcy (within 2 years)
+  if (p.bk_date) {
+    const yearsSinceBk = (Date.now() - new Date(p.bk_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceBk <= 2) sellerMotivation += 12;
+    else if (yearsSinceBk <= 5) sellerMotivation += 6;
+  }
+  
+  // Divorce (within 2 years)
+  if (p.divorce_date) {
+    const yearsSinceDiv = (Date.now() - new Date(p.divorce_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceDiv <= 2) sellerMotivation += 10;
+    else if (yearsSinceDiv <= 5) sellerMotivation += 5;
+  }
   
   sellerMotivation = Math.min(40, sellerMotivation);
   
