@@ -21,7 +21,7 @@ export const CSVImporter = () => {
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [source, setSource] = useState<string>('PropWire');
   const [calculatePIW, setCalculatePIW] = useState<boolean>(true);
-  const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: string[]; skippedSold?: number; hotLeadsNoPhone?: string[] } | null>(null);
 
   const importMutation = useCSVImport();
 
