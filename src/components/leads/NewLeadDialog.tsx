@@ -215,7 +215,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
             ) : (
               <>
                 <Home className="h-5 w-5 text-primary" />
-                Nuevo Lead - 20 Variables PIW
+                Nuevo Lead - 20 Variables K-Score
               </>
             )}
           </DialogTitle>

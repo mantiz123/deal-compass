@@ -109,9 +109,9 @@ export const LeadsDelDia = () => {
         {leadsWithSpread.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No hay leads con PIW Score calculado</p>
+            <p className="text-sm">No hay leads con K-Score calculado</p>
             <Button variant="link" size="sm" asChild className="mt-2">
-              <Link to="/leads">Calcular PIW Scores</Link>
+              <Link to="/leads">Calcular K-Scores</Link>
             </Button>
           </div>
         ) : (
@@ -152,7 +152,7 @@ export const LeadsDelDia = () => {
                       {index + 1}
                     </div>
 
-                    {/* PIW Score */}
+                    {/* K-Score */}
                     <div className="flex-shrink-0">
                       <KScoreGauge score={lead.piw_score || 0} size="sm" />
                     </div>
