@@ -36,6 +36,13 @@ export const useCSVImport = () => {
           try {
             const propertyData = transformRow(row, mappings);
             
+            // === FILTER: Skip SOLD properties ===
+            const mlsStatus = propertyData.mls_status?.toUpperCase?.() || null;
+            if (mlsStatus === 'SOLD') {
+              result.skippedSold++;
+              continue;
+            }
+            
             if (!propertyData.address || !propertyData.city || !propertyData.state || !propertyData.zip_code) {
               result.failed++;
               result.errors.push(`Fila ${i + batch.indexOf(row) + 2}: Faltan campos requeridos`);
