@@ -224,7 +224,7 @@ export const useCSVImport = () => {
                 tax_debt: propertyData.tax_debt || null,
                 mortgage_balance: propertyData.est_remaining_balance || null,
                 auction_date: propertyData.auction_date || null,
-                // New fields
+                // Multi-phone
                 phone_2: propertyData.phone_2 || null,
                 phone_3: propertyData.phone_3 || null,
                 phone_4: propertyData.phone_4 || null,
@@ -234,12 +234,35 @@ export const useCSVImport = () => {
                 phone_3_dnc: propertyData.phone_3_dnc || false,
                 phone_4_dnc: propertyData.phone_4_dnc || false,
                 phone_5_dnc: propertyData.phone_5_dnc || false,
+                phone_1_type: propertyData.phone_1_type || null,
+                phone_2_type: propertyData.phone_2_type || null,
+                phone_3_type: propertyData.phone_3_type || null,
+                phone_4_type: propertyData.phone_4_type || null,
+                phone_5_type: propertyData.phone_5_type || null,
                 property_condition: propertyData.property_condition || null,
                 exterior_condition: propertyData.exterior_condition || null,
                 is_litigator: propertyData.is_litigator || false,
                 do_not_mail: propertyData.do_not_mail || false,
                 county: propertyData.county || null,
                 apn: propertyData.apn || null,
+                // Distress signals
+                bk_date: propertyData.bk_date || null,
+                divorce_date: propertyData.divorce_date || null,
+                // Pre-FC details
+                prefc_recording_date: propertyData.prefc_recording_date || null,
+                prefc_unpaid_balance: propertyData.prefc_unpaid_balance || null,
+                prefc_default_amount: propertyData.prefc_default_amount || null,
+                prefc_opening_bid: propertyData.prefc_opening_bid || null,
+                // Liens
+                lien_type: propertyData.lien_type || null,
+                lien_amount: propertyData.lien_amount || null,
+                lien_date: propertyData.lien_date || null,
+                // MLS Agent
+                mls_agent_name: propertyData.mls_agent_name || null,
+                mls_agent_phone: propertyData.mls_agent_phone || null,
+                mls_agent_email: propertyData.mls_agent_email || null,
+                // Rent
+                estimated_monthly_rent: propertyData.monthly_rent || null,
                 data_source: source,
                 data_fetched_at: new Date().toISOString(),
               })
