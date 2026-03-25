@@ -512,6 +512,35 @@ const Leads = () => {
                     <th className="p-4 font-medium">
                       <Tooltip>
                         <TooltipTrigger className="flex items-center gap-1 cursor-help">
+                          Net Equity $
+                          <AlertTriangle className="h-3 w-3 opacity-50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[260px]">
+                          <p className="text-xs">
+                            <strong>Equity Neto en Dólares</strong>: ARV menos el balance de hipoteca pendiente. Representa el margen real disponible en la propiedad. Mayor equity = más espacio para negociar y más ganancia potencial.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </th>
+                    <th className="p-4 font-medium">
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 cursor-help">
+                          Fee Rango
+                          <AlertTriangle className="h-3 w-3 opacity-50" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[280px]">
+                          <p className="text-xs">
+                            <strong>Assignment Fee Estimado</strong>: Rango recomendado de ganancia por cesión. Se calcula como un porcentaje del spread (MAO - Costo Adquisición).<br/>
+                            <strong>Conservador</strong>: 30% del spread<br/>
+                            <strong>Agresivo</strong>: 60% del spread<br/>
+                            Mínimo $5K. Si el spread es negativo no hay fee viable.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </th>
+                    <th className="p-4 font-medium">
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1 cursor-help">
                           Indicadores
                           <AlertTriangle className="h-3 w-3 opacity-50" />
                         </TooltipTrigger>
