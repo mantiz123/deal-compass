@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Layout } from "@/components/layout/Layout";
 import { StatsCard } from "@/components/dashboard/StatsCard";
-import { LeadsTable } from "@/components/dashboard/LeadsTable";
 import { LeadsDelDia } from "@/components/dashboard/LeadsDelDia";
 import { PipelinePreview } from "@/components/dashboard/PipelinePreview";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
@@ -19,7 +18,6 @@ const Index = () => {
   const { data: stats, isLoading } = useDashboardStats();
   const { user } = useAuth();
   
-  // Get user's name from metadata or email
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Usuario';
 
   return (
@@ -41,7 +39,7 @@ const Index = () => {
           </div>
           <div className="flex gap-2 sm:gap-3">
             <Button variant="outline" size="sm" asChild>
-              <Link to="/leads">Import Leads</Link>
+              <Link to="/import">Import Leads</Link>
             </Button>
             <Button size="sm" asChild>
               <Link to="/leads">
@@ -104,24 +102,23 @@ const Index = () => {
         <StaleLeadsAlert />
       </div>
 
-      {/* Leads del Día - Full Width */}
+      {/* Centro de Acción - Full Width */}
       <div className="mb-6">
         <LeadsDelDia />
       </div>
 
-      {/* Main Content Grid */}
+      {/* Secondary Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column - Leads Table */}
+        {/* Left Column - Pipeline + Activity */}
         <div className="lg:col-span-2 space-y-6">
-          <LeadsTable />
+          <PipelinePreview />
+          <ActivityFeed />
         </div>
 
-        {/* Right Column - Pipeline, Liquidity & Dead Leads */}
+        {/* Right Column - Buyers & Dead Leads */}
         <div className="space-y-6">
-          <PipelinePreview />
           <BuyerLiquidityWidget />
           <DeadLeadsAnalytics />
-          <ActivityFeed />
         </div>
       </div>
     </Layout>
