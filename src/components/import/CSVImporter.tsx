@@ -21,7 +21,7 @@ export const CSVImporter = () => {
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [source, setSource] = useState<string>('PropWire');
   const [calculatePIW, setCalculatePIW] = useState<boolean>(true);
-  const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: string[]; skippedSold?: number; hotLeadsNoPhone?: string[] } | null>(null);
 
   const importMutation = useCSVImport();
 
@@ -269,6 +269,29 @@ export const CSVImporter = () => {
                 <div className="text-sm text-destructive/80">Registros con errores</div>
               </div>
             </div>
+
+            {(importResult.skippedSold ?? 0) > 0 && (
+              <div className="p-3 rounded-lg bg-muted border border-border text-sm">
+                📋 {importResult.skippedSold} propiedades SOLD descartadas automáticamente
+              </div>
+            )}
+
+            {importResult.hotLeadsNoPhone && importResult.hotLeadsNoPhone.length > 0 && (
+              <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-2">
+                <div className="flex items-center gap-2 text-amber-400 font-semibold">
+                  <AlertTriangle className="h-4 w-4" />
+                  🔥 {importResult.hotLeadsNoPhone.length} propiedades HOT sin teléfono — busca el contacto manualmente
+                </div>
+                <ul className="text-sm text-amber-300/80 list-disc list-inside space-y-1">
+                  {importResult.hotLeadsNoPhone.map((addr, i) => (
+                    <li key={i}>{addr}</li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground mt-2">
+                  💡 Tip: Busca en TruePeopleSearch, WhitePages o FastPeopleSearch. También puedes ir al condado y buscar por APN.
+                </p>
+              </div>
+            )}
 
             {importResult.errors.length > 0 && (
               <div className="space-y-2">

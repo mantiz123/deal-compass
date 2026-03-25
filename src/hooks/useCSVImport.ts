@@ -7,6 +7,8 @@ interface ImportResult {
   success: number;
   failed: number;
   errors: string[];
+  skippedSold: number;
+  hotLeadsNoPhone: string[];
 }
 
 interface ImportOptions {
@@ -22,7 +24,7 @@ export const useCSVImport = () => {
 
   return useMutation({
     mutationFn: async ({ rows, mappings, source, calculatePIW }: ImportOptions): Promise<ImportResult> => {
-      const result: ImportResult = { success: 0, failed: 0, errors: [] };
+      const result: ImportResult = { success: 0, failed: 0, errors: [], skippedSold: 0, hotLeadsNoPhone: [] };
       let skippedDuplicates = 0;
       let piwCalculated = 0;
       const batchSize = 50;
@@ -33,6 +35,13 @@ export const useCSVImport = () => {
         for (const row of batch) {
           try {
             const propertyData = transformRow(row, mappings);
+            
+            // === FILTER: Skip SOLD properties ===
+            const mlsStatus = propertyData.mls_status?.toUpperCase?.() || null;
+            if (mlsStatus === 'SOLD') {
+              result.skippedSold++;
+              continue;
+            }
             
             if (!propertyData.address || !propertyData.city || !propertyData.state || !propertyData.zip_code) {
               result.failed++;
@@ -136,7 +145,7 @@ export const useCSVImport = () => {
             }
             
             // === DERIVED FIELD: MLS Status signals ===
-            const mlsStatus = propertyData.mls_status || null;
+            // mlsStatus already defined above (SOLD filter)
             // FAIL or EXPIRED on MLS = frustrated seller → additional DOM signal
             if (mlsStatus && (mlsStatus === 'FAIL' || mlsStatus === 'EXPIRED')) {
               // If no DOM, estimate from MLS date; if still no data, set minimum DOM signal
@@ -215,6 +224,22 @@ export const useCSVImport = () => {
                 tax_debt: propertyData.tax_debt || null,
                 mortgage_balance: propertyData.est_remaining_balance || null,
                 auction_date: propertyData.auction_date || null,
+                // New fields
+                phone_2: propertyData.phone_2 || null,
+                phone_3: propertyData.phone_3 || null,
+                phone_4: propertyData.phone_4 || null,
+                phone_5: propertyData.phone_5 || null,
+                phone_1_dnc: propertyData.phone_1_dnc || false,
+                phone_2_dnc: propertyData.phone_2_dnc || false,
+                phone_3_dnc: propertyData.phone_3_dnc || false,
+                phone_4_dnc: propertyData.phone_4_dnc || false,
+                phone_5_dnc: propertyData.phone_5_dnc || false,
+                property_condition: propertyData.property_condition || null,
+                exterior_condition: propertyData.exterior_condition || null,
+                is_litigator: propertyData.is_litigator || false,
+                do_not_mail: propertyData.do_not_mail || false,
+                county: propertyData.county || null,
+                apn: propertyData.apn || null,
                 data_source: source,
                 data_fetched_at: new Date().toISOString(),
               })
@@ -225,6 +250,17 @@ export const useCSVImport = () => {
               result.failed++;
               result.errors.push(`Fila ${i + batch.indexOf(row) + 2}: ${propertyError.message}`);
               continue;
+            }
+            
+            // === HOT LEAD WITHOUT PHONE ALERT ===
+            const netEquity = (property.arv || 0) - (property.mortgage_balance || 0);
+            const hasPhone = !!(property.owner_phone || property.phone_2 || property.phone_3 || property.phone_4 || property.phone_5);
+            const isHotOpportunity = (
+              netEquity > 50000 &&
+              (isForeclosure || isAbsentee || (daysOnMarket && daysOnMarket > 90) || mlsStatus === 'FAIL' || mlsStatus === 'EXPIRED')
+            );
+            if (isHotOpportunity && !hasPhone) {
+              result.hotLeadsNoPhone.push(`${property.address}, ${property.city} (Equity: $${netEquity.toLocaleString()})`);
             }
             
             const leadInsertData: any = { property_id: property.id, source: source, status: 'captacion' as const };
@@ -276,6 +312,7 @@ export const useCSVImport = () => {
       const parts: string[] = [];
       if (result.success > 0) parts.push(`${result.success} nuevos leads importados`);
       if (result.skippedDuplicates > 0) parts.push(`${result.skippedDuplicates} duplicados omitidos`);
+      if (result.skippedSold > 0) parts.push(`${result.skippedSold} SOLD descartados`);
       if (result.piwCalculated > 0) parts.push(`${result.piwCalculated} PIW-Scores calculados`);
       if (result.failed > 0) parts.push(`${result.failed} fallaron`);
       
@@ -284,10 +321,10 @@ export const useCSVImport = () => {
           title: 'Importación completada',
           description: parts.join(', '),
         });
-      } else if (result.skippedDuplicates > 0 && result.failed === 0) {
+      } else if ((result.skippedDuplicates > 0 || result.skippedSold > 0) && result.failed === 0) {
         toast({
-          title: 'Sin cambios',
-          description: `${result.skippedDuplicates} propiedades ya existían en el sistema`,
+          title: 'Sin cambios nuevos',
+          description: parts.join(', '),
         });
       } else if (result.failed > 0) {
         toast({
@@ -295,6 +332,16 @@ export const useCSVImport = () => {
           description: `Todos los ${result.failed} registros fallaron`,
           variant: 'destructive',
         });
+      }
+      
+      // Alert for hot leads without phone numbers
+      if (result.hotLeadsNoPhone && result.hotLeadsNoPhone.length > 0) {
+        setTimeout(() => {
+          toast({
+            title: `🔥 ${result.hotLeadsNoPhone.length} propiedades HOT sin teléfono`,
+            description: `Busca el contacto manualmente: ${result.hotLeadsNoPhone.slice(0, 3).join(' | ')}${result.hotLeadsNoPhone.length > 3 ? ` (+${result.hotLeadsNoPhone.length - 3} más)` : ''}`,
+          });
+        }, 2000);
       }
     },
     onError: (error: Error) => {

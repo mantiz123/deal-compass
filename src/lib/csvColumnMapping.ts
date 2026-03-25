@@ -376,6 +376,129 @@ export const propertyFields: PropertyField[] = [
       return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
     },
   },
+  // === Multi-phone support (PropStream exports Phone 1-5) ===
+  {
+    key: 'phone_2',
+    label: 'Teléfono 2',
+    aliases: ['phone2'],
+    required: false,
+  },
+  {
+    key: 'phone_3',
+    label: 'Teléfono 3',
+    aliases: ['phone3'],
+    required: false,
+  },
+  {
+    key: 'phone_4',
+    label: 'Teléfono 4',
+    aliases: ['phone4'],
+    required: false,
+  },
+  {
+    key: 'phone_5',
+    label: 'Teléfono 5',
+    aliases: ['phone5'],
+    required: false,
+  },
+  // === DNC flags ===
+  {
+    key: 'phone_1_dnc',
+    label: 'Phone 1 DNC',
+    aliases: ['phone1dnc'],
+    required: false,
+    transform: (value: string) => {
+      const n = normalize(value);
+      return n === 'dnc' || n === 'yes' || n === 'y' || n === 'true' || n === '1';
+    },
+  },
+  {
+    key: 'phone_2_dnc',
+    label: 'Phone 2 DNC',
+    aliases: ['phone2dnc'],
+    required: false,
+    transform: (value: string) => {
+      const n = normalize(value);
+      return n === 'dnc' || n === 'yes' || n === 'y' || n === 'true' || n === '1';
+    },
+  },
+  {
+    key: 'phone_3_dnc',
+    label: 'Phone 3 DNC',
+    aliases: ['phone3dnc'],
+    required: false,
+    transform: (value: string) => {
+      const n = normalize(value);
+      return n === 'dnc' || n === 'yes' || n === 'y' || n === 'true' || n === '1';
+    },
+  },
+  {
+    key: 'phone_4_dnc',
+    label: 'Phone 4 DNC',
+    aliases: ['phone4dnc'],
+    required: false,
+    transform: (value: string) => {
+      const n = normalize(value);
+      return n === 'dnc' || n === 'yes' || n === 'y' || n === 'true' || n === '1';
+    },
+  },
+  {
+    key: 'phone_5_dnc',
+    label: 'Phone 5 DNC',
+    aliases: ['phone5dnc'],
+    required: false,
+    transform: (value: string) => {
+      const n = normalize(value);
+      return n === 'dnc' || n === 'yes' || n === 'y' || n === 'true' || n === '1';
+    },
+  },
+  // === Property Condition ===
+  {
+    key: 'property_condition',
+    label: 'Condición General',
+    aliases: ['totalcondition', 'propertycondition', 'overallcondition', 'condition'],
+    required: false,
+  },
+  {
+    key: 'exterior_condition',
+    label: 'Condición Exterior',
+    aliases: ['exteriorcondition'],
+    required: false,
+  },
+  // === Compliance flags ===
+  {
+    key: 'is_litigator',
+    label: 'Litigante',
+    aliases: ['litigator', 'islitigator'],
+    required: false,
+    transform: (value: string) => {
+      const n = normalize(value);
+      return n === 'yes' || n === 'y' || n === 'true' || n === '1';
+    },
+  },
+  {
+    key: 'do_not_mail',
+    label: 'Do Not Mail',
+    aliases: ['donotmail', 'dnm', 'nomailing'],
+    required: false,
+    transform: (value: string) => {
+      const n = normalize(value);
+      return n === 'yes' || n === 'y' || n === 'true' || n === '1';
+    },
+  },
+  // === Property identification ===
+  {
+    key: 'county',
+    label: 'Condado',
+    aliases: ['county', 'condado'],
+    required: false,
+  },
+  {
+    key: 'apn',
+    label: 'APN (Parcel Number)',
+    aliases: ['apn', 'parcelnumber', 'parcelid', 'assessorparcelnumber'],
+    required: false,
+  },
 ];
 
 export interface ColumnMapping {
