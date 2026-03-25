@@ -622,6 +622,7 @@ export type Database = {
           active_liens_count: number | null
           address: string
           arv: number | null
+          auction_date: string | null
           bathrooms: number | null
           bedrooms: number | null
           city: string
@@ -647,6 +648,7 @@ export type Database = {
           mao: number | null
           median_household_income: number | null
           mortgage_age_years: number | null
+          mortgage_balance: number | null
           neighborhood_vacancy_rate: number | null
           notes: string | null
           owner_email: string | null
@@ -676,6 +678,7 @@ export type Database = {
           active_liens_count?: number | null
           address: string
           arv?: number | null
+          auction_date?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
           city: string
@@ -701,6 +704,7 @@ export type Database = {
           mao?: number | null
           median_household_income?: number | null
           mortgage_age_years?: number | null
+          mortgage_balance?: number | null
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
           owner_email?: string | null
@@ -730,6 +734,7 @@ export type Database = {
           active_liens_count?: number | null
           address?: string
           arv?: number | null
+          auction_date?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string
@@ -755,6 +760,7 @@ export type Database = {
           mao?: number | null
           median_household_income?: number | null
           mortgage_age_years?: number | null
+          mortgage_balance?: number | null
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
           owner_email?: string | null
