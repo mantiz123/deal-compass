@@ -14,6 +14,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json().catch(() => ({}));
@@ -69,8 +70,9 @@ serve(async (req) => {
         const calcResponse = await fetch(`${supabaseUrl}/functions/v1/calculate-piw-score`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${supabaseKey}`,
+            'Authorization': `Bearer ${anonKey}`,
             'Content-Type': 'application/json',
+            'apikey': anonKey,
           },
           body: JSON.stringify({ leadId: lead.id, propertyData: property }),
         });
@@ -94,8 +96,9 @@ serve(async (req) => {
             const retryResponse = await fetch(`${supabaseUrl}/functions/v1/calculate-piw-score`, {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${supabaseKey}`,
+                'Authorization': `Bearer ${anonKey}`,
                 'Content-Type': 'application/json',
+                'apikey': anonKey,
               },
               body: JSON.stringify({ leadId: lead.id, propertyData: property }),
             });
