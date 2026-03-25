@@ -10,7 +10,7 @@ import { useLeads, Lead } from "@/hooks/useLeads";
 import { useLatestPropertyAnalysis, SavedAnalysis } from "@/hooks/usePropertyAnalysis";
 import { useCompsSummary } from "@/hooks/usePropertyComps";
 import { GitCompare, Home, DollarSign, TrendingUp, AlertTriangle, Target, ArrowRight } from "lucide-react";
-import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
+import { KScoreGauge } from "@/components/dashboard/KScoreGauge";
 
 interface PropertyColumnProps {
   lead: Lead | null;
@@ -43,7 +43,7 @@ const PropertyColumn = ({ lead, analysis, compsSummary, isLoading }: PropertyCol
         <h3 className="font-semibold text-lg truncate">{property?.address}</h3>
         <p className="text-sm text-muted-foreground">{property?.city}, {property?.state} {property?.zip_code}</p>
         <div className="flex justify-center mt-2">
-          <PIWScoreGauge score={lead.piw_score || 0} size="sm" />
+          <KScoreGauge score={lead.piw_score || 0} size="sm" />
         </div>
       </div>
 

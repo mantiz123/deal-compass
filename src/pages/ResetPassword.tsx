@@ -105,7 +105,7 @@ export default function ResetPassword() {
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
               <TrendingUp className="w-7 h-7 text-primary-foreground" />
             </div>
-            <span className="text-3xl font-bold text-foreground">PIW Navigator</span>
+            <span className="text-3xl font-bold text-foreground">KLOSE</span>
           </div>
         </div>
 

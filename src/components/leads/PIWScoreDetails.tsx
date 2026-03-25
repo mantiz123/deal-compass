@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
+import { KScoreGauge } from "@/components/dashboard/KScoreGauge";
 import { SendDealPackageSheet } from "@/components/buyers/SendDealPackageSheet";
 import { Lead } from "@/hooks/useLeads";
 import { 
@@ -58,7 +58,7 @@ export function PIWScoreDetails({ lead, open, onOpenChange, onRecalculate, isCal
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            Análisis PIW-Score
+            Análisis K-Score
           </SheetTitle>
           <SheetDescription>
             {property?.address}, {property?.city}
@@ -70,7 +70,7 @@ export function PIWScoreDetails({ lead, open, onOpenChange, onRecalculate, isCal
           <div className="flex items-center justify-between">
             <div className="flex-1">
               {lead.piw_score !== null ? (
-                <PIWScoreGauge score={lead.piw_score} size="lg" />
+                <KScoreGauge score={lead.piw_score} size="lg" />
               ) : (
                 <div className="text-center py-8">
                   <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-2" />

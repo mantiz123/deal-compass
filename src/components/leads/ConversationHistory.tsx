@@ -40,7 +40,7 @@ export function ConversationHistory({ leadId }: ConversationHistoryProps) {
       <div className="text-center py-12 text-muted-foreground">
         <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
         <p className="text-lg font-medium">Sin conversaciones registradas</p>
-        <p className="text-sm">Registra tu primera conversación con el seller para ajustar el PIW-Score</p>
+        <p className="text-sm">Registra tu primera conversación con el seller para ajustar el K-Score</p>
       </div>
     );
   }

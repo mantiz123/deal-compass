@@ -182,7 +182,7 @@ export const CSVImporter = () => {
                 </div>
                 <div className="flex items-center justify-between p-4 rounded-lg border">
                   <div>
-                    <Label htmlFor="calculate-piw">Calcular PIW-Score</Label>
+                    <Label htmlFor="calculate-piw">Calcular K-Score</Label>
                     <p className="text-sm text-muted-foreground">
                       Asignar prioridad automáticamente
                     </p>

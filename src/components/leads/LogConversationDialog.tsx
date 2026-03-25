@@ -115,7 +115,7 @@ export function LogConversationDialog({
           <DialogDescription>
             {propertyAddress && <span className="font-medium">{propertyAddress}</span>}
             <br />
-            PIW-Score actual: <span className="font-bold text-primary">{currentPiwScore}</span>
+            K-Score actual: <span className="font-bold text-primary">{currentPiwScore}</span>
           </DialogDescription>
         </DialogHeader>
 

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PIWScoreGauge } from "./PIWScoreGauge";
+import { KScoreGauge } from "./KScoreGauge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { MoreHorizontal, Phone, Mail, MapPin, ArrowRight } from "lucide-react";
@@ -27,7 +27,7 @@ export function LeadsTable() {
   const { data: result, isLoading } = useLeads();
   const leads = result?.data;
   
-  // Get top 5 leads by PIW score
+  // Get top 5 leads by K-Score
   const topLeads = leads
     ?.filter(l => l.piw_score !== null)
     .sort((a, b) => (b.piw_score || 0) - (a.piw_score || 0))
@@ -60,7 +60,7 @@ export function LeadsTable() {
   return (
     <Card variant="glass">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-xl">Top Leads por PIW Score</CardTitle>
+        <CardTitle className="text-xl">Top Leads por K-Score</CardTitle>
         <Button variant="outline" size="sm" asChild>
           <Link to="/leads">
             Ver Todos
@@ -71,7 +71,7 @@ export function LeadsTable() {
       <CardContent>
         {topLeads.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <p>No hay leads con PIW Score calculado</p>
+            <p>No hay leads con K-Score calculado</p>
             <Button variant="outline" size="sm" className="mt-4" asChild>
               <Link to="/leads">Ir a Leads</Link>
             </Button>
@@ -83,7 +83,7 @@ export function LeadsTable() {
                 <tr className="border-b border-border text-left text-sm text-muted-foreground">
                   <th className="pb-4 font-medium">Propiedad</th>
                   <th className="pb-4 font-medium">Propietario</th>
-                  <th className="pb-4 font-medium">PIW Score</th>
+                  <th className="pb-4 font-medium">K-Score</th>
                   <th className="pb-4 font-medium">Est. Equity</th>
                   <th className="pb-4 font-medium">Prioridad</th>
                   <th className="pb-4 font-medium">Último Contacto</th>
@@ -112,7 +112,7 @@ export function LeadsTable() {
                         <p className="font-medium">{property?.owner_name || 'Desconocido'}</p>
                       </td>
                       <td className="py-4">
-                        <PIWScoreGauge score={lead.piw_score || 0} size="sm" />
+                        <KScoreGauge score={lead.piw_score || 0} size="sm" />
                       </td>
                       <td className="py-4">
                         {property?.equity_percent ? (

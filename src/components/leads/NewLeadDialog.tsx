@@ -215,14 +215,14 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
             ) : (
               <>
                 <Home className="h-5 w-5 text-primary" />
-                Nuevo Lead - 20 Variables PIW
+                Nuevo Lead - 20 Variables K-Score
               </>
             )}
           </DialogTitle>
           <DialogDescription>
             {mode === "realtor-referral" 
               ? "Ingreso rápido para propiedades referidas por Realtors" 
-              : "Ingresa los datos de la propiedad. Cuantas más variables completes, más preciso será el PIW-Score."}
+              : "Ingresa los datos de la propiedad. Cuantas más variables completes, más preciso será el K-Score."}
           </DialogDescription>
         </DialogHeader>
 
@@ -595,7 +595,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
                 <span className="font-semibold">Indicadores de Alta Motivación</span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Estos factores tienen el mayor peso en el PIW-Score (40% del total)
+                Estos factores tienen el mayor peso en el K-Score (40% del total)
               </p>
             </div>
 
@@ -702,7 +702,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
                 <span className="font-semibold">Viabilidad Financiera</span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Estos datos determinan si el trato es rentable (35% del PIW-Score)
+                Estos datos determinan si el trato es rentable (35% del K-Score)
               </p>
             </div>
 

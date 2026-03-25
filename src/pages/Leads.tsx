@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
+import { KScoreGauge } from "@/components/dashboard/KScoreGauge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { PropertyComparisonSheet } from "@/components/leads/PropertyComparisonSheet";
@@ -162,7 +162,7 @@ const Leads = () => {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">Leads</h1>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Gestiona y califica tus leads con el scoring PIW impulsado por IA
+              Gestiona y califica tus leads con el scoring K-Score impulsado por IA
             </p>
           </div>
           <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -176,7 +176,7 @@ const Leads = () => {
                 try {
                   const { data: exportData } = await fetchExport();
                   const exportLeads = exportData || [];
-                  const headers = ['Nombre', 'Dirección', 'Teléfono', 'PIW Score', 'ARV', 'MAO', 'Spread', 'Estado', 'Días sin actividad'];
+                  const headers = ['Nombre', 'Dirección', 'Teléfono', 'K-Score', 'ARV', 'MAO', 'Spread', 'Estado', 'Días sin actividad'];
                   const rows = exportLeads.map(lead => {
                     const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
                     const mao = lead.property?.mao ? Number(lead.property.mao) : (arv > 0 ? Math.round(arv * 0.7 - (Number(lead.property?.repair_cost) || 0)) : 0);
@@ -363,10 +363,10 @@ const Leads = () => {
                 </Select>
               </div>
 
-              {/* PIW Score Range */}
+              {/* K-Score Range */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">
-                  PIW Score: {piwRange[0]} – {piwRange[1]}
+                  K-Score: {piwRange[0]} – {piwRange[1]}
                 </label>
                 <div className="pt-2 px-1">
                   <Slider
@@ -421,7 +421,7 @@ const Leads = () => {
             <Home className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold mb-2">No hay leads todavía</h3>
             <p className="text-muted-foreground mb-6">
-              Añade tu primer lead para comenzar a usar el sistema de scoring PIW con IA.
+              Añade tu primer lead para comenzar a usar el sistema de scoring K-Score con IA.
             </p>
             <Button onClick={() => setShowNewLeadDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -445,7 +445,7 @@ const Leads = () => {
                     <th className="p-4 font-medium">
                       <Tooltip>
                         <TooltipTrigger className="flex items-center gap-1 cursor-help">
-                          PIW Score
+                          K-Score
                           <AlertTriangle className="h-3 w-3 opacity-50" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-[250px]">
@@ -628,7 +628,7 @@ const Leads = () => {
                         </td>
                         <td className="p-4">
                           {lead.piw_score !== null ? (
-                            <PIWScoreGauge score={lead.piw_score} size="sm" />
+                            <KScoreGauge score={lead.piw_score} size="sm" />
                           ) : (
                             <Button
                               variant="outline"

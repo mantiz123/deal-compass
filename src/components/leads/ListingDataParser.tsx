@@ -274,7 +274,7 @@ export function ListingDataParser({
       
       // Trigger PIW recalculation if enabled and callback provided
       if (recalculatePIW && onRecalculatePIW) {
-        toast.info('Recalculando PIW Score...');
+        toast.info('Recalculando K-Score...');
         onRecalculatePIW();
       }
 
@@ -688,7 +688,7 @@ export function ListingDataParser({
                     />
                     <div className="flex items-center gap-2 text-sm">
                       <Brain className="h-4 w-4 text-primary" />
-                      <span>Recalcular PIW Score después de aplicar</span>
+                      <span>Recalcular K-Score después de aplicar</span>
                     </div>
                   </div>
                 )}

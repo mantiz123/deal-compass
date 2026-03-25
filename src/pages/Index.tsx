@@ -87,7 +87,7 @@ const Index = () => {
               iconColor="text-success"
             />
             <StatsCard
-              title="PIW Score Prom."
+              title="K-Score Prom."
               value={stats?.avgPIWScore.toString() || "0"}
               change="Promedio de leads con score"
               changeType="neutral"
