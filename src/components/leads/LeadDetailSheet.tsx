@@ -572,6 +572,11 @@ export function LeadDetailSheet({
                 </Card>
               </div>
 
+              {/* Auction Date Countdown */}
+              {property?.is_foreclosure && (
+                <AuctionDateAlert auctionDate={property?.auction_date} />
+              )}
+
               {/* Indicators */}
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
