@@ -7,6 +7,8 @@ interface ImportResult {
   success: number;
   failed: number;
   errors: string[];
+  skippedSold: number;
+  hotLeadsNoPhone: string[];
 }
 
 interface ImportOptions {
