@@ -713,8 +713,100 @@ const Leads = () => {
                             );
                           })()}
                         </td>
+                        {/* Net Equity $ */}
                         <td className="p-4">
-                          <TooltipProvider>
+                          {(() => {
+                            const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
+                            const mortgageBalance = (lead.property as any)?.mortgage_balance ? Number((lead.property as any).mortgage_balance) : 0;
+                            const netEquity = arv > 0 && mortgageBalance > 0 ? arv - mortgageBalance : 0;
+                            
+                            if (netEquity === 0 && arv > 0 && mortgageBalance === 0) {
+                              // Has ARV but no mortgage data
+                              return (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <span className="text-muted-foreground text-xs">Sin datos hipoteca</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs">No hay balance de hipoteca registrado. Importa datos con "Open Mortgage Balance" para calcular el equity neto.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              );
+                            }
+                            
+                            if (netEquity === 0) return <span className="text-muted-foreground">-</span>;
+                            
+                            const equityPercent = arv > 0 ? Math.round((netEquity / arv) * 100) : 0;
+                            const color = netEquity > 100000 ? 'text-success' : netEquity > 50000 ? 'text-accent' : 'text-foreground';
+                            
+                            return (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <p className={`font-semibold ${color}`}>
+                                    ${netEquity.toLocaleString()}
+                                  </p>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-[220px]">
+                                  <p className="text-xs">
+                                    ARV (${arv.toLocaleString()}) - Hipoteca (${mortgageBalance.toLocaleString()}) = <strong>${netEquity.toLocaleString()}</strong> ({equityPercent}% equity)<br/>
+                                    {netEquity > 100000 ? '✅ Excelente margen para deal' : netEquity > 50000 ? '👍 Buen margen' : '⚠️ Margen ajustado'}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })()}
+                        </td>
+                        {/* Assignment Fee Range */}
+                        <td className="p-4">
+                          {(() => {
+                            const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
+                            const repairCost = lead.property?.repair_cost ? Number(lead.property.repair_cost) : 0;
+                            const savedMao = lead.property?.mao ? Number(lead.property.mao) : 0;
+                            const mao = savedMao || (arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0);
+                            const offerAmount = lead.offer_amount ? Number(lead.offer_amount) : 0;
+                            const listingPrice = lead.listing_price ? Number(lead.listing_price) : 0;
+                            const lastSalePrice = lead.property?.last_sale_price ? Number(lead.property.last_sale_price) : 0;
+                            const acquisitionCost = offerAmount || listingPrice || lastSalePrice;
+                            const spread = mao > 0 && acquisitionCost > 0 ? mao - acquisitionCost : 0;
+                            
+                            if (spread <= 0) return <span className="text-muted-foreground text-xs">-</span>;
+                            
+                            const feeMin = Math.max(5000, Math.round(spread * 0.3));
+                            const feeMax = Math.round(spread * 0.6);
+                            
+                            if (feeMax < 5000) return (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <span className="text-destructive text-xs font-medium">Bajo</span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">El spread de ${spread.toLocaleString()} es muy bajo para un assignment fee viable (mínimo $5K).</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                            
+                            return (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <div>
+                                    <p className="font-semibold text-success text-sm">
+                                      ${(feeMin/1000).toFixed(0)}K - ${(feeMax/1000).toFixed(0)}K
+                                    </p>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-[260px]">
+                                  <p className="text-xs">
+                                    <strong>Rango de Assignment Fee recomendado:</strong><br/>
+                                    Conservador (30%): <strong>${feeMin.toLocaleString()}</strong><br/>
+                                    Agresivo (60%): <strong>${feeMax.toLocaleString()}</strong><br/>
+                                    Basado en spread de ${spread.toLocaleString()}<br/>
+                                    <em>Tip: Empieza agresivo y negocia hacia abajo con el buyer.</em>
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })()}
+                        </td>
                             <div className="flex gap-1 flex-wrap max-w-[220px]">
                               {/* OUT-STATE: Owner lives in different state */}
                               {lead.property?.absentee_type === 'out_of_state' && (
