@@ -191,7 +191,7 @@ export const useCSVImport = () => {
                   .eq('id', existingProperty.id);
               }
 
-              // Recalculate PIW score with updated data
+              // Recalculate K-Score with updated data
               if (calculatePIW) {
                 const { data: existingLead } = await supabase
                   .from('leads')
@@ -445,7 +445,7 @@ export const useCSVImport = () => {
                   body: { leadId: lead.id, propertyData: property },
                 });
               } catch (piwError) {
-                console.warn('PIW Score calculation error:', piwError);
+                console.warn('K-Score calculation error:', piwError);
               }
             }
             
@@ -472,7 +472,7 @@ export const useCSVImport = () => {
       if (result.success > 0) parts.push(`${result.success} nuevos leads importados`);
       if (result.skippedDuplicates > 0) parts.push(`${result.skippedDuplicates} existentes actualizados`);
       if (result.skippedSold > 0) parts.push(`${result.skippedSold} SOLD descartados`);
-      if (result.piwCalculated > 0) parts.push(`${result.piwCalculated} PIW-Scores calculados`);
+      if (result.piwCalculated > 0) parts.push(`${result.piwCalculated} K-Scores calculados`);
       if (result.failed > 0) parts.push(`${result.failed} fallaron`);
       
       if (result.success > 0 || result.piwCalculated > 0) {

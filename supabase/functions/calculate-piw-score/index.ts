@@ -142,7 +142,7 @@ serve(async (req) => {
 
   try {
     const { leadId, propertyData } = await req.json();
-    console.log('Calculating PIW score for lead:', leadId);
+    console.log('Calculating K-Score for lead:', leadId);
 
     const result = calculateScore(propertyData);
 

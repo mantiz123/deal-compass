@@ -315,7 +315,7 @@ export function useCalculatePIWScore() {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       const priorityEmoji = data.priority === 'hot' ? '🔥' : data.priority === 'warm' ? '⚡' : '❄️';
       toast({
-        title: `PIW Score: ${data.score}% ${priorityEmoji}`,
+        title: `K-Score: ${data.score}% ${priorityEmoji}`,
         description: data.recommended_action,
       });
     },
@@ -326,7 +326,7 @@ export function useCalculatePIWScore() {
         description: message,
         variant: 'destructive',
       });
-      console.error('Error calculating PIW score:', error);
+      console.error('Error calculating K-Score:', error);
     },
   });
 }

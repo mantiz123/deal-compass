@@ -49,7 +49,7 @@ serve(async (req) => {
     } = conversationData;
 
     console.log('Processing conversation for lead:', leadId);
-    console.log('Current PIW Score:', currentPiwScore);
+    console.log('Current K-Score:', currentPiwScore);
     console.log('Urgency Level:', urgencyLevel);
     console.log('Price Flexibility:', priceFlexibility);
 
@@ -169,7 +169,7 @@ Responde EXACTAMENTE en este formato JSON:
       throw new Error('Failed to save conversation record');
     }
 
-    // Update the lead's PIW score
+    // Update the lead's K-Score
     const { error: updateError } = await supabase
       .from('leads')
       .update({ 
@@ -179,11 +179,11 @@ Responde EXACTAMENTE en este formato JSON:
       .eq('id', leadId);
 
     if (updateError) {
-      console.error('Error updating lead PIW score:', updateError);
-      throw new Error('Failed to update lead PIW score');
+      console.error('Error updating lead K-Score:', updateError);
+      throw new Error('Failed to update lead K-Score');
     }
 
-    console.log('Successfully adjusted PIW score from', currentPiwScore, 'to', finalScore);
+    console.log('Successfully adjusted K-Score from', currentPiwScore, 'to', finalScore);
 
     return new Response(JSON.stringify({
       success: true,

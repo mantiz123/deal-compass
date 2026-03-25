@@ -88,7 +88,7 @@ export function useLogConversation() {
       
       const scoreChange = data.adjustment >= 0 ? `+${data.adjustment}` : `${data.adjustment}`;
       toast.success(
-        `PIW-Score ajustado: ${data.previousScore} → ${data.adjustedScore} (${scoreChange})`,
+        `K-Score ajustado: ${data.previousScore} → ${data.adjustedScore} (${scoreChange})`,
         { description: data.reason }
       );
     },
