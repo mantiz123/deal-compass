@@ -321,10 +321,10 @@ export const useCSVImport = () => {
           title: 'Importación completada',
           description: parts.join(', '),
         });
-      } else if (result.skippedDuplicates > 0 && result.failed === 0) {
+      } else if ((result.skippedDuplicates > 0 || result.skippedSold > 0) && result.failed === 0) {
         toast({
-          title: 'Sin cambios',
-          description: `${result.skippedDuplicates} propiedades ya existían en el sistema`,
+          title: 'Sin cambios nuevos',
+          description: parts.join(', '),
         });
       } else if (result.failed > 0) {
         toast({
@@ -332,6 +332,16 @@ export const useCSVImport = () => {
           description: `Todos los ${result.failed} registros fallaron`,
           variant: 'destructive',
         });
+      }
+      
+      // Alert for hot leads without phone numbers
+      if (result.hotLeadsNoPhone && result.hotLeadsNoPhone.length > 0) {
+        setTimeout(() => {
+          toast({
+            title: `🔥 ${result.hotLeadsNoPhone.length} propiedades HOT sin teléfono`,
+            description: `Busca el contacto manualmente: ${result.hotLeadsNoPhone.slice(0, 3).join(' | ')}${result.hotLeadsNoPhone.length > 3 ? ` (+${result.hotLeadsNoPhone.length - 3} más)` : ''}`,
+          });
+        }, 2000);
       }
     },
     onError: (error: Error) => {
