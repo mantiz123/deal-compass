@@ -377,13 +377,32 @@ export function LeadDetailSheet({
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">MAO {(repairCost || medianPriceSqft) && calculatedMao > 0 && <span className="text-accent">(calculado)</span>}</p>
+                      <p className="text-muted-foreground">MAO <span className="text-[10px]">(ARV×70% - Repairs)</span></p>
                       <p className="font-medium text-lg text-success">
                         {calculatedMao > 0 ? `$${calculatedMao.toLocaleString()}` : 'N/A'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Equity</p>
+                      <p className="text-muted-foreground">Hipoteca Pendiente</p>
+                      <p className="font-medium">
+                        {property?.mortgage_balance ? `$${Number(property.mortgage_balance).toLocaleString()}` : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Net Equity $</p>
+                      {(() => {
+                        const mortBal = property?.mortgage_balance ? Number(property.mortgage_balance) : 0;
+                        const netEq = calculatedArv > 0 && mortBal > 0 ? calculatedArv - mortBal : 0;
+                        const color = netEq > 100000 ? 'text-success' : netEq > 50000 ? 'text-accent' : 'text-foreground';
+                        return netEq > 0 ? (
+                          <p className={`font-medium text-lg ${color}`}>${netEq.toLocaleString()}</p>
+                        ) : (
+                          <p className="font-medium">N/A</p>
+                        );
+                      })()}
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Equity %</p>
                       <p className="font-medium">{property?.equity_percent ? `${property.equity_percent}%` : 'N/A'}</p>
                     </div>
                     <div>
@@ -396,6 +415,12 @@ export function LeadDetailSheet({
                         <p className="font-medium text-primary">${Number(lead.offer_amount).toLocaleString()}</p>
                       </div>
                     )}
+                    {lead.listing_price && (
+                      <div>
+                        <p className="text-muted-foreground">Listing Price</p>
+                        <p className="font-medium">${Number(lead.listing_price).toLocaleString()}</p>
+                      </div>
+                    )}
                     {lead.assignment_fee && (
                       <div>
                         <p className="text-muted-foreground">Fee Cesión</p>
@@ -403,6 +428,32 @@ export function LeadDetailSheet({
                       </div>
                     )}
                   </div>
+
+                  {/* Spread & Fee Rango Summary */}
+                  {(() => {
+                    const mao = calculatedMao;
+                    const acqCost = Number(lead.offer_amount) || Number(lead.listing_price) || Number(property?.last_sale_price) || 0;
+                    const spread = mao > 0 && acqCost > 0 ? mao - acqCost : 0;
+                    if (spread <= 0) return null;
+                    const feeMin = Math.max(5000, Math.round(spread * 0.3));
+                    const feeMax = Math.round(spread * 0.6);
+                    return (
+                      <Card className="p-3 bg-primary/5 border-primary/20">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Spread</p>
+                            <p className="font-bold text-success text-lg">+${spread.toLocaleString()}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">Fee Rango Recomendado</p>
+                            <p className="font-bold text-primary text-lg">
+                              ${(feeMin/1000).toFixed(0)}K – ${(feeMax/1000).toFixed(0)}K
+                            </p>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })()}
 
                   <Separator />
 
