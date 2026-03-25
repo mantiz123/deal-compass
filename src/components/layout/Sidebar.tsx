@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import kloseLogo from "@/assets/klose-logo.png";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -58,16 +59,14 @@ export function Sidebar() {
       <div className="flex h-16 items-center justify-between border-b border-border px-4">
         {(!collapsed || isMobile) && (
           <Link to="/" className="flex items-center gap-2" onClick={handleNavClick}>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
-              <Zap className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold text-gradient">KLOSE</span>
+            <img src={kloseLogo} alt="KLOSE" className="h-8 w-8 object-contain" />
+            <span className="text-lg font-bold text-foreground">KLOSE</span>
           </Link>
         )}
         {collapsed && !isMobile && (
-          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
-            <Zap className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <Link to="/" className="mx-auto">
+            <img src={kloseLogo} alt="KLOSE" className="h-8 w-8 object-contain" />
+          </Link>
         )}
         {isMobile && (
           <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)}>

@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, TrendingUp, ShieldCheck } from 'lucide-react';
+import { Loader2, ShieldCheck } from 'lucide-react';
+import kloseLogo from '@/assets/klose-logo.png';
 import { z } from 'zod';
 
 const passwordSchema = z.string().min(6, 'La contraseña debe tener al menos 6 caracteres');
@@ -102,9 +103,7 @@ export default function ResetPassword() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
-              <TrendingUp className="w-7 h-7 text-primary-foreground" />
-            </div>
+            <img src={kloseLogo} alt="KLOSE" className="w-12 h-12 object-contain" />
             <span className="text-3xl font-bold text-foreground">KLOSE</span>
           </div>
         </div>
