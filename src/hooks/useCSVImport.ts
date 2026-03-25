@@ -143,6 +143,10 @@ export const useCSVImport = () => {
                 isForeclosure = true;
               }
             }
+            // Auto-detect foreclosure from Pre-FC Recording Date
+            if (!isForeclosure && propertyData.prefc_recording_date) {
+              isForeclosure = true;
+            }
             
             // === DERIVED FIELD: MLS Status signals ===
             // mlsStatus already defined above (SOLD filter)
