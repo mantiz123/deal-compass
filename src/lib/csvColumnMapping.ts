@@ -1,5 +1,6 @@
-// Intelligent column mapping for PropWire CSV imports
-// Handles variations in column names, casing, and common abbreviations
+// Intelligent column mapping for PropWire / PropStream imports
+// Handles CSV and XLSX, variations in column names, casing, and common abbreviations
+import * as XLSX from 'xlsx';
 
 export interface PropertyField {
   key: string;
@@ -441,6 +442,29 @@ export const parseCSV = (text: string): { headers: string[]; rows: Record<string
       rows.push(row);
     }
   }
+  
+  return { headers, rows };
+};
+
+// Parse XLSX/XLS binary data to array of objects
+export const parseXLSX = (data: Uint8Array): { headers: string[]; rows: Record<string, string>[] } => {
+  const workbook = XLSX.read(data, { type: 'array' });
+  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+  
+  // Get raw JSON with all values as strings
+  const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(firstSheet, { defval: '' });
+  
+  if (jsonData.length === 0) return { headers: [], rows: [] };
+  
+  const headers = Object.keys(jsonData[0]);
+  const rows = jsonData.map(row => {
+    const stringRow: Record<string, string> = {};
+    for (const key of headers) {
+      const val = row[key];
+      stringRow[key] = val !== null && val !== undefined ? String(val) : '';
+    }
+    return stringRow;
+  });
   
   return { headers, rows };
 };
