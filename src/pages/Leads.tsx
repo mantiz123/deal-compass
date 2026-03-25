@@ -515,9 +515,19 @@ const Leads = () => {
                           Indicadores
                           <AlertTriangle className="h-3 w-3 opacity-50" />
                         </TooltipTrigger>
-                        <TooltipContent className="max-w-[250px]">
+                        <TooltipContent className="max-w-[300px]">
                           <p className="text-xs">
-                            Señales de motivación del vendedor: Ausente (no vive ahí), Deuda Imp. (impuestos atrasados), Ejecución (foreclosure), Sucesión (herencia/probate).
+                            <strong>Señales de motivación del vendedor:</strong><br/>
+                            🏠 OUT-STATE = dueño fuera de estado<br/>
+                            🏚️ VACANT = propiedad vacía<br/>
+                            💎 FREE = sin hipoteca (100% equity)<br/>
+                            🚨 URGENTE = subasta en &lt;30 días<br/>
+                            🕐 10Y+ = dueño por 10+ años<br/>
+                            🏚️ FORECL = ejecución hipotecaria<br/>
+                            💰 TAX = impuestos atrasados<br/>
+                            ⚖️ PROBATE = herencia/sucesión<br/>
+                            🔗 LIENS = gravámenes activos<br/>
+                            📉 MLS = 180+ días en mercado
                           </p>
                         </TooltipContent>
                       </Tooltip>
@@ -676,60 +686,130 @@ const Leads = () => {
                         </td>
                         <td className="p-4">
                           <TooltipProvider>
-                            <div className="flex gap-1 flex-wrap max-w-[150px]">
-                              {lead.property?.is_absentee_owner && (
+                            <div className="flex gap-1 flex-wrap max-w-[220px]">
+                              {/* OUT-STATE: Owner lives in different state */}
+                              {lead.property?.absentee_type === 'out_of_state' && (
                                 <Tooltip>
                                   <TooltipTrigger>
-                                    <Badge variant="info" className="text-[10px]">
-                                      Ausente
-                                    </Badge>
+                                    <Badge variant="accent" className="text-[10px]">🏠 OUT-STATE</Badge>
                                   </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="max-w-[200px] text-xs">
-                                      El propietario no vive en la propiedad. Mayor probabilidad de motivación para vender.
-                                    </p>
+                                  <TooltipContent className="max-w-[220px]">
+                                    <p className="text-xs"><strong>Propietario Fuera de Estado</strong>: Vive en otro estado. Alta probabilidad de querer vender porque no puede gestionar la propiedad a distancia.</p>
                                   </TooltipContent>
                                 </Tooltip>
                               )}
-                              {lead.property?.tax_delinquent && (
+                              {/* VACANT: Property is unoccupied */}
+                              {lead.property?.is_vacant && (
                                 <Tooltip>
                                   <TooltipTrigger>
-                                    <Badge variant="warning" className="text-[10px]">
-                                      Deuda Imp.
-                                    </Badge>
+                                    <Badge variant="warning" className="text-[10px]">🏚️ VACANT</Badge>
                                   </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="max-w-[200px] text-xs">
-                                      Propiedad con impuestos atrasados. Indica urgencia financiera del propietario.
-                                    </p>
+                                  <TooltipContent className="max-w-[220px]">
+                                    <p className="text-xs"><strong>Propiedad Vacante</strong>: Nadie vive aquí. El dueño está pagando impuestos y seguro sin recibir ingresos. Fuerte señal de motivación.</p>
                                   </TooltipContent>
                                 </Tooltip>
                               )}
+                              {/* FREE: 100% equity, no mortgage */}
+                              {lead.property?.equity_percent != null && Number(lead.property.equity_percent) >= 100 && (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="success" className="text-[10px]">💎 FREE</Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-[220px]">
+                                    <p className="text-xs"><strong>Libre de Hipoteca</strong>: Propiedad 100% pagada. El dueño se queda con todo el dinero de la venta, lo que facilita negociar un precio justo.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {/* URGENTE: Auction within 30 days */}
+                              {(() => {
+                                const ad = (lead.property as any)?.auction_date;
+                                if (!ad) return null;
+                                const days = Math.ceil((new Date(ad).getTime() - Date.now()) / (1000*60*60*24));
+                                if (days > 0 && days <= 30) return (
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Badge variant="destructive" className="text-[10px] animate-pulse">🚨 URGENTE {days}d</Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-[220px]">
+                                      <p className="text-xs"><strong>Subasta en {days} días</strong>: La propiedad se va a subasta pronto. El vendedor puede perder su casa — máxima urgencia para negociar rápido.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                                if (days > 30 && days <= 90) return (
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Badge variant="warning" className="text-[10px]">⏰ SUBASTA {days}d</Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-[220px]">
+                                      <p className="text-xs"><strong>Subasta en {days} días</strong>: Hay tiempo para negociar, pero la presión del timeline favorece un cierre rápido.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                                return null;
+                              })()}
+                              {/* 10Y+: Long-term ownership fatigue */}
+                              {lead.property?.owner_tenure_years != null && lead.property.owner_tenure_years >= 10 && (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="secondary" className="text-[10px]">🕐 {lead.property.owner_tenure_years}Y+</Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-[220px]">
+                                    <p className="text-xs"><strong>Propietario por {lead.property.owner_tenure_years} años</strong>: Fatiga de propiedad — después de 10+ años, muchos dueños están cansados de mantener y quieren salir.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {/* FORECLOSURE */}
                               {lead.property?.is_foreclosure && (
                                 <Tooltip>
                                   <TooltipTrigger>
-                                    <Badge variant="accent" className="text-[10px]">
-                                      Ejecución
-                                    </Badge>
+                                    <Badge variant="accent" className="text-[10px]">🏚️ FORECL</Badge>
                                   </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="max-w-[200px] text-xs">
-                                      Propiedad en proceso de ejecución hipotecaria. Alta motivación para venta rápida.
-                                    </p>
+                                  <TooltipContent className="max-w-[220px]">
+                                    <p className="text-xs"><strong>En Ejecución Hipotecaria</strong>: El banco está por tomar la propiedad. El dueño prefiere vender antes de perderlo todo. Urgencia máxima.</p>
                                   </TooltipContent>
                                 </Tooltip>
                               )}
+                              {/* TAX DEBT */}
+                              {lead.property?.tax_delinquent && (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="warning" className="text-[10px]">💰 TAX</Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-[220px]">
+                                    <p className="text-xs"><strong>Impuestos Atrasados</strong>{lead.property?.tax_debt ? ` ($${Number(lead.property.tax_debt).toLocaleString()})` : ''}: El dueño no está pagando impuestos, señal de problemas financieros y motivación para vender.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {/* PROBATE */}
                               {lead.property?.is_probate && (
                                 <Tooltip>
                                   <TooltipTrigger>
-                                    <Badge variant="glow" className="text-[10px]">
-                                      Sucesión
-                                    </Badge>
+                                    <Badge variant="glow" className="text-[10px]">⚖️ PROBATE</Badge>
                                   </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="max-w-[200px] text-xs">
-                                      Propiedad heredada en proceso de sucesión. Herederos suelen preferir venta rápida.
-                                    </p>
+                                  <TooltipContent className="max-w-[220px]">
+                                    <p className="text-xs"><strong>Herencia/Sucesión</strong>: Los herederos generalmente no quieren la propiedad y prefieren venta rápida para repartir el dinero.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {/* LIENS */}
+                              {lead.property?.active_liens_count != null && lead.property.active_liens_count > 0 && (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="destructive" className="text-[10px]">🔗 {lead.property.active_liens_count} LIENS</Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-[220px]">
+                                    <p className="text-xs"><strong>{lead.property.active_liens_count} Gravámenes Activos</strong>: La propiedad tiene deudas registradas. Puede complicar el cierre pero indica presión financiera del dueño.</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {/* STALE MLS */}
+                              {lead.property?.days_on_market != null && lead.property.days_on_market > 180 && (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Badge variant="info" className="text-[10px]">📉 {lead.property.days_on_market}d MLS</Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-[220px]">
+                                    <p className="text-xs"><strong>{lead.property.days_on_market} días en MLS</strong>: La propiedad lleva mucho tiempo sin venderse en el mercado público. El vendedor está frustrado y más abierto a ofertas por debajo del mercado.</p>
                                   </TooltipContent>
                                 </Tooltip>
                               )}

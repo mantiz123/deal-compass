@@ -213,6 +213,8 @@ export const useCSVImport = () => {
                 last_sale_price: propertyData.last_sale_price || null,
                 mailing_address_different: propertyData.mailing_address_different || false,
                 tax_debt: propertyData.tax_debt || null,
+                mortgage_balance: propertyData.est_remaining_balance || null,
+                auction_date: propertyData.auction_date || null,
                 data_source: source,
                 data_fetched_at: new Date().toISOString(),
               })
