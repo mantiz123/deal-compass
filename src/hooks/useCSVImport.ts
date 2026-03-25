@@ -59,16 +59,148 @@ export const useCSVImport = () => {
               .maybeSingle();
             
             if (existingProperty) {
-              // Property exists - check if lead needs PIW score
+              // Property exists - UPDATE with new/enriched data
+              const updateFields: Record<string, any> = {};
+              
+              // Helper: only update if new value is truthy and different from null
+              const setIfNew = (dbField: string, value: any) => {
+                if (value !== null && value !== undefined && value !== '' && value !== false && value !== 0) {
+                  updateFields[dbField] = value;
+                }
+              };
+
+              // Combine owner name
+              let ownerNameUpdate = propertyData.owner_name || null;
+              if (propertyData.owner_first_name || propertyData.owner_last_name) {
+                ownerNameUpdate = [propertyData.owner_first_name, propertyData.owner_last_name]
+                  .filter(Boolean).join(' ').trim() || null;
+              }
+
+              // Derived tenure
+              let tenureUpdate: number | null = null;
+              const ownershipMo = propertyData.ownership_months || null;
+              const tenureMo = propertyData.owner_tenure_months || null;
+              if (ownershipMo) tenureUpdate = Math.floor(ownershipMo / 12);
+              else if (tenureMo) tenureUpdate = tenureMo;
+              else if (propertyData.last_sale_date) {
+                const sd = new Date(propertyData.last_sale_date);
+                if (!isNaN(sd.getTime())) tenureUpdate = Math.floor((Date.now() - sd.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+              }
+
+              // Derived equity
+              let eqPct = propertyData.equity_percent || null;
+              if (!eqPct && propertyData.est_ltv != null && propertyData.est_ltv >= 0) eqPct = Math.round(100 - propertyData.est_ltv);
+              if (!eqPct && propertyData.est_equity_dollars && propertyData.arv && propertyData.arv > 0) eqPct = Math.round((propertyData.est_equity_dollars / propertyData.arv) * 100);
+
+              // Derived DOM
+              let domUpdate = propertyData.days_on_market || null;
+              if (!domUpdate && propertyData.mls_date) {
+                const md = new Date(propertyData.mls_date);
+                if (!isNaN(md.getTime())) domUpdate = Math.max(0, Math.floor((Date.now() - md.getTime()) / (1000 * 60 * 60 * 24)));
+              }
+
+              // Derived foreclosure
+              let fcUpdate = propertyData.is_foreclosure || false;
+              const ff = propertyData.foreclosure_factor?.toLowerCase?.() || '';
+              if (ff === 'high' || ff === 'very high') fcUpdate = true;
+              if (!fcUpdate && propertyData.prefc_recording_date) fcUpdate = true;
+
+              // Absentee
+              let isAbUpdate = false;
+              if (propertyData.is_absentee_owner) isAbUpdate = true;
+              else if (propertyData.owner_occupied) isAbUpdate = true;
+              const omState = propertyData.owner_mailing_state?.trim().toUpperCase() || null;
+              const omCity = propertyData.owner_mailing_city?.trim().toUpperCase() || null;
+              const pState = propertyData.state?.trim().toUpperCase() || null;
+              const pCity = propertyData.city?.trim().toUpperCase() || null;
+              let abType: string | null = null;
+              if (omState && pState) {
+                if (omState !== pState) { abType = 'out_of_state'; isAbUpdate = true; }
+                else if (omCity && pCity && omCity !== pCity) { abType = 'local'; isAbUpdate = true; }
+                else abType = 'occupied';
+              }
+
+              // Set all enrichment fields
+              setIfNew('owner_name', ownerNameUpdate);
+              setIfNew('owner_phone', propertyData.owner_phone);
+              setIfNew('owner_email', propertyData.owner_email);
+              setIfNew('owner_type', propertyData.owner_type);
+              setIfNew('bedrooms', propertyData.bedrooms);
+              setIfNew('bathrooms', propertyData.bathrooms);
+              setIfNew('sqft', propertyData.sqft);
+              setIfNew('lot_size', propertyData.lot_size);
+              setIfNew('year_built', propertyData.year_built);
+              setIfNew('arv', propertyData.arv);
+              setIfNew('equity_percent', eqPct);
+              setIfNew('owner_tenure_years', tenureUpdate);
+              if (isAbUpdate) updateFields.is_absentee_owner = true;
+              if (abType) updateFields.absentee_type = abType;
+              setIfNew('owner_mailing_state', propertyData.owner_mailing_state);
+              setIfNew('owner_mailing_city', propertyData.owner_mailing_city);
+              setIfNew('is_vacant', propertyData.is_vacant);
+              setIfNew('days_on_market', domUpdate);
+              setIfNew('tax_delinquent', propertyData.tax_delinquent);
+              if (fcUpdate) updateFields.is_foreclosure = true;
+              setIfNew('is_probate', propertyData.is_probate);
+              setIfNew('last_sale_date', propertyData.last_sale_date);
+              setIfNew('last_sale_price', propertyData.last_sale_price);
+              setIfNew('mailing_address_different', propertyData.mailing_address_different);
+              setIfNew('tax_debt', propertyData.tax_debt);
+              setIfNew('mortgage_balance', propertyData.est_remaining_balance);
+              setIfNew('auction_date', propertyData.auction_date);
+              setIfNew('phone_2', propertyData.phone_2);
+              setIfNew('phone_3', propertyData.phone_3);
+              setIfNew('phone_4', propertyData.phone_4);
+              setIfNew('phone_5', propertyData.phone_5);
+              setIfNew('phone_1_dnc', propertyData.phone_1_dnc);
+              setIfNew('phone_2_dnc', propertyData.phone_2_dnc);
+              setIfNew('phone_3_dnc', propertyData.phone_3_dnc);
+              setIfNew('phone_4_dnc', propertyData.phone_4_dnc);
+              setIfNew('phone_5_dnc', propertyData.phone_5_dnc);
+              setIfNew('phone_1_type', propertyData.phone_1_type);
+              setIfNew('phone_2_type', propertyData.phone_2_type);
+              setIfNew('phone_3_type', propertyData.phone_3_type);
+              setIfNew('phone_4_type', propertyData.phone_4_type);
+              setIfNew('phone_5_type', propertyData.phone_5_type);
+              setIfNew('property_condition', propertyData.property_condition);
+              setIfNew('exterior_condition', propertyData.exterior_condition);
+              setIfNew('is_litigator', propertyData.is_litigator);
+              setIfNew('do_not_mail', propertyData.do_not_mail);
+              setIfNew('county', propertyData.county);
+              setIfNew('apn', propertyData.apn);
+              setIfNew('bk_date', propertyData.bk_date);
+              setIfNew('divorce_date', propertyData.divorce_date);
+              setIfNew('prefc_recording_date', propertyData.prefc_recording_date);
+              setIfNew('prefc_unpaid_balance', propertyData.prefc_unpaid_balance);
+              setIfNew('prefc_default_amount', propertyData.prefc_default_amount);
+              setIfNew('prefc_opening_bid', propertyData.prefc_opening_bid);
+              setIfNew('lien_type', propertyData.lien_type);
+              setIfNew('lien_amount', propertyData.lien_amount);
+              setIfNew('lien_date', propertyData.lien_date);
+              setIfNew('mls_agent_name', propertyData.mls_agent_name);
+              setIfNew('mls_agent_phone', propertyData.mls_agent_phone);
+              setIfNew('mls_agent_email', propertyData.mls_agent_email);
+              setIfNew('estimated_monthly_rent', propertyData.monthly_rent);
+
+              if (Object.keys(updateFields).length > 0) {
+                updateFields.data_source = source;
+                updateFields.data_fetched_at = new Date().toISOString();
+                await supabase
+                  .from('properties')
+                  .update(updateFields)
+                  .eq('id', existingProperty.id);
+              }
+
+              // Recalculate PIW score with updated data
               if (calculatePIW) {
                 const { data: existingLead } = await supabase
                   .from('leads')
-                  .select('id, piw_score')
+                  .select('id')
                   .eq('property_id', existingProperty.id)
+                  .is('archived_at', null)
                   .maybeSingle();
                 
-                if (existingLead && existingLead.piw_score === null) {
-                  // Fetch full property data for PIW calculation
+                if (existingLead) {
                   const { data: fullProperty } = await supabase
                     .from('properties')
                     .select('*')
@@ -338,7 +470,7 @@ export const useCSVImport = () => {
       
       const parts: string[] = [];
       if (result.success > 0) parts.push(`${result.success} nuevos leads importados`);
-      if (result.skippedDuplicates > 0) parts.push(`${result.skippedDuplicates} duplicados omitidos`);
+      if (result.skippedDuplicates > 0) parts.push(`${result.skippedDuplicates} existentes actualizados`);
       if (result.skippedSold > 0) parts.push(`${result.skippedSold} SOLD descartados`);
       if (result.piwCalculated > 0) parts.push(`${result.piwCalculated} PIW-Scores calculados`);
       if (result.failed > 0) parts.push(`${result.failed} fallaron`);
