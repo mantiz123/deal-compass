@@ -154,7 +154,7 @@ export const LeadsDelDia = () => {
 
                     {/* PIW Score */}
                     <div className="flex-shrink-0">
-                      <PIWScoreGauge score={lead.piw_score || 0} size="sm" />
+                      <KScoreGauge score={lead.piw_score || 0} size="sm" />
                     </div>
 
                     {/* Property Info + Indicators */}

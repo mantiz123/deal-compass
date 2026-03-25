@@ -176,7 +176,7 @@ export function LeadDetailSheet({
           <Card variant="glass" className="p-4 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <PIWScoreGauge score={lead.piw_score || 0} size="md" />
+                <KScoreGauge score={lead.piw_score || 0} size="md" />
                 <div>
                   <p className="text-sm text-muted-foreground">PIW Score</p>
                   <p className="text-2xl font-bold">{lead.piw_score || 0}%</p>

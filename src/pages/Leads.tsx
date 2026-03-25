@@ -628,7 +628,7 @@ const Leads = () => {
                         </td>
                         <td className="p-4">
                           {lead.piw_score !== null ? (
-                            <PIWScoreGauge score={lead.piw_score} size="sm" />
+                            <KScoreGauge score={lead.piw_score} size="sm" />
                           ) : (
                             <Button
                               variant="outline"

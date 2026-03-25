@@ -53,7 +53,7 @@ function KanbanCardContent({
               <span>{property?.city}, {property?.state} {property?.zip_code}</span>
             </div>
           </div>
-          <PIWScoreGauge score={lead.piw_score || 0} size="sm" />
+          <KScoreGauge score={lead.piw_score || 0} size="sm" />
         </div>
 
         {/* Owner Info */}
@@ -183,7 +183,7 @@ export function KanbanCard({ lead, isDragOverlay = false }: KanbanCardProps) {
                   <span>{property?.city}, {property?.state} {property?.zip_code}</span>
                 </div>
               </div>
-              <PIWScoreGauge score={lead.piw_score || 0} size="sm" />
+              <KScoreGauge score={lead.piw_score || 0} size="sm" />
             </div>
 
             {/* Owner Info */}

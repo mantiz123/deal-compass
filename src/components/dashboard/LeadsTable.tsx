@@ -112,7 +112,7 @@ export function LeadsTable() {
                         <p className="font-medium">{property?.owner_name || 'Desconocido'}</p>
                       </td>
                       <td className="py-4">
-                        <PIWScoreGauge score={lead.piw_score || 0} size="sm" />
+                        <KScoreGauge score={lead.piw_score || 0} size="sm" />
                       </td>
                       <td className="py-4">
                         {property?.equity_percent ? (

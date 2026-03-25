@@ -70,7 +70,7 @@ export function PIWScoreDetails({ lead, open, onOpenChange, onRecalculate, isCal
           <div className="flex items-center justify-between">
             <div className="flex-1">
               {lead.piw_score !== null ? (
-                <PIWScoreGauge score={lead.piw_score} size="lg" />
+                <KScoreGauge score={lead.piw_score} size="lg" />
               ) : (
                 <div className="text-center py-8">
                   <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
