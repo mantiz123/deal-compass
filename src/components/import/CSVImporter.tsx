@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ColumnMapper } from './ColumnMapper';
-import { parseCSV, autoMapColumns, validateMappings, ColumnMapping } from '@/lib/csvColumnMapping';
+import { parseCSV, parseXLSX, autoMapColumns, validateMappings, ColumnMapping } from '@/lib/csvColumnMapping';
 import { useCSVImport } from '@/hooks/useCSVImport';
 
 type ImportStep = 'upload' | 'mapping' | 'importing' | 'complete';
@@ -30,11 +30,24 @@ export const CSVImporter = () => {
     if (!file) return;
 
     setFileName(file.name);
+    const isExcel = file.name.match(/\.xlsx?$/i);
     
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const { headers: parsedHeaders, rows: parsedRows } = parseCSV(text);
+      let parsedHeaders: string[] = [];
+      let parsedRows: Record<string, string>[] = [];
+
+      if (isExcel) {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const result = parseXLSX(data);
+        parsedHeaders = result.headers;
+        parsedRows = result.rows;
+      } else {
+        const text = e.target?.result as string;
+        const result = parseCSV(text);
+        parsedHeaders = result.headers;
+        parsedRows = result.rows;
+      }
       
       if (parsedHeaders.length === 0) {
         return;
@@ -49,7 +62,12 @@ export const CSVImporter = () => {
       
       setStep('mapping');
     };
-    reader.readAsText(file);
+
+    if (isExcel) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
   }, []);
 
   const handleMappingChange = useCallback((csvColumn: string, propertyField: string | null) => {
@@ -113,7 +131,7 @@ export const CSVImporter = () => {
                 <Input
                   id="csv-upload"
                   type="file"
-                  accept=".csv,.txt"
+                  accept=".csv,.txt,.xlsx,.xls"
                   onChange={handleFileUpload}
                   className="hidden"
                 />

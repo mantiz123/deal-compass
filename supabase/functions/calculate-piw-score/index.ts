@@ -45,6 +45,10 @@ interface PropertyData {
   city?: string;
   state?: string;
   zip_code?: string;
+  
+  // PropStream-specific fields
+  owner_mailing_state?: string;
+  owner_mailing_city?: string;
 }
 
 serve(async (req) => {
