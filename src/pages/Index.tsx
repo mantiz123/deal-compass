@@ -6,6 +6,7 @@ import { PipelinePreview } from "@/components/dashboard/PipelinePreview";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { DeadLeadsAnalytics } from "@/components/dashboard/DeadLeadsAnalytics";
 import { BuyerLiquidityWidget } from "@/components/dashboard/BuyerLiquidityWidget";
+import { HotLeadsWidget } from "@/components/dashboard/HotLeadsWidget";
 import { StaleLeadsAlert } from "@/components/dashboard/StaleLeadsAlert";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useAuth } from "@/contexts/AuthContext";
@@ -100,6 +101,11 @@ const Index = () => {
       {/* Stale Leads Alert */}
       <div className="mb-6">
         <StaleLeadsAlert />
+      </div>
+
+      {/* Hot Leads Widget */}
+      <div className="mb-6">
+        <HotLeadsWidget />
       </div>
 
       {/* Centro de Acción - Full Width */}
