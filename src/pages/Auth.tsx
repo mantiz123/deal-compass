@@ -314,7 +314,7 @@ export default function Auth() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground">
-          KLOSE © 2024 • Alabama, USA
+          KLOSE © 2025 • Alabama, USA
         </p>
       </div>
     </div>
