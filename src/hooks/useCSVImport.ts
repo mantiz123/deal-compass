@@ -145,7 +145,7 @@ export const useCSVImport = () => {
             }
             
             // === DERIVED FIELD: MLS Status signals ===
-            const mlsStatus = propertyData.mls_status || null;
+            // mlsStatus already defined above (SOLD filter)
             // FAIL or EXPIRED on MLS = frustrated seller → additional DOM signal
             if (mlsStatus && (mlsStatus === 'FAIL' || mlsStatus === 'EXPIRED')) {
               // If no DOM, estimate from MLS date; if still no data, set minimum DOM signal
