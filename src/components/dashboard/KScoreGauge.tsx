@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils";
 
-interface PIWScoreGaugeProps {
+interface KScoreGaugeProps {
   score: number;
   size?: "sm" | "md" | "lg";
 }
 
-export function PIWScoreGauge({ score, size = "md" }: PIWScoreGaugeProps) {
+export function KScoreGauge({ score, size = "md" }: KScoreGaugeProps) {
   const getColor = (score: number) => {
     if (score >= 80) return "text-success";
     if (score >= 60) return "text-primary";
@@ -39,3 +39,6 @@ export function PIWScoreGauge({ score, size = "md" }: PIWScoreGaugeProps) {
     </div>
   );
 }
+
+// Backward compat alias
+export const PIWScoreGauge = KScoreGauge;
