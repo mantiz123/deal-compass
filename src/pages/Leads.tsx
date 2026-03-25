@@ -13,7 +13,7 @@ import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { PropertyComparisonSheet } from "@/components/leads/PropertyComparisonSheet";
 import { ArchiveLeadDialog } from "@/components/leads/ArchiveLeadDialog";
-import { useLeads, useLeadsExport, useLeadFilterOptions, useCalculatePIWScore, Lead } from "@/hooks/useLeads";
+import { useLeads, useLeadsExport, useLeadFilterOptions, useCalculatePIWScore, useBatchRecalculatePIW, Lead } from "@/hooks/useLeads";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
