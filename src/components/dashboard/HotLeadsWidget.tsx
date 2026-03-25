@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LeadDetailSheet } from '@/components/leads/LeadDetailSheet';
-import { Flame, AlertTriangle, Phone, PhoneOff, Search, ExternalLink } from 'lucide-react';
+import { Flame, AlertTriangle, Phone, PhoneOff, Search, ExternalLink, Gavel } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { differenceInDays, isPast } from 'date-fns';
 import type { Lead } from '@/hooks/useLeads';
 
 function useHotLeads() {
@@ -64,6 +65,19 @@ function allPhonesDNC(property: any): boolean {
 function getDistressBadges(property: any) {
   const badges: { label: string; color: string }[] = [];
   if (!property) return badges;
+  
+  // Auction urgency badge
+  if (property.is_foreclosure && property.auction_date) {
+    const daysUntil = differenceInDays(new Date(property.auction_date), new Date());
+    const expired = isPast(new Date(property.auction_date));
+    if (expired) {
+      badges.push({ label: '⚠️ SUBASTA VENCIDA', color: 'bg-destructive/30 text-destructive border-destructive/40 animate-pulse' });
+    } else if (daysUntil <= 7) {
+      badges.push({ label: `🔨 ${daysUntil}d SUBASTA`, color: 'bg-destructive/20 text-destructive border-destructive/30' });
+    } else if (daysUntil <= 30) {
+      badges.push({ label: `🔨 ${daysUntil}d SUBASTA`, color: 'bg-warning/20 text-warning border-warning/30' });
+    }
+  }
   
   if (property.is_foreclosure) badges.push({ label: '🏚️ FORECL', color: 'bg-destructive/20 text-destructive border-destructive/30' });
   if (property.is_vacant) badges.push({ label: '🏚️ VACANT', color: 'bg-warning/20 text-warning border-warning/30' });
