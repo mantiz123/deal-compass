@@ -568,6 +568,8 @@ function calculateFallbackScore(p: PropertyData): any {
   if (p.tax_delinquent) keyIndicators.push('Tax delinquency - financial distress');
   if (p.days_on_market && p.days_on_market > 90) keyIndicators.push(`${p.days_on_market} days on market - MLS frustrated`);
   if (auctionDays !== null && auctionDays <= 30) keyIndicators.push(`Auction in ${auctionDays} days - MAXIMUM URGENCY`);
+  if (p.bk_date) keyIndicators.push('Bankruptcy - severe financial distress');
+  if (p.divorce_date) keyIndicators.push('Divorce - forced sale likely');
   if (p.arv && p.mortgage_balance && (p.arv - p.mortgage_balance) > 100000) {
     keyIndicators.push(`Net equity $${(p.arv - p.mortgage_balance).toLocaleString()} - excellent margin`);
   }

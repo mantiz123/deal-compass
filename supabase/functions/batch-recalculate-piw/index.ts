@@ -53,6 +53,20 @@ function calculateScore(p: any): any {
   if (p.eviction_count != null && p.eviction_count > 0) sellerMotivation += 8;
   if (p.owner_type === 'corporation' || p.owner_type === 'trust') sellerMotivation += 5;
   if (p.mailing_address_different) sellerMotivation += 3;
+  
+  // Bankruptcy (within 2 years = +12, within 5 years = +6)
+  if (p.bk_date) {
+    const yearsSinceBk = (Date.now() - new Date(p.bk_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceBk <= 2) sellerMotivation += 12;
+    else if (yearsSinceBk <= 5) sellerMotivation += 6;
+  }
+  
+  // Divorce (within 2 years = +10, within 5 years = +5)
+  if (p.divorce_date) {
+    const yearsSinceDiv = (Date.now() - new Date(p.divorce_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceDiv <= 2) sellerMotivation += 10;
+    else if (yearsSinceDiv <= 5) sellerMotivation += 5;
+  }
 
   sellerMotivation = Math.min(sellerMotivation, 40);
 
