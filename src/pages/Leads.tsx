@@ -515,9 +515,19 @@ const Leads = () => {
                           Indicadores
                           <AlertTriangle className="h-3 w-3 opacity-50" />
                         </TooltipTrigger>
-                        <TooltipContent className="max-w-[250px]">
+                        <TooltipContent className="max-w-[300px]">
                           <p className="text-xs">
-                            Señales de motivación del vendedor: Ausente (no vive ahí), Deuda Imp. (impuestos atrasados), Ejecución (foreclosure), Sucesión (herencia/probate).
+                            <strong>Señales de motivación del vendedor:</strong><br/>
+                            🏠 OUT-STATE = dueño fuera de estado<br/>
+                            🏚️ VACANT = propiedad vacía<br/>
+                            💎 FREE = sin hipoteca (100% equity)<br/>
+                            🚨 URGENTE = subasta en &lt;30 días<br/>
+                            🕐 10Y+ = dueño por 10+ años<br/>
+                            🏚️ FORECL = ejecución hipotecaria<br/>
+                            💰 TAX = impuestos atrasados<br/>
+                            ⚖️ PROBATE = herencia/sucesión<br/>
+                            🔗 LIENS = gravámenes activos<br/>
+                            📉 MLS = 180+ días en mercado
                           </p>
                         </TooltipContent>
                       </Tooltip>
