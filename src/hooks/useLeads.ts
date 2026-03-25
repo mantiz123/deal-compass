@@ -54,9 +54,16 @@ export function useLeads(options?: {
   return useQuery({
     queryKey: ['leads', options?.filters, options?.from, options?.to],
     queryFn: async (): Promise<{ data: Lead[]; count: number }> => {
+      const hasSearch = !!options?.filters?.search;
+      
+      // Use !inner join when searching so leads with non-matching properties are excluded
+      const selectStr = hasSearch
+        ? `*, property:properties!inner(*)`
+        : `*, property:properties(*)`;
+      
       let query = supabase
         .from('leads')
-        .select(`*, property:properties(*)`, { count: 'exact' })
+        .select(selectStr, { count: 'exact' })
         .order('created_at', { ascending: false });
 
       query = applyLeadFilters(query, options?.filters);
