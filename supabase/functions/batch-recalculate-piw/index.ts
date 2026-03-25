@@ -53,6 +53,20 @@ function calculateScore(p: any): any {
   if (p.eviction_count != null && p.eviction_count > 0) sellerMotivation += 8;
   if (p.owner_type === 'corporation' || p.owner_type === 'trust') sellerMotivation += 5;
   if (p.mailing_address_different) sellerMotivation += 3;
+  
+  // Bankruptcy (within 2 years = +12, within 5 years = +6)
+  if (p.bk_date) {
+    const yearsSinceBk = (Date.now() - new Date(p.bk_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceBk <= 2) sellerMotivation += 12;
+    else if (yearsSinceBk <= 5) sellerMotivation += 6;
+  }
+  
+  // Divorce (within 2 years = +10, within 5 years = +5)
+  if (p.divorce_date) {
+    const yearsSinceDiv = (Date.now() - new Date(p.divorce_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceDiv <= 2) sellerMotivation += 10;
+    else if (yearsSinceDiv <= 5) sellerMotivation += 5;
+  }
 
   sellerMotivation = Math.min(sellerMotivation, 40);
 
@@ -96,6 +110,8 @@ function calculateScore(p: any): any {
   if (p.equity_percent != null && p.equity_percent >= 60) indicators.push(`${p.equity_percent}% equity`);
   if (p.is_foreclosure) indicators.push('Foreclosure');
   if (p.tax_delinquent) indicators.push('Tax delinquent');
+  if (p.bk_date) indicators.push('Bankruptcy');
+  if (p.divorce_date) indicators.push('Divorce');
   if (auctionDays !== null && auctionDays > 0 && auctionDays <= 90) indicators.push(`Auction in ${auctionDays}d`);
 
   return {

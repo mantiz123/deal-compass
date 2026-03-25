@@ -23,6 +23,9 @@ interface PropertyData {
   mortgage_age_years?: number;
   days_on_market?: number;
   auction_date?: string;
+  bk_date?: string;
+  divorce_date?: string;
+  prefc_recording_date?: string;
   
   // II. Financial Viability Variables
   equity_percent?: number;
@@ -34,11 +37,14 @@ interface PropertyData {
   year_built?: number;
   neighborhood_vacancy_rate?: number;
   price_growth_3yr?: number;
+  lien_amount?: number;
+  prefc_default_amount?: number;
   
   // III. Closing Difficulty Variables
   active_liens_count?: number;
   last_sale_date?: string;
   proximity_to_development?: 'high' | 'medium' | 'low' | 'none';
+  lien_type?: string;
   
   // Additional context
   property_type?: string;
@@ -236,6 +242,8 @@ MANDATORY POINT ASSIGNMENTS — apply these EXACTLY before any other analysis:
 - Tax delinquency > $2,000: +12 pts
 - Tax delinquent flag: +8 pts
 - Probate/Estate: +10 pts
+- Bankruptcy (bk_date within 2 years): +12 pts (severe financial distress)
+- Divorce (divorce_date within 2 years): +10 pts (forced sale likely)
 - Evictions > 0: +8 pts (burned-out landlord)
 - Corporate/LLC owner: +5 pts
 - Mailing address different: +3 pts
@@ -375,7 +383,27 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
     lines.push(`- Eviction History: ${p.eviction_count} evictions (+8 pts burned-out landlord)`);
   }
   
-  if (p.last_refinance_date) lines.push(`- Last Refinance: ${p.last_refinance_date}`);
+  // Bankruptcy
+  if (p.bk_date) {
+    const bkDate = new Date(p.bk_date);
+    const yearsSinceBk = (Date.now() - bkDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceBk <= 2) {
+      lines.push(`- 🚨 BANKRUPTCY: ${p.bk_date} (${yearsSinceBk.toFixed(1)} years ago) (+12 pts - severe distress)`);
+    } else {
+      lines.push(`- Bankruptcy: ${p.bk_date} (${yearsSinceBk.toFixed(1)} years ago, older - reduced impact)`);
+    }
+  }
+  
+  // Divorce
+  if (p.divorce_date) {
+    const divDate = new Date(p.divorce_date);
+    const yearsSinceDiv = (Date.now() - divDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceDiv <= 2) {
+      lines.push(`- 🚨 DIVORCE: ${p.divorce_date} (${yearsSinceDiv.toFixed(1)} years ago) (+10 pts - forced sale likely)`);
+    } else {
+      lines.push(`- Divorce: ${p.divorce_date} (${yearsSinceDiv.toFixed(1)} years ago, older - reduced impact)`);
+    }
+  }
   if (p.mortgage_age_years != null) {
     lines.push(`- Mortgage Age: ${p.mortgage_age_years} years${p.mortgage_age_years > 15 ? ' (HIGH EQUITY likely)' : ''}`);
   }
@@ -477,6 +505,20 @@ function calculateFallbackScore(p: PropertyData): any {
   if (p.owner_type === 'corporation') sellerMotivation += 5;
   if (p.mailing_address_different) sellerMotivation += 3;
   
+  // Bankruptcy (within 2 years)
+  if (p.bk_date) {
+    const yearsSinceBk = (Date.now() - new Date(p.bk_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceBk <= 2) sellerMotivation += 12;
+    else if (yearsSinceBk <= 5) sellerMotivation += 6;
+  }
+  
+  // Divorce (within 2 years)
+  if (p.divorce_date) {
+    const yearsSinceDiv = (Date.now() - new Date(p.divorce_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
+    if (yearsSinceDiv <= 2) sellerMotivation += 10;
+    else if (yearsSinceDiv <= 5) sellerMotivation += 5;
+  }
+  
   sellerMotivation = Math.min(40, sellerMotivation);
   
   // === FINANCIAL VIABILITY (max 35) ===
@@ -526,6 +568,8 @@ function calculateFallbackScore(p: PropertyData): any {
   if (p.tax_delinquent) keyIndicators.push('Tax delinquency - financial distress');
   if (p.days_on_market && p.days_on_market > 90) keyIndicators.push(`${p.days_on_market} days on market - MLS frustrated`);
   if (auctionDays !== null && auctionDays <= 30) keyIndicators.push(`Auction in ${auctionDays} days - MAXIMUM URGENCY`);
+  if (p.bk_date) keyIndicators.push('Bankruptcy - severe financial distress');
+  if (p.divorce_date) keyIndicators.push('Divorce - forced sale likely');
   if (p.arv && p.mortgage_balance && (p.arv - p.mortgage_balance) > 100000) {
     keyIndicators.push(`Net equity $${(p.arv - p.mortgage_balance).toLocaleString()} - excellent margin`);
   }

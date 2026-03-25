@@ -1,0 +1,18 @@
+ALTER TABLE public.properties
+  ADD COLUMN IF NOT EXISTS bk_date date,
+  ADD COLUMN IF NOT EXISTS divorce_date date,
+  ADD COLUMN IF NOT EXISTS lien_type text,
+  ADD COLUMN IF NOT EXISTS lien_amount numeric,
+  ADD COLUMN IF NOT EXISTS lien_date date,
+  ADD COLUMN IF NOT EXISTS prefc_recording_date date,
+  ADD COLUMN IF NOT EXISTS prefc_unpaid_balance numeric,
+  ADD COLUMN IF NOT EXISTS prefc_default_amount numeric,
+  ADD COLUMN IF NOT EXISTS prefc_opening_bid numeric,
+  ADD COLUMN IF NOT EXISTS mls_agent_name text,
+  ADD COLUMN IF NOT EXISTS mls_agent_phone text,
+  ADD COLUMN IF NOT EXISTS mls_agent_email text,
+  ADD COLUMN IF NOT EXISTS phone_1_type text,
+  ADD COLUMN IF NOT EXISTS phone_2_type text,
+  ADD COLUMN IF NOT EXISTS phone_3_type text,
+  ADD COLUMN IF NOT EXISTS phone_4_type text,
+  ADD COLUMN IF NOT EXISTS phone_5_type text;

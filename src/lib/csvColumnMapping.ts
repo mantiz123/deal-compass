@@ -368,7 +368,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'auction_date',
     label: 'Fecha de Subasta',
-    aliases: ['auctiondate', 'foreclosuresaledate', 'saledateforeclosure', 'trusteedatesale', 'sheriffsaledate', 'foreclosureauctiondate', 'trusteesaledate', 'foreclosuresale'],
+    aliases: ['auctiondate', 'foreclosuresaledate', 'saledateforeclosure', 'trusteedatesale', 'sheriffsaledate', 'foreclosureauctiondate', 'trusteesaledate', 'foreclosuresale', 'prefcauctiondate'],
     required: false,
     transform: (value: string) => {
       if (!value) return null;
@@ -497,6 +497,145 @@ export const propertyFields: PropertyField[] = [
     key: 'apn',
     label: 'APN (Parcel Number)',
     aliases: ['apn', 'parcelnumber', 'parcelid', 'assessorparcelnumber'],
+    required: false,
+  },
+  // === Bankruptcy & Divorce ===
+  {
+    key: 'bk_date',
+    label: 'Fecha de Bancarrota',
+    aliases: ['bkdate', 'bankruptcydate', 'bankruptcy'],
+    required: false,
+    transform: (value: string) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+    },
+  },
+  {
+    key: 'divorce_date',
+    label: 'Fecha de Divorcio',
+    aliases: ['divorcedate', 'divorce'],
+    required: false,
+    transform: (value: string) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+    },
+  },
+  // === Pre-Foreclosure details ===
+  {
+    key: 'prefc_recording_date',
+    label: 'Fecha Pre-FC Recording',
+    aliases: ['prefcrecordingdate', 'preforeclosurerecordingdate', 'preforeclosuredate'],
+    required: false,
+    transform: (value: string) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+    },
+  },
+  {
+    key: 'prefc_unpaid_balance',
+    label: 'Pre-FC Balance Impago',
+    aliases: ['prefcunpaidbalance', 'preforeclosureunpaidbalance'],
+    required: false,
+    transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
+  },
+  {
+    key: 'prefc_default_amount',
+    label: 'Pre-FC Monto en Default',
+    aliases: ['prefcdefaultamount', 'preforeclosuredefaultamount', 'defaultamount'],
+    required: false,
+    transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
+  },
+  {
+    key: 'prefc_opening_bid',
+    label: 'Pre-FC Oferta de Apertura',
+    aliases: ['prefcauctionopeningbid', 'openingbid', 'prefcopeningbid'],
+    required: false,
+    transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
+  },
+  // === Lien data ===
+  {
+    key: 'lien_type',
+    label: 'Tipo de Gravamen',
+    aliases: ['lientype', 'lien'],
+    required: false,
+  },
+  {
+    key: 'lien_amount',
+    label: 'Monto del Gravamen',
+    aliases: ['lienamount', 'lienbalance'],
+    required: false,
+    transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
+  },
+  {
+    key: 'lien_date',
+    label: 'Fecha del Gravamen',
+    aliases: ['liendate'],
+    required: false,
+    transform: (value: string) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+    },
+  },
+  // === Monthly Rent ===
+  {
+    key: 'monthly_rent',
+    label: 'Renta Mensual Estimada',
+    aliases: ['monthlyrent', 'rent', 'estimatedrent', 'monthlyrentestimate'],
+    required: false,
+    transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
+  },
+  // === MLS Agent info ===
+  {
+    key: 'mls_agent_name',
+    label: 'Agente MLS',
+    aliases: ['mlsagentname', 'agentname', 'listingagent', 'listagent'],
+    required: false,
+  },
+  {
+    key: 'mls_agent_phone',
+    label: 'Teléfono Agente MLS',
+    aliases: ['mlsagentphone', 'agentphone'],
+    required: false,
+  },
+  {
+    key: 'mls_agent_email',
+    label: 'Email Agente MLS',
+    aliases: ['mlsagentemail', 'agentemail', 'mlsagentemail'],
+    required: false,
+  },
+  // === Phone types ===
+  {
+    key: 'phone_1_type',
+    label: 'Tipo Phone 1',
+    aliases: ['phone1type'],
+    required: false,
+  },
+  {
+    key: 'phone_2_type',
+    label: 'Tipo Phone 2',
+    aliases: ['phone2type'],
+    required: false,
+  },
+  {
+    key: 'phone_3_type',
+    label: 'Tipo Phone 3',
+    aliases: ['phone3type'],
+    required: false,
+  },
+  {
+    key: 'phone_4_type',
+    label: 'Tipo Phone 4',
+    aliases: ['phone4type'],
+    required: false,
+  },
+  {
+    key: 'phone_5_type',
+    label: 'Tipo Phone 5',
+    aliases: ['phone5type'],
     required: false,
   },
 ];

@@ -626,6 +626,7 @@ export type Database = {
           auction_date: string | null
           bathrooms: number | null
           bedrooms: number | null
+          bk_date: string | null
           city: string
           county: string | null
           created_at: string
@@ -634,6 +635,7 @@ export type Database = {
           data_source: string | null
           days_on_market: number | null
           days_on_market_avg: number | null
+          divorce_date: string | null
           do_not_mail: boolean | null
           equity_percent: number | null
           estimated_monthly_rent: number | null
@@ -648,10 +650,16 @@ export type Database = {
           last_refinance_date: string | null
           last_sale_date: string | null
           last_sale_price: number | null
+          lien_amount: number | null
+          lien_date: string | null
+          lien_type: string | null
           lot_size: number | null
           mailing_address_different: boolean | null
           mao: number | null
           median_household_income: number | null
+          mls_agent_email: string | null
+          mls_agent_name: string | null
+          mls_agent_phone: string | null
           mortgage_age_years: number | null
           mortgage_balance: number | null
           neighborhood_vacancy_rate: number | null
@@ -664,15 +672,24 @@ export type Database = {
           owner_tenure_years: number | null
           owner_type: string | null
           phone_1_dnc: boolean | null
+          phone_1_type: string | null
           phone_2: string | null
           phone_2_dnc: boolean | null
+          phone_2_type: string | null
           phone_3: string | null
           phone_3_dnc: boolean | null
+          phone_3_type: string | null
           phone_4: string | null
           phone_4_dnc: boolean | null
+          phone_4_type: string | null
           phone_5: string | null
           phone_5_dnc: boolean | null
+          phone_5_type: string | null
           population_growth_5yr: number | null
+          prefc_default_amount: number | null
+          prefc_opening_bid: number | null
+          prefc_recording_date: string | null
+          prefc_unpaid_balance: number | null
           price_growth_3yr: number | null
           property_condition: string | null
           property_type: Database["public"]["Enums"]["property_type"]
@@ -697,6 +714,7 @@ export type Database = {
           auction_date?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
+          bk_date?: string | null
           city: string
           county?: string | null
           created_at?: string
@@ -705,6 +723,7 @@ export type Database = {
           data_source?: string | null
           days_on_market?: number | null
           days_on_market_avg?: number | null
+          divorce_date?: string | null
           do_not_mail?: boolean | null
           equity_percent?: number | null
           estimated_monthly_rent?: number | null
@@ -719,10 +738,16 @@ export type Database = {
           last_refinance_date?: string | null
           last_sale_date?: string | null
           last_sale_price?: number | null
+          lien_amount?: number | null
+          lien_date?: string | null
+          lien_type?: string | null
           lot_size?: number | null
           mailing_address_different?: boolean | null
           mao?: number | null
           median_household_income?: number | null
+          mls_agent_email?: string | null
+          mls_agent_name?: string | null
+          mls_agent_phone?: string | null
           mortgage_age_years?: number | null
           mortgage_balance?: number | null
           neighborhood_vacancy_rate?: number | null
@@ -735,15 +760,24 @@ export type Database = {
           owner_tenure_years?: number | null
           owner_type?: string | null
           phone_1_dnc?: boolean | null
+          phone_1_type?: string | null
           phone_2?: string | null
           phone_2_dnc?: boolean | null
+          phone_2_type?: string | null
           phone_3?: string | null
           phone_3_dnc?: boolean | null
+          phone_3_type?: string | null
           phone_4?: string | null
           phone_4_dnc?: boolean | null
+          phone_4_type?: string | null
           phone_5?: string | null
           phone_5_dnc?: boolean | null
+          phone_5_type?: string | null
           population_growth_5yr?: number | null
+          prefc_default_amount?: number | null
+          prefc_opening_bid?: number | null
+          prefc_recording_date?: string | null
+          prefc_unpaid_balance?: number | null
           price_growth_3yr?: number | null
           property_condition?: string | null
           property_type?: Database["public"]["Enums"]["property_type"]
@@ -768,6 +802,7 @@ export type Database = {
           auction_date?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
+          bk_date?: string | null
           city?: string
           county?: string | null
           created_at?: string
@@ -776,6 +811,7 @@ export type Database = {
           data_source?: string | null
           days_on_market?: number | null
           days_on_market_avg?: number | null
+          divorce_date?: string | null
           do_not_mail?: boolean | null
           equity_percent?: number | null
           estimated_monthly_rent?: number | null
@@ -790,10 +826,16 @@ export type Database = {
           last_refinance_date?: string | null
           last_sale_date?: string | null
           last_sale_price?: number | null
+          lien_amount?: number | null
+          lien_date?: string | null
+          lien_type?: string | null
           lot_size?: number | null
           mailing_address_different?: boolean | null
           mao?: number | null
           median_household_income?: number | null
+          mls_agent_email?: string | null
+          mls_agent_name?: string | null
+          mls_agent_phone?: string | null
           mortgage_age_years?: number | null
           mortgage_balance?: number | null
           neighborhood_vacancy_rate?: number | null
@@ -806,15 +848,24 @@ export type Database = {
           owner_tenure_years?: number | null
           owner_type?: string | null
           phone_1_dnc?: boolean | null
+          phone_1_type?: string | null
           phone_2?: string | null
           phone_2_dnc?: boolean | null
+          phone_2_type?: string | null
           phone_3?: string | null
           phone_3_dnc?: boolean | null
+          phone_3_type?: string | null
           phone_4?: string | null
           phone_4_dnc?: boolean | null
+          phone_4_type?: string | null
           phone_5?: string | null
           phone_5_dnc?: boolean | null
+          phone_5_type?: string | null
           population_growth_5yr?: number | null
+          prefc_default_amount?: number | null
+          prefc_opening_bid?: number | null
+          prefc_recording_date?: string | null
+          prefc_unpaid_balance?: number | null
           price_growth_3yr?: number | null
           property_condition?: string | null
           property_type?: Database["public"]["Enums"]["property_type"]
