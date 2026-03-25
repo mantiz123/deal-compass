@@ -131,7 +131,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'equity_percent',
     label: 'Porcentaje de Equity',
-    aliases: ['estimatedequitypercent', 'equitypercent', 'equitypct', 'estequitypercent', 'equitypercentage', 'estimatedequity'],
+    aliases: ['estimatedequitypercent', 'equitypercent', 'equitypct', 'estequitypercent', 'equitypercentage'],
     required: false,
     transform: (value: string) => {
       const num = parseFloat(value.replace(/%/g, ''));
