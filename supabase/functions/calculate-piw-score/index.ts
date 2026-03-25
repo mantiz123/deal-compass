@@ -22,10 +22,12 @@ interface PropertyData {
   last_refinance_date?: string;
   mortgage_age_years?: number;
   days_on_market?: number;
+  auction_date?: string;
   
   // II. Financial Viability Variables
   equity_percent?: number;
   arv?: number;
+  mortgage_balance?: number;
   sqft?: number;
   bedrooms?: number;
   bathrooms?: number;
@@ -60,7 +62,6 @@ serve(async (req) => {
     const { leadId, propertyData } = await req.json();
     
     console.log('Calculating PIW score for lead:', leadId);
-    console.log('Property data received:', JSON.stringify(propertyData));
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -68,7 +69,6 @@ serve(async (req) => {
     }
 
     const analysisPrompt = buildEnhancedAnalysisPrompt(propertyData);
-    console.log('Analysis prompt built, sending to AI gateway...');
     
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -79,69 +79,33 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          {
-            role: 'system',
-            content: SYSTEM_PROMPT
-          },
-          {
-            role: 'user',
-            content: analysisPrompt
-          }
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: analysisPrompt }
         ],
         tools: [
           {
             type: "function",
             function: {
               name: "calculate_piw_score",
-              description: "Calculate the PIW score for a real estate wholesale lead based on critical variables",
+              description: "Calculate the PIW score for a real estate wholesale lead",
               parameters: {
                 type: "object",
                 properties: {
-                  score: {
-                    type: "number",
-                    description: "Overall PIW score from 0-100"
-                  },
+                  score: { type: "number", description: "Overall PIW score from 0-100" },
                   factors: {
                     type: "object",
                     properties: {
-                      seller_motivation_score: { 
-                        type: "number",
-                        description: "Score 0-40 based on seller urgency indicators"
-                      },
-                      financial_viability_score: { 
-                        type: "number",
-                        description: "Score 0-35 based on deal profitability"
-                      },
-                      closing_difficulty_score: { 
-                        type: "number",
-                        description: "Score 0-25 (higher = easier close)"
-                      }
+                      seller_motivation_score: { type: "number", description: "Score 0-40" },
+                      financial_viability_score: { type: "number", description: "Score 0-35" },
+                      closing_difficulty_score: { type: "number", description: "Score 0-25" }
                     },
                     required: ["seller_motivation_score", "financial_viability_score", "closing_difficulty_score"]
                   },
-                  priority: {
-                    type: "string",
-                    enum: ["hot", "warm", "cold"],
-                    description: "Lead priority classification"
-                  },
-                  key_indicators: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Top 3-5 reasons for the score"
-                  },
-                  risks: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Potential deal risks identified"
-                  },
-                  recommended_action: {
-                    type: "string",
-                    description: "Next best action for this lead"
-                  },
-                  analysis: {
-                    type: "string",
-                    description: "Brief explanation of the overall assessment"
-                  }
+                  priority: { type: "string", enum: ["hot", "warm", "cold"] },
+                  key_indicators: { type: "array", items: { type: "string" } },
+                  risks: { type: "array", items: { type: "string" } },
+                  recommended_action: { type: "string" },
+                  analysis: { type: "string" }
                 },
                 required: ["score", "factors", "priority", "key_indicators", "risks", "recommended_action", "analysis"]
               }
@@ -155,25 +119,16 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AI gateway error:', response.status, errorText);
-      
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded, please try again later' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required, please add credits' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({ error: 'Payment required' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
     const aiResponse = await response.json();
-    console.log('AI response received');
-
     let result;
     const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
@@ -182,9 +137,7 @@ serve(async (req) => {
       const content = aiResponse.choices?.[0]?.message?.content;
       if (content) {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          result = JSON.parse(jsonMatch[0]);
-        }
+        if (jsonMatch) result = JSON.parse(jsonMatch[0]);
       }
     }
 
@@ -215,11 +168,7 @@ serve(async (req) => {
         })
         .eq('id', leadId);
 
-      if (updateError) {
-        console.error('Error updating lead:', updateError);
-      } else {
-        console.log('Lead PIW score updated successfully');
-      }
+      if (updateError) console.error('Error updating lead:', updateError);
     }
 
     return new Response(JSON.stringify({
@@ -276,6 +225,12 @@ MANDATORY POINT ASSIGNMENTS — apply these EXACTLY before any other analysis:
 - 91-180 days: +8 pts (frustrated with MLS)
 - 180+ days: +14 pts (very frustrated, open to offers)
 
+**Pre-Foreclosure Auction Urgency (from auction_date):**
+- Auction in ≤30 days: +20 pts (MAXIMUM URGENCY — about to lose the house)
+- Auction in 31-60 days: +15 pts
+- Auction in 61-90 days: +10 pts
+- No auction date: +0 pts
+
 **Additional Motivation Signals (additive):**
 - Foreclosure: +15 pts (immediate urgency, cap motivation at 40)
 - Tax delinquency > $2,000: +12 pts
@@ -297,11 +252,15 @@ Cap total seller_motivation_score at 40.
 - 80-99%: +22 pts
 - 100% (free & clear): +28 pts
 
+**Net Equity in Dollars (from ARV - mortgage_balance):**
+- Net equity > $100,000: +8 pts (excellent deal margin)
+- Net equity > $50,000: +5 pts (good deal margin)
+- Net equity ≤ $50,000 or unknown: +0 pts
+
 **Additional Financial Signals:**
 - ARV supports 70% rule after repairs: +5 pts
 - Property in growing neighborhood (price_growth > 5%/yr): +5 pts
 - Standard SFH 3/2: +3 pts
-- Good beds/baths/sqft ratio: +2 pts
 
 Cap total financial_viability_score at 35.
 
@@ -325,10 +284,18 @@ Cap at 0-25.
 ## CRITICAL RULE
 You MUST use the mandatory point tables above. Do NOT underweight absentee, vacant, tenure, equity, or days_on_market. These are the PRIMARY scoring drivers from PropWire data. A vacant, absentee out-of-state property with 100% equity and 20+ years ownership should score 75+ minimum.`;
 
+function getAuctionDaysRemaining(auctionDate?: string): number | null {
+  if (!auctionDate) return null;
+  const auction = new Date(auctionDate);
+  if (isNaN(auction.getTime())) return null;
+  const now = new Date();
+  const diffMs = auction.getTime() - now.getTime();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
 function buildEnhancedAnalysisPrompt(p: PropertyData): string {
   const lines: string[] = ['## PROPERTY DATA FOR PIW-SCORE ANALYSIS\n'];
   
-  // Location
   if (p.city || p.state || p.zip_code) {
     lines.push(`**Location:** ${[p.city, p.state, p.zip_code].filter(Boolean).join(', ')}`);
   }
@@ -348,12 +315,10 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
     lines.push(`- Absentee Owner: ${p.is_absentee_owner ? '✓ YES (+8 pts minimum)' : 'No / Unknown'}`);
   }
   
-  // Vacant
   if (p.is_vacant != null) {
     lines.push(`- Vacant Property: ${p.is_vacant ? '🚨 YES - VACANT (+12 pts mandatory)' : 'No'}`);
   }
   
-  // Owner tenure
   if (p.owner_tenure_years != null) {
     let tenureLabel = '';
     if (p.owner_tenure_years >= 20) tenureLabel = ' 🚨 MAXIMUM FATIGUE (+18 pts mandatory)';
@@ -365,7 +330,6 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
     lines.push(`- Owner Tenure: ${p.owner_tenure_years} years${tenureLabel}`);
   }
   
-  // Days on Market
   if (p.days_on_market != null && p.days_on_market > 0) {
     let domLabel = '';
     if (p.days_on_market > 180) domLabel = ' 🚨 VERY FRUSTRATED WITH MLS (+14 pts mandatory)';
@@ -373,19 +337,27 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
     else domLabel = ' (+3 pts)';
     lines.push(`- Days on Market: ${p.days_on_market}${domLabel}`);
   }
+
+  // Auction date urgency
+  const auctionDays = getAuctionDaysRemaining(p.auction_date);
+  if (auctionDays !== null && auctionDays > 0) {
+    let urgencyLabel = '';
+    if (auctionDays <= 30) urgencyLabel = ' 🚨🚨 MAXIMUM URGENCY - about to lose house (+20 pts mandatory)';
+    else if (auctionDays <= 60) urgencyLabel = ' 🚨 HIGH URGENCY (+15 pts mandatory)';
+    else if (auctionDays <= 90) urgencyLabel = ' ⚠️ UPCOMING AUCTION (+10 pts mandatory)';
+    else urgencyLabel = ' (auction far out, +0 pts)';
+    lines.push(`- Auction Date: ${p.auction_date} (${auctionDays} days remaining)${urgencyLabel}`);
+  }
   
-  // Owner type
   if (p.owner_type) {
     const ownerTypeNote = p.owner_type === 'corporation' ? ' (possible tired landlord, +5 pts)' : '';
     lines.push(`- Owner Type: ${p.owner_type}${ownerTypeNote}`);
   }
   
-  // Mailing address
   if (p.mailing_address_different != null) {
     lines.push(`- Mailing Address Different: ${p.mailing_address_different ? '✓ YES (+3 pts)' : 'No'}`);
   }
   
-  // Tax situation
   if (p.tax_delinquent != null) {
     lines.push(`- Tax Delinquent: ${p.tax_delinquent ? '⚠️ YES (+8 pts)' : 'No'}`);
   }
@@ -393,7 +365,6 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
     lines.push(`- Tax Debt Amount: $${p.tax_debt.toLocaleString()} ${p.tax_debt > 2000 ? '(+12 pts - SIGNIFICANT)' : ''}`);
   }
   
-  // Distress indicators
   if (p.is_probate != null) {
     lines.push(`- Probate/Estate: ${p.is_probate ? '✓ YES (+10 pts)' : 'No'}`);
   }
@@ -404,13 +375,9 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
     lines.push(`- Eviction History: ${p.eviction_count} evictions (+8 pts burned-out landlord)`);
   }
   
-  // Mortgage info
-  if (p.last_refinance_date) {
-    lines.push(`- Last Refinance: ${p.last_refinance_date}`);
-  }
+  if (p.last_refinance_date) lines.push(`- Last Refinance: ${p.last_refinance_date}`);
   if (p.mortgage_age_years != null) {
-    const mortgageNote = p.mortgage_age_years > 15 ? ' (HIGH EQUITY likely)' : '';
-    lines.push(`- Mortgage Age: ${p.mortgage_age_years} years${mortgageNote}`);
+    lines.push(`- Mortgage Age: ${p.mortgage_age_years} years${p.mortgage_age_years > 15 ? ' (HIGH EQUITY likely)' : ''}`);
   }
   
   lines.push('\n### II. FINANCIAL VIABILITY');
@@ -425,49 +392,41 @@ function buildEnhancedAnalysisPrompt(p: PropertyData): string {
     else equityLabel = ' (LOW - +0 pts)';
     lines.push(`- Estimated Equity: ${p.equity_percent}%${equityLabel}`);
   }
-  if (p.arv != null) {
-    lines.push(`- ARV (After Repair Value): $${p.arv.toLocaleString()}`);
+
+  // Net equity in dollars
+  if (p.arv != null && p.mortgage_balance != null) {
+    const netEquity = p.arv - p.mortgage_balance;
+    let netLabel = '';
+    if (netEquity > 100000) netLabel = ' 🚨 EXCELLENT MARGIN (+8 pts)';
+    else if (netEquity > 50000) netLabel = ' ✓ GOOD MARGIN (+5 pts)';
+    else netLabel = ' (thin margin)';
+    lines.push(`- Net Equity (ARV - Mortgage): $${netEquity.toLocaleString()}${netLabel}`);
+    lines.push(`- Mortgage Balance: $${p.mortgage_balance.toLocaleString()}`);
+  } else if (p.mortgage_balance != null) {
+    lines.push(`- Mortgage Balance: $${p.mortgage_balance.toLocaleString()}`);
   }
+
+  if (p.arv != null) lines.push(`- ARV (After Repair Value): $${p.arv.toLocaleString()}`);
   if (p.repair_cost != null) {
     lines.push(`- Estimated Repair Cost: $${p.repair_cost.toLocaleString()}`);
-    if (p.arv != null) {
-      const repairPercent = ((p.repair_cost / p.arv) * 100).toFixed(1);
-      lines.push(`- Repair/ARV Ratio: ${repairPercent}%`);
-    }
+    if (p.arv != null) lines.push(`- Repair/ARV Ratio: ${((p.repair_cost / p.arv) * 100).toFixed(1)}%`);
   }
-  if (p.mao != null) {
-    lines.push(`- MAO (Max Allowable Offer): $${p.mao.toLocaleString()}`);
-  }
-  if (p.sqft != null) {
-    lines.push(`- Square Footage: ${p.sqft.toLocaleString()} sq ft`);
-  }
-  if (p.bedrooms != null || p.bathrooms != null) {
-    lines.push(`- Beds/Baths: ${p.bedrooms ?? '?'}/${p.bathrooms ?? '?'}`);
-  }
-  if (p.year_built != null) {
-    const age = new Date().getFullYear() - p.year_built;
-    lines.push(`- Year Built: ${p.year_built} (${age} years old)`);
-  }
-  if (p.neighborhood_vacancy_rate != null) {
-    lines.push(`- Neighborhood Vacancy Rate: ${p.neighborhood_vacancy_rate}%`);
-  }
+  if (p.mao != null) lines.push(`- MAO: $${p.mao.toLocaleString()}`);
+  if (p.sqft != null) lines.push(`- Square Footage: ${p.sqft.toLocaleString()} sq ft`);
+  if (p.bedrooms != null || p.bathrooms != null) lines.push(`- Beds/Baths: ${p.bedrooms ?? '?'}/${p.bathrooms ?? '?'}`);
+  if (p.year_built != null) lines.push(`- Year Built: ${p.year_built} (${new Date().getFullYear() - p.year_built} years old)`);
+  if (p.neighborhood_vacancy_rate != null) lines.push(`- Neighborhood Vacancy Rate: ${p.neighborhood_vacancy_rate}%`);
   if (p.price_growth_3yr != null) {
-    const growthNote = p.price_growth_3yr > 5 ? ' (GROWING)' : p.price_growth_3yr < 0 ? ' (DECLINING)' : '';
-    lines.push(`- 3-Year Price Growth: ${p.price_growth_3yr}%${growthNote}`);
+    lines.push(`- 3-Year Price Growth: ${p.price_growth_3yr}%${p.price_growth_3yr > 5 ? ' (GROWING)' : p.price_growth_3yr < 0 ? ' (DECLINING)' : ''}`);
   }
   
   lines.push('\n### III. CLOSING DIFFICULTY');
   
   if (p.active_liens_count != null) {
-    const liensNote = p.active_liens_count > 2 ? ' ⚠️ COMPLEX TITLE' : p.active_liens_count === 0 ? ' (CLEAN)' : '';
-    lines.push(`- Active Liens: ${p.active_liens_count}${liensNote}`);
+    lines.push(`- Active Liens: ${p.active_liens_count}${p.active_liens_count > 2 ? ' ⚠️ COMPLEX TITLE' : p.active_liens_count === 0 ? ' (CLEAN)' : ''}`);
   }
-  if (p.last_sale_date) {
-    lines.push(`- Last Sale Date: ${p.last_sale_date}`);
-  }
-  if (p.proximity_to_development) {
-    lines.push(`- Proximity to Development: ${p.proximity_to_development}`);
-  }
+  if (p.last_sale_date) lines.push(`- Last Sale Date: ${p.last_sale_date}`);
+  if (p.proximity_to_development) lines.push(`- Proximity to Development: ${p.proximity_to_development}`);
   
   lines.push('\n---');
   lines.push('Calculate the PIW-Score using the MANDATORY point tables from the system prompt. Show your math. Be decisive.');
@@ -482,15 +441,12 @@ function calculateFallbackScore(p: PropertyData): any {
   
   // === SELLER MOTIVATION (max 40) ===
   
-  // Absentee type (mandatory)
   if (p.absentee_type === 'out_of_state') sellerMotivation += 15;
   else if (p.absentee_type === 'local') sellerMotivation += 8;
   else if (p.is_absentee_owner) sellerMotivation += 8;
   
-  // Vacant (mandatory)
   if (p.is_vacant) sellerMotivation += 12;
   
-  // Ownership length (mandatory)
   if (p.owner_tenure_years != null) {
     if (p.owner_tenure_years >= 20) sellerMotivation += 18;
     else if (p.owner_tenure_years >= 10) sellerMotivation += 15;
@@ -499,14 +455,20 @@ function calculateFallbackScore(p: PropertyData): any {
     else if (p.owner_tenure_years >= 1) sellerMotivation += 3;
   }
   
-  // Days on market (mandatory)
   if (p.days_on_market != null) {
     if (p.days_on_market > 180) sellerMotivation += 14;
     else if (p.days_on_market > 90) sellerMotivation += 8;
     else if (p.days_on_market > 0) sellerMotivation += 3;
   }
+
+  // Auction urgency
+  const auctionDays = getAuctionDaysRemaining(p.auction_date);
+  if (auctionDays !== null && auctionDays > 0) {
+    if (auctionDays <= 30) sellerMotivation += 20;
+    else if (auctionDays <= 60) sellerMotivation += 15;
+    else if (auctionDays <= 90) sellerMotivation += 10;
+  }
   
-  // Additional signals
   if (p.is_foreclosure) sellerMotivation += 15;
   if (p.tax_debt && p.tax_debt > 2000) sellerMotivation += 12;
   else if (p.tax_delinquent) sellerMotivation += 8;
@@ -519,7 +481,6 @@ function calculateFallbackScore(p: PropertyData): any {
   
   // === FINANCIAL VIABILITY (max 35) ===
   
-  // Equity (mandatory)
   if (p.equity_percent != null) {
     if (p.equity_percent >= 100) financialViability += 28;
     else if (p.equity_percent >= 80) financialViability += 22;
@@ -527,8 +488,14 @@ function calculateFallbackScore(p: PropertyData): any {
     else if (p.equity_percent >= 40) financialViability += 14;
     else if (p.equity_percent >= 20) financialViability += 8;
   }
+
+  // Net equity in dollars
+  if (p.arv != null && p.mortgage_balance != null) {
+    const netEquity = p.arv - p.mortgage_balance;
+    if (netEquity > 100000) financialViability += 8;
+    else if (netEquity > 50000) financialViability += 5;
+  }
   
-  // Additional
   if (p.price_growth_3yr != null && p.price_growth_3yr > 5) financialViability += 5;
   if (p.property_type === 'single_family') financialViability += 3;
   if (p.arv && p.repair_cost) {
@@ -558,6 +525,10 @@ function calculateFallbackScore(p: PropertyData): any {
   if (p.is_foreclosure) keyIndicators.push('Foreclosure - urgent seller');
   if (p.tax_delinquent) keyIndicators.push('Tax delinquency - financial distress');
   if (p.days_on_market && p.days_on_market > 90) keyIndicators.push(`${p.days_on_market} days on market - MLS frustrated`);
+  if (auctionDays !== null && auctionDays <= 30) keyIndicators.push(`Auction in ${auctionDays} days - MAXIMUM URGENCY`);
+  if (p.arv && p.mortgage_balance && (p.arv - p.mortgage_balance) > 100000) {
+    keyIndicators.push(`Net equity $${(p.arv - p.mortgage_balance).toLocaleString()} - excellent margin`);
+  }
   
   const risks: string[] = [];
   if (p.active_liens_count && p.active_liens_count > 2) risks.push('Multiple liens may complicate title');
