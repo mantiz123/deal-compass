@@ -64,6 +64,7 @@ export function useLeads(options?: {
       let query = supabase
         .from('leads')
         .select(selectStr, { count: 'exact' })
+        .order('piw_score', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
 
       query = applyLeadFilters(query, options?.filters);
