@@ -89,13 +89,72 @@ export const useCSVImport = () => {
                 .filter(Boolean).join(' ').trim() || null;
             }
             
-            const tenureYears = propertyData.owner_tenure_months || propertyData.owner_tenure_years || null;
-            
-            // Compute ownership_months (raw months, not converted)
+            // === DERIVED FIELD: Tenure from last_sale_date if no ownership_months ===
             const ownershipMonthsRaw = propertyData.ownership_months || null;
-            // If we have raw months but tenure was converted to years, keep raw months for PIW
+            let tenureYears = propertyData.owner_tenure_months || null;
+            
+            if (!ownershipMonthsRaw && !tenureYears && propertyData.last_sale_date) {
+              const saleDate = new Date(propertyData.last_sale_date);
+              if (!isNaN(saleDate.getTime())) {
+                const diffMs = Date.now() - saleDate.getTime();
+                const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30.44);
+                tenureYears = Math.floor(diffMonths / 12);
+              }
+            }
+            
             const tenureForDb = ownershipMonthsRaw ? Math.floor(ownershipMonthsRaw / 12) : tenureYears;
             
+            // === DERIVED FIELD: Equity from Est. Loan-to-Value ===
+            let equityPercent = propertyData.equity_percent || null;
+            if (equityPercent === null && propertyData.est_ltv != null && propertyData.est_ltv >= 0) {
+              equityPercent = Math.round(100 - propertyData.est_ltv);
+            }
+            // If we have est_equity_dollars and arv, compute equity percent
+            if (equityPercent === null && propertyData.est_equity_dollars && propertyData.arv && propertyData.arv > 0) {
+              equityPercent = Math.round((propertyData.est_equity_dollars / propertyData.arv) * 100);
+            }
+            
+            // === DERIVED FIELD: Days on Market from MLS Date ===
+            let daysOnMarket = propertyData.days_on_market || null;
+            if (daysOnMarket === null && propertyData.mls_date) {
+              const mlsDate = new Date(propertyData.mls_date);
+              if (!isNaN(mlsDate.getTime())) {
+                const diffMs = Date.now() - mlsDate.getTime();
+                daysOnMarket = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                if (daysOnMarket < 0) daysOnMarket = 0;
+              }
+            }
+            
+            // === DERIVED FIELD: Foreclosure from Foreclosure Factor ===
+            let isForeclosure = propertyData.is_foreclosure || false;
+            const foreclosureFactor = propertyData.foreclosure_factor;
+            if (foreclosureFactor) {
+              const ff = foreclosureFactor.toLowerCase();
+              if (ff === 'high' || ff === 'very high') {
+                isForeclosure = true;
+              }
+            }
+            
+            // === DERIVED FIELD: MLS Status signals ===
+            const mlsStatus = propertyData.mls_status || null;
+            // FAIL or EXPIRED on MLS = frustrated seller → additional DOM signal
+            if (mlsStatus && (mlsStatus === 'FAIL' || mlsStatus === 'EXPIRED')) {
+              // If no DOM, estimate from MLS date; if still no data, set minimum DOM signal
+              if (daysOnMarket === null || daysOnMarket === 0) {
+                if (propertyData.mls_date) {
+                  const mlsDate = new Date(propertyData.mls_date);
+                  if (!isNaN(mlsDate.getTime())) {
+                    daysOnMarket = Math.floor((Date.now() - mlsDate.getTime()) / (1000 * 60 * 60 * 24));
+                  }
+                }
+                // If still nothing, set a default for FAIL/EXPIRED properties
+                if (daysOnMarket === null || daysOnMarket === 0) {
+                  daysOnMarket = 200; // Conservative estimate for failed/expired listings
+                }
+              }
+            }
+            
+            // === Absentee detection ===
             let isAbsentee = false;
             if (propertyData.is_absentee_owner !== undefined && propertyData.is_absentee_owner !== null) {
               isAbsentee = propertyData.is_absentee_owner;
@@ -103,7 +162,6 @@ export const useCSVImport = () => {
               isAbsentee = propertyData.owner_occupied;
             }
             
-            // Auto-detect absentee type from mailing state/city vs property state/city
             let absenteeType: string | null = null;
             const ownerMailingState = propertyData.owner_mailing_state?.trim().toUpperCase() || null;
             const ownerMailingCity = propertyData.owner_mailing_city?.trim().toUpperCase() || null;
@@ -140,16 +198,16 @@ export const useCSVImport = () => {
                 lot_size: propertyData.lot_size || null,
                 year_built: propertyData.year_built || null,
                 arv: propertyData.arv || null,
-                equity_percent: propertyData.equity_percent || null,
+                equity_percent: equityPercent,
                 owner_tenure_years: tenureForDb,
                 is_absentee_owner: isAbsentee,
                 absentee_type: absenteeType,
                 owner_mailing_state: propertyData.owner_mailing_state || null,
                 owner_mailing_city: propertyData.owner_mailing_city || null,
                 is_vacant: propertyData.is_vacant || false,
-                days_on_market: propertyData.days_on_market || null,
+                days_on_market: daysOnMarket,
                 tax_delinquent: propertyData.tax_delinquent || false,
-                is_foreclosure: propertyData.is_foreclosure || false,
+                is_foreclosure: isForeclosure,
                 is_probate: propertyData.is_probate || false,
                 last_sale_date: propertyData.last_sale_date || null,
                 last_sale_price: propertyData.last_sale_price || null,
@@ -167,9 +225,14 @@ export const useCSVImport = () => {
               continue;
             }
             
+            const leadInsertData: any = { property_id: property.id, source: source, status: 'captacion' as const };
+            if (propertyData.mls_amount) {
+              leadInsertData.listing_price = propertyData.mls_amount;
+            }
+            
             const { data: lead, error: leadError } = await supabase
               .from('leads')
-              .insert({ property_id: property.id, source: source, status: 'captacion' })
+              .insert(leadInsertData)
               .select()
               .single();
             
