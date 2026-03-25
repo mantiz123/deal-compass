@@ -56,13 +56,13 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'owner_phone',
     label: 'Teléfono',
-    aliases: ['phone', 'ownerphone', 'phonenumber', 'tel', 'telefono', 'mobile', 'cell'],
+    aliases: ['phone1', 'phone', 'ownerphone', 'phonenumber', 'tel', 'telefono', 'mobile', 'cell'],
     required: false,
   },
   {
     key: 'owner_email',
     label: 'Email',
-    aliases: ['email', 'owneremail', 'emailaddress', 'correo', 'mail'],
+    aliases: ['email1', 'email', 'owneremail', 'emailaddress', 'correo', 'mail'],
     required: false,
   },
   {
@@ -72,11 +72,11 @@ export const propertyFields: PropertyField[] = [
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
-      if (normalized.includes('single') || normalized.includes('sfr') || normalized.includes('sfd') || normalized.includes('singlefamilyresidence')) return 'single_family';
-      if (normalized.includes('multi') || normalized.includes('duplex') || normalized.includes('triplex')) return 'multi_family';
+      if (normalized.includes('single') || normalized.includes('sfr') || normalized.includes('sfd') || normalized.includes('singlefamilyresidence') || normalized.includes('singlefamilyresidential')) return 'single_family';
+      if (normalized.includes('multi') || normalized.includes('duplex') || normalized.includes('triplex') || normalized.includes('2units')) return 'multi_family';
       if (normalized.includes('condo')) return 'condo';
       if (normalized.includes('town')) return 'townhouse';
-      if (normalized.includes('land') || normalized.includes('lot') || normalized.includes('vacant')) return 'land';
+      if (normalized.includes('land') || normalized.includes('lot')) return 'land';
       if (normalized.includes('commercial') || normalized.includes('retail') || normalized.includes('office')) return 'commercial';
       return 'single_family';
     },
@@ -91,28 +91,28 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'bathrooms',
     label: 'Baños',
-    aliases: ['bathrooms', 'baths', 'bath', 'ba', 'banos', 'bathroomcount', 'fullbaths'],
+    aliases: ['totalbathrooms', 'bathrooms', 'baths', 'bath', 'ba', 'banos', 'bathroomcount', 'fullbaths'],
     required: false,
     transform: (value: string) => parseFloat(value) || null,
   },
   {
     key: 'sqft',
     label: 'Pies Cuadrados',
-    aliases: ['sqft', 'squarefeet', 'sqfeet', 'livingsquarefeet', 'livingarea', 'buildingarea', 'grossarea', 'area', 'size'],
+    aliases: ['buildingsqft', 'sqft', 'squarefeet', 'sqfeet', 'livingsquarefeet', 'livingarea', 'buildingarea', 'grossarea', 'area', 'size'],
     required: false,
     transform: (value: string) => parseInt(value.replace(/,/g, '')) || null,
   },
   {
     key: 'lot_size',
-    label: 'Tamaño del Lote (Acres)',
-    aliases: ['lotacres', 'lotsize', 'lotsqft', 'lotarea', 'landarea', 'acreage', 'acres'],
+    label: 'Tamaño del Lote',
+    aliases: ['lotsizesqft', 'lotacres', 'lotsize', 'lotsqft', 'lotarea', 'landarea', 'acreage', 'acres'],
     required: false,
     transform: (value: string) => parseFloat(value.replace(/,/g, '')) || null,
   },
   {
     key: 'year_built',
     label: 'Año de Construcción',
-    aliases: ['yearbuilt', 'year', 'built', 'yrbuilt', 'constructionyear', 'anoconstruccion'],
+    aliases: ['effectiveyearbuilt', 'yearbuilt', 'year', 'built', 'yrbuilt', 'constructionyear', 'anoconstruccion'],
     required: false,
     transform: (value: string) => {
       const year = parseInt(value);
@@ -122,23 +122,43 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'arv',
     label: 'ARV (Valor Estimado)',
-    aliases: ['arv', 'estimatedvalue', 'marketvalue', 'value', 'avm', 'assessedvalue', 'totalvalue', 'fairmarketvalue'],
+    // CRITICAL: "estvalue" matches PropStream "Est. Value". 
+    // DO NOT include "assessedvalue" or "totalassessedvalue" — those are tax assessments, not market value.
+    aliases: ['arv', 'estvalue', 'estimatedvalue', 'marketvalue', 'avm', 'fairmarketvalue'],
     required: false,
     transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
   },
   {
     key: 'equity_percent',
     label: 'Porcentaje de Equity',
-    // IMPORTANT: Don't use 'equity' alone - it would match "Estimated Equity" (dollar amount)
-    aliases: ['estimatedequitypercent', 'equitypercent', 'equitypct', 'ltv', 'loantovalue'],
+    aliases: ['estimatedequitypercent', 'equitypercent', 'equitypct'],
     required: false,
     transform: (value: string) => {
       const num = parseFloat(value.replace(/%/g, ''));
-      // Cap at reasonable percentage values
       if (isNaN(num)) return null;
-      if (num > 100) return null; // Likely a dollar amount, not percentage
+      if (num > 100) return null;
       return num;
     },
+  },
+  {
+    key: 'est_ltv',
+    label: 'Loan-to-Value Estimado',
+    // PropStream: "Est. Loan-to-Value" → normalize → "estloantovalue"
+    aliases: ['estloantovalue', 'loantovalue', 'ltv', 'ltvpercent'],
+    required: false,
+    transform: (value: string) => {
+      const num = parseFloat(value.replace(/%/g, ''));
+      if (isNaN(num) || num < 0) return null;
+      return num;
+    },
+  },
+  {
+    key: 'est_equity_dollars',
+    label: 'Equity Estimado ($)',
+    // PropStream: "Est. Equity" → normalize → "estequity"
+    aliases: ['estequity', 'estimatedequity', 'equitydollars'],
+    required: false,
+    transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
   },
   {
     key: 'owner_tenure_months',
@@ -147,7 +167,7 @@ export const propertyFields: PropertyField[] = [
     required: false,
     transform: (value: string) => {
       const months = parseInt(value);
-      return !isNaN(months) ? Math.floor(months / 12) : null; // Convert to years
+      return !isNaN(months) ? Math.floor(months / 12) : null;
     },
   },
   {
@@ -157,23 +177,20 @@ export const propertyFields: PropertyField[] = [
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
-      // Map PropWire values to DB-valid values
       if (normalized === 'individual' || normalized === 'person') return 'individual';
       if (normalized === 'company' || normalized === 'llc' || normalized === 'corporation' || normalized === 'corp') return 'corporation';
       if (normalized === 'trust') return 'trust';
       if (normalized === 'estate') return 'estate';
-      // Return null for unknown types to avoid constraint violations
       return null;
     },
   },
   {
     key: 'is_absentee_owner',
     label: 'Propietario Ausente',
-    aliases: ['absentee', 'absenteeowner', 'outofstate', 'outofarea', 'ausente', 'vacant'],
+    aliases: ['absentee', 'absenteeowner', 'outofstate', 'outofarea', 'ausente'],
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
-      // Handle "1" as absentee/vacant, "0" or empty as owner-occupied
       if (normalized === 'yes' || normalized === 'y' || normalized === 'true' || normalized === '1' || normalized === 'absentee') return true;
       if (normalized === 'no' || normalized === 'n' || normalized === 'false' || normalized === '0' || normalized === '') return false;
       return null;
@@ -185,10 +202,9 @@ export const propertyFields: PropertyField[] = [
     aliases: ['owneroccupied', 'owneroccupancy', 'occupied'],
     required: false,
     transform: (value: string) => {
-      // This is inverse - if owner occupied, then NOT absentee
       const normalized = normalize(value);
-      if (normalized === 'yes' || normalized === 'y' || normalized === 'true' || normalized === '1') return false; // Owner occupied = NOT absentee
-      if (normalized === 'no' || normalized === 'n' || normalized === 'false' || normalized === '0' || normalized === '') return true; // NOT owner occupied = IS absentee
+      if (normalized === 'yes' || normalized === 'y' || normalized === 'true' || normalized === '1') return false;
+      if (normalized === 'no' || normalized === 'n' || normalized === 'false' || normalized === '0' || normalized === '') return true;
       return null;
     },
   },
@@ -213,9 +229,20 @@ export const propertyFields: PropertyField[] = [
     },
   },
   {
+    key: 'foreclosure_factor',
+    label: 'Factor de Foreclosure',
+    // PropStream: "Foreclosure Factor" → normalize → "foreclosurefactor"
+    aliases: ['foreclosurefactor', 'foreclosurescore', 'foreclosurerisk'],
+    required: false,
+    transform: (value: string) => {
+      if (!value || value.trim() === '') return null;
+      return value.trim();
+    },
+  },
+  {
     key: 'is_probate',
     label: 'Probate/Herencia',
-    aliases: ['probate', 'inheritance', 'estate', 'deceased', 'herencia'],
+    aliases: ['probate', 'inheritance', 'deceased', 'herencia'],
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
@@ -225,7 +252,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'last_sale_date',
     label: 'Última Fecha de Venta',
-    aliases: ['lastsaledate', 'saledate', 'solddate', 'transferdate', 'fechaventa'],
+    aliases: ['lastsalerecordingdate', 'lastsaledate', 'saledate', 'solddate', 'transferdate', 'fechaventa'],
     required: false,
     transform: (value: string) => {
       if (!value) return null;
@@ -253,26 +280,26 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'tax_debt',
     label: 'Deuda de Impuestos',
-    aliases: ['taxdebt', 'taxowed', 'taxbalance', 'delinquentamount', 'deudaimpuestos'],
+    aliases: ['taxdebt', 'taxowed', 'taxbalance', 'delinquentamount', 'deudaimpuestos', 'lienamount'],
     required: false,
     transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
   },
   {
     key: 'owner_mailing_state',
     label: 'Estado Correo del Propietario',
-    aliases: ['ownermailingstate', 'mailingstate', 'mailstate'],
+    aliases: ['mailingstate', 'ownermailingstate', 'mailstate'],
     required: false,
   },
   {
     key: 'owner_mailing_city',
     label: 'Ciudad Correo del Propietario',
-    aliases: ['ownermailingcity', 'mailingcity', 'mailcity'],
+    aliases: ['mailingcity', 'ownermailingcity', 'mailcity'],
     required: false,
   },
   {
     key: 'is_vacant',
     label: 'Vacante',
-    aliases: ['vacant', 'isvacant', 'vacante', 'vacancy'],
+    aliases: ['vacant', 'isvacant', 'vacante', 'vacancy', 'propertystatus'],
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
@@ -292,6 +319,51 @@ export const propertyFields: PropertyField[] = [
     aliases: ['daysonmarket', 'dom', 'daysonmls', 'marketdays', 'cdom'],
     required: false,
     transform: (value: string) => parseInt(value) || null,
+  },
+  {
+    key: 'mls_status',
+    label: 'Estado MLS',
+    // PropStream: "MLS Status" → normalize → "mlsstatus"
+    aliases: ['mlsstatus', 'listingstatus', 'mlslistingstatus'],
+    required: false,
+    transform: (value: string) => {
+      if (!value || value.trim() === '') return null;
+      return value.trim().toUpperCase();
+    },
+  },
+  {
+    key: 'mls_date',
+    label: 'Fecha MLS',
+    // PropStream: "MLS Date" → normalize → "mlsdate"
+    aliases: ['mlsdate', 'listingdate', 'mlslistingdate'],
+    required: false,
+    transform: (value: string) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+    },
+  },
+  {
+    key: 'mls_amount',
+    label: 'Precio MLS',
+    // PropStream: "MLS Amount" → normalize → "mlsamount"
+    aliases: ['mlsamount', 'mlsprice', 'listingprice', 'listprice', 'askingprice'],
+    required: false,
+    transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
+  },
+  {
+    key: 'total_open_loans',
+    label: 'Préstamos Abiertos',
+    aliases: ['totalopenloans', 'openloans', 'numberofloans', 'loancount'],
+    required: false,
+    transform: (value: string) => parseInt(value) || null,
+  },
+  {
+    key: 'est_remaining_balance',
+    label: 'Balance Restante Estimado',
+    aliases: ['estremainingbalanceofopenloans', 'remainingbalance', 'mortgagebalance', 'loanbalance', 'estremainingbalance'],
+    required: false,
+    transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
   },
 ];
 
