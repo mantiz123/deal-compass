@@ -13,7 +13,7 @@ import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { PropertyComparisonSheet } from "@/components/leads/PropertyComparisonSheet";
 import { ArchiveLeadDialog } from "@/components/leads/ArchiveLeadDialog";
-import { useLeads, useLeadsExport, useLeadFilterOptions, useCalculatePIWScore, Lead } from "@/hooks/useLeads";
+import { useLeads, useLeadsExport, useLeadFilterOptions, useCalculatePIWScore, useBatchRecalculatePIW, Lead } from "@/hooks/useLeads";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -37,6 +37,7 @@ import {
   Home,
   Loader2,
   Archive,
+  RefreshCw,
 } from "lucide-react";
 import { generateCSV, downloadCSV, todayDateString } from "@/lib/csvExport";
 
@@ -56,6 +57,7 @@ const priorityConfig: Record<string, { label: string; variant: "accent" | "warni
 
 const Leads = () => {
   const calculateScore = useCalculatePIWScore();
+  const batchRecalculate = useBatchRecalculatePIW();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
@@ -222,11 +224,30 @@ const Leads = () => {
                 ) : (
                   <>
                     <Brain className="mr-2 h-4 w-4" />
-                    Calcular Todos ({pendingLeads.length})
+                    Calcular Nuevos ({pendingLeads.length})
                   </>
                 )}
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => batchRecalculate.mutate({ forceAll: true })}
+              disabled={batchRecalculate.isPending || !totalCount}
+              className="border-warning/50 text-warning hover:bg-warning/10"
+            >
+              {batchRecalculate.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Recalculando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Recalcular Todos
+                </>
+              )}
+            </Button>
             <Button size="sm" onClick={() => setShowNewLeadDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Nuevo Lead

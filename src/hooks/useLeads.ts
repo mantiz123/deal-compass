@@ -317,3 +317,53 @@ export function useCalculatePIWScore() {
     },
   });
 }
+
+export function useBatchRecalculatePIW() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ forceAll = true }: { forceAll?: boolean } = {}) => {
+      let offset = 0;
+      const batchSize = 5;
+      let totalProcessed = 0;
+      let totalFailed = 0;
+      let done = false;
+
+      while (!done) {
+        const { data, error } = await supabase.functions.invoke('batch-recalculate-piw', {
+          body: { batchSize, offset, forceAll },
+        });
+
+        if (error) throw error;
+        
+        totalProcessed += data.processed || 0;
+        totalFailed += data.failed || 0;
+        done = data.done || !data.hasMore;
+        offset = data.nextOffset || offset + batchSize;
+        
+        // Refresh UI periodically
+        if (totalProcessed % 10 === 0) {
+          queryClient.invalidateQueries({ queryKey: ['leads'] });
+        }
+      }
+
+      return { processed: totalProcessed, failed: totalFailed };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      toast({
+        title: 'Recálculo completado',
+        description: `${result.processed} leads recalculados${result.failed > 0 ? `, ${result.failed} fallaron` : ''}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error en recálculo',
+        description: error?.message || 'Error desconocido',
+        variant: 'destructive',
+      });
+    },
+  });
+}
