@@ -23,6 +23,9 @@ interface PropertyData {
   mortgage_age_years?: number;
   days_on_market?: number;
   auction_date?: string;
+  bk_date?: string;
+  divorce_date?: string;
+  prefc_recording_date?: string;
   
   // II. Financial Viability Variables
   equity_percent?: number;
@@ -34,11 +37,14 @@ interface PropertyData {
   year_built?: number;
   neighborhood_vacancy_rate?: number;
   price_growth_3yr?: number;
+  lien_amount?: number;
+  prefc_default_amount?: number;
   
   // III. Closing Difficulty Variables
   active_liens_count?: number;
   last_sale_date?: string;
   proximity_to_development?: 'high' | 'medium' | 'low' | 'none';
+  lien_type?: string;
   
   // Additional context
   property_type?: string;
@@ -236,6 +242,8 @@ MANDATORY POINT ASSIGNMENTS — apply these EXACTLY before any other analysis:
 - Tax delinquency > $2,000: +12 pts
 - Tax delinquent flag: +8 pts
 - Probate/Estate: +10 pts
+- Bankruptcy (bk_date within 2 years): +12 pts (severe financial distress)
+- Divorce (divorce_date within 2 years): +10 pts (forced sale likely)
 - Evictions > 0: +8 pts (burned-out landlord)
 - Corporate/LLC owner: +5 pts
 - Mailing address different: +3 pts
