@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PIWScoreGauge } from "./PIWScoreGauge";
+import { KScoreGauge } from "./KScoreGauge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLeads, type Lead } from "@/hooks/useLeads";
 import { MoreHorizontal, Phone, Mail, MapPin, ArrowRight } from "lucide-react";

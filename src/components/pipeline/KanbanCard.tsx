@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PIWScoreGauge } from '@/components/dashboard/PIWScoreGauge';
+import { KScoreGauge } from '@/components/dashboard/KScoreGauge';
 import { LeadDetailSheet } from '@/components/leads/LeadDetailSheet';
 import { Phone, MoreHorizontal, DollarSign, GripVertical, MapPin, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';

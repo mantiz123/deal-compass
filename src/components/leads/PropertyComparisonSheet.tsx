@@ -10,7 +10,7 @@ import { useLeads, Lead } from "@/hooks/useLeads";
 import { useLatestPropertyAnalysis, SavedAnalysis } from "@/hooks/usePropertyAnalysis";
 import { useCompsSummary } from "@/hooks/usePropertyComps";
 import { GitCompare, Home, DollarSign, TrendingUp, AlertTriangle, Target, ArrowRight } from "lucide-react";
-import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
+import { KScoreGauge } from "@/components/dashboard/KScoreGauge";
 
 interface PropertyColumnProps {
   lead: Lead | null;

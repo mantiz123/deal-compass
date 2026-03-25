@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
+import { KScoreGauge } from "@/components/dashboard/KScoreGauge";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { PropertyComparisonSheet } from "@/components/leads/PropertyComparisonSheet";

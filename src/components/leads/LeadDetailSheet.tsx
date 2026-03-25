@@ -12,7 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { PIWScoreGauge } from '@/components/dashboard/PIWScoreGauge';
+import { KScoreGauge } from '@/components/dashboard/KScoreGauge';
 import { LeadTimeline } from './LeadTimeline';
 import { LeadDocuments } from './LeadDocuments';
 import { NewInteractionDialog } from './NewInteractionDialog';

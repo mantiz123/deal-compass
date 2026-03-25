@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { PIWScoreGauge } from "@/components/dashboard/PIWScoreGauge";
+import { KScoreGauge } from "@/components/dashboard/KScoreGauge";
 import { SendDealPackageSheet } from "@/components/buyers/SendDealPackageSheet";
 import { Lead } from "@/hooks/useLeads";
 import { 
