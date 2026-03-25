@@ -121,19 +121,19 @@ serve(async (req) => {
 
     if (phones.length > 0) {
       for (const p of phones) {
-        let phoneText = `📞 ${p.num}`;
+        let phoneText = `TEL: ${p.num}`;
         if (p.type) phoneText += ` (${p.type})`;
-        if (p.dnc) phoneText += ` — DNC`;
+        if (p.dnc) phoneText += ` -- DNC`;
         page.drawText(phoneText, { x: M + 10, y, size: 9, font: regular, color: p.dnc ? red : text });
         y -= 14;
       }
     } else {
-      page.drawText("📵 Sin teléfono disponible — Requiere skip-tracing", { x: M + 10, y, size: 9, font: regular, color: red });
+      page.drawText("SIN TELEFONO -- Requiere skip-tracing", { x: M + 10, y, size: 9, font: regular, color: red });
       y -= 14;
     }
 
     if (property?.owner_email) {
-      page.drawText(`✉️ ${property.owner_email}`, { x: M + 10, y, size: 9, font: regular, color: text });
+      page.drawText(`EMAIL: ${property.owner_email}`, { x: M + 10, y, size: 9, font: regular, color: text });
       y -= 14;
     }
     y -= 15;
