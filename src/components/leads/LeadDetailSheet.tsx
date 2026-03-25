@@ -50,8 +50,9 @@ import {
   TrendingUp,
   Download,
   MessageSquare,
+  Gavel,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { Lead } from '@/hooks/useLeads';
 
@@ -759,5 +760,63 @@ export function LeadDetailSheet({
         propertyAddress={`${property?.address || ''}, ${property?.city || ''}`}
       />
     </>
+  );
+}
+
+function AuctionDateAlert({ auctionDate }: { auctionDate: string | null | undefined }) {
+  if (!auctionDate) {
+    return (
+      <Card className="p-3 border-warning/30 bg-warning/5">
+        <div className="flex items-center gap-2">
+          <Gavel className="h-4 w-4 text-warning" />
+          <span className="text-sm font-medium">Pre-Foreclosure</span>
+          <span className="text-xs text-muted-foreground ml-auto">Sin fecha de subasta registrada</span>
+        </div>
+      </Card>
+    );
+  }
+
+  const auction = new Date(auctionDate);
+  const daysUntil = differenceInDays(auction, new Date());
+  const expired = isPast(auction);
+
+  const urgencyColor = expired
+    ? 'border-destructive/50 bg-destructive/10'
+    : daysUntil <= 7
+    ? 'border-destructive/40 bg-destructive/5'
+    : daysUntil <= 30
+    ? 'border-warning/40 bg-warning/5'
+    : 'border-accent/30 bg-accent/5';
+
+  const textColor = expired || daysUntil <= 7 ? 'text-destructive' : daysUntil <= 30 ? 'text-warning' : 'text-accent';
+
+  return (
+    <Card className={`p-4 ${urgencyColor}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Gavel className={`h-5 w-5 ${textColor}`} />
+          <div>
+            <p className={`text-sm font-bold ${textColor}`}>
+              {expired ? '⚠️ SUBASTA VENCIDA' : '🔨 Fecha de Subasta'}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {format(auction, "d 'de' MMMM, yyyy", { locale: es })}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          {expired ? (
+            <Badge className="bg-destructive/20 text-destructive border-destructive/30">
+              EXPIRADO
+            </Badge>
+          ) : (
+            <div>
+              <p className={`text-2xl font-bold ${textColor}`}>{daysUntil}</p>
+              <p className="text-[10px] text-muted-foreground">días restantes</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
   );
 }
