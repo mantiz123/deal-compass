@@ -121,19 +121,19 @@ serve(async (req) => {
 
     if (phones.length > 0) {
       for (const p of phones) {
-        let phoneText = `📞 ${p.num}`;
+        let phoneText = `TEL: ${p.num}`;
         if (p.type) phoneText += ` (${p.type})`;
-        if (p.dnc) phoneText += ` — DNC`;
+        if (p.dnc) phoneText += ` -- DNC`;
         page.drawText(phoneText, { x: M + 10, y, size: 9, font: regular, color: p.dnc ? red : text });
         y -= 14;
       }
     } else {
-      page.drawText("📵 Sin teléfono disponible — Requiere skip-tracing", { x: M + 10, y, size: 9, font: regular, color: red });
+      page.drawText("SIN TELEFONO -- Requiere skip-tracing", { x: M + 10, y, size: 9, font: regular, color: red });
       y -= 14;
     }
 
     if (property?.owner_email) {
-      page.drawText(`✉️ ${property.owner_email}`, { x: M + 10, y, size: 9, font: regular, color: text });
+      page.drawText(`EMAIL: ${property.owner_email}`, { x: M + 10, y, size: 9, font: regular, color: text });
       y -= 14;
     }
     y -= 15;
@@ -185,23 +185,23 @@ serve(async (req) => {
     y -= 18;
 
     const signals: string[] = [];
-    if (property?.is_foreclosure) signals.push("🔨 FORECLOSURE — Property in pre-foreclosure/foreclosure");
+    if (property?.is_foreclosure) signals.push("[!] FORECLOSURE -- Property in pre-foreclosure/foreclosure");
     if (property?.auction_date) {
       const days = Math.ceil((new Date(property.auction_date).getTime() - Date.now()) / (1000*60*60*24));
-      if (days > 0) signals.push(`🚨 AUCTION in ${days} days (${new Date(property.auction_date).toLocaleDateString()})`);
-      else signals.push(`⚠️ AUCTION EXPIRED (${new Date(property.auction_date).toLocaleDateString()})`);
+      if (days > 0) signals.push(`[!!] AUCTION in ${days} days (${new Date(property.auction_date).toLocaleDateString()})`);
+      else signals.push(`[X] AUCTION EXPIRED (${new Date(property.auction_date).toLocaleDateString()})`);
     }
-    if (property?.bk_date) signals.push(`⚖️ BANKRUPTCY filed ${new Date(property.bk_date).toLocaleDateString()}`);
-    if (property?.divorce_date) signals.push(`💔 DIVORCE filed ${new Date(property.divorce_date).toLocaleDateString()}`);
-    if (property?.is_vacant) signals.push("🏚️ VACANT — Property unoccupied");
-    if (property?.tax_delinquent) signals.push(`💰 TAX DELINQUENT${property.tax_debt ? ` ($${Number(property.tax_debt).toLocaleString()})` : ""}`);
-    if (property?.is_probate) signals.push("⚖️ PROBATE — Estate/inheritance");
-    if (property?.is_absentee_owner) signals.push(`🏠 ABSENTEE OWNER${property.absentee_type === 'out_of_state' ? ' (Out-of-State)' : ''}`);
-    if (property?.owner_tenure_years && property.owner_tenure_years > 10) signals.push(`🕐 ${property.owner_tenure_years}+ YEARS owned — ownership fatigue`);
-    if (property?.days_on_market && property.days_on_market > 90) signals.push(`📉 ${property.days_on_market} DAYS ON MARKET — frustrated seller`);
-    if (property?.equity_percent && Number(property.equity_percent) >= 100) signals.push("💎 FREE & CLEAR — No mortgage");
-    if (property?.prefc_recording_date) signals.push(`📋 Pre-FC Recorded: ${new Date(property.prefc_recording_date).toLocaleDateString()}`);
-    if (property?.lien_type) signals.push(`🔗 LIEN: ${property.lien_type}${property.lien_amount ? ` ($${Number(property.lien_amount).toLocaleString()})` : ""}`);
+    if (property?.bk_date) signals.push(`[!] BANKRUPTCY filed ${new Date(property.bk_date).toLocaleDateString()}`);
+    if (property?.divorce_date) signals.push(`[!] DIVORCE filed ${new Date(property.divorce_date).toLocaleDateString()}`);
+    if (property?.is_vacant) signals.push("[!] VACANT -- Property unoccupied");
+    if (property?.tax_delinquent) signals.push(`[!] TAX DELINQUENT${property.tax_debt ? ` ($${Number(property.tax_debt).toLocaleString()})` : ""}`);
+    if (property?.is_probate) signals.push("[!] PROBATE -- Estate/inheritance");
+    if (property?.is_absentee_owner) signals.push(`[!] ABSENTEE OWNER${property.absentee_type === 'out_of_state' ? ' (Out-of-State)' : ''}`);
+    if (property?.owner_tenure_years && property.owner_tenure_years > 10) signals.push(`[!] ${property.owner_tenure_years}+ YEARS owned -- ownership fatigue`);
+    if (property?.days_on_market && property.days_on_market > 90) signals.push(`[!] ${property.days_on_market} DAYS ON MARKET -- frustrated seller`);
+    if (property?.equity_percent && Number(property.equity_percent) >= 100) signals.push("[+] FREE & CLEAR -- No mortgage");
+    if (property?.prefc_recording_date) signals.push(`[!] Pre-FC Recorded: ${new Date(property.prefc_recording_date).toLocaleDateString()}`);
+    if (property?.lien_type) signals.push(`[!] LIEN: ${property.lien_type}${property.lien_amount ? ` ($${Number(property.lien_amount).toLocaleString()})` : ""}`);
 
     if (signals.length > 0) {
       for (const s of signals) {
