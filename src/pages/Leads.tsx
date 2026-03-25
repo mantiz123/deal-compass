@@ -807,6 +807,8 @@ const Leads = () => {
                             );
                           })()}
                         </td>
+                        <td className="p-4">
+                          <TooltipProvider>
                             <div className="flex gap-1 flex-wrap max-w-[220px]">
                               {/* OUT-STATE: Owner lives in different state */}
                               {lead.property?.absentee_type === 'out_of_state' && (
