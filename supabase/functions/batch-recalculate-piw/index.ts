@@ -110,6 +110,8 @@ function calculateScore(p: any): any {
   if (p.equity_percent != null && p.equity_percent >= 60) indicators.push(`${p.equity_percent}% equity`);
   if (p.is_foreclosure) indicators.push('Foreclosure');
   if (p.tax_delinquent) indicators.push('Tax delinquent');
+  if (p.bk_date) indicators.push('Bankruptcy');
+  if (p.divorce_date) indicators.push('Divorce');
   if (auctionDays !== null && auctionDays > 0 && auctionDays <= 90) indicators.push(`Auction in ${auctionDays}d`);
 
   return {
