@@ -312,6 +312,7 @@ export const useCSVImport = () => {
       const parts: string[] = [];
       if (result.success > 0) parts.push(`${result.success} nuevos leads importados`);
       if (result.skippedDuplicates > 0) parts.push(`${result.skippedDuplicates} duplicados omitidos`);
+      if (result.skippedSold > 0) parts.push(`${result.skippedSold} SOLD descartados`);
       if (result.piwCalculated > 0) parts.push(`${result.piwCalculated} PIW-Scores calculados`);
       if (result.failed > 0) parts.push(`${result.failed} fallaron`);
       
