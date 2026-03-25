@@ -6,6 +6,7 @@ import { PipelinePreview } from "@/components/dashboard/PipelinePreview";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { DeadLeadsAnalytics } from "@/components/dashboard/DeadLeadsAnalytics";
 import { BuyerLiquidityWidget } from "@/components/dashboard/BuyerLiquidityWidget";
+import { HotLeadsWidget } from "@/components/dashboard/HotLeadsWidget";
 import { StaleLeadsAlert } from "@/components/dashboard/StaleLeadsAlert";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useAuth } from "@/contexts/AuthContext";
