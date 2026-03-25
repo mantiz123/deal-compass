@@ -621,23 +621,28 @@ export type Database = {
           absentee_type: string | null
           active_liens_count: number | null
           address: string
+          apn: string | null
           arv: number | null
           auction_date: string | null
           bathrooms: number | null
           bedrooms: number | null
           city: string
+          county: string | null
           created_at: string
           crime_index: number | null
           data_fetched_at: string | null
           data_source: string | null
           days_on_market: number | null
           days_on_market_avg: number | null
+          do_not_mail: boolean | null
           equity_percent: number | null
           estimated_monthly_rent: number | null
           eviction_count: number | null
+          exterior_condition: string | null
           id: string
           is_absentee_owner: boolean | null
           is_foreclosure: boolean | null
+          is_litigator: boolean | null
           is_probate: boolean | null
           is_vacant: boolean | null
           last_refinance_date: string | null
@@ -658,8 +663,18 @@ export type Database = {
           owner_phone: string | null
           owner_tenure_years: number | null
           owner_type: string | null
+          phone_1_dnc: boolean | null
+          phone_2: string | null
+          phone_2_dnc: boolean | null
+          phone_3: string | null
+          phone_3_dnc: boolean | null
+          phone_4: string | null
+          phone_4_dnc: boolean | null
+          phone_5: string | null
+          phone_5_dnc: boolean | null
           population_growth_5yr: number | null
           price_growth_3yr: number | null
+          property_condition: string | null
           property_type: Database["public"]["Enums"]["property_type"]
           proximity_to_development: string | null
           repair_cost: number | null
@@ -677,23 +692,28 @@ export type Database = {
           absentee_type?: string | null
           active_liens_count?: number | null
           address: string
+          apn?: string | null
           arv?: number | null
           auction_date?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
           city: string
+          county?: string | null
           created_at?: string
           crime_index?: number | null
           data_fetched_at?: string | null
           data_source?: string | null
           days_on_market?: number | null
           days_on_market_avg?: number | null
+          do_not_mail?: boolean | null
           equity_percent?: number | null
           estimated_monthly_rent?: number | null
           eviction_count?: number | null
+          exterior_condition?: string | null
           id?: string
           is_absentee_owner?: boolean | null
           is_foreclosure?: boolean | null
+          is_litigator?: boolean | null
           is_probate?: boolean | null
           is_vacant?: boolean | null
           last_refinance_date?: string | null
@@ -714,8 +734,18 @@ export type Database = {
           owner_phone?: string | null
           owner_tenure_years?: number | null
           owner_type?: string | null
+          phone_1_dnc?: boolean | null
+          phone_2?: string | null
+          phone_2_dnc?: boolean | null
+          phone_3?: string | null
+          phone_3_dnc?: boolean | null
+          phone_4?: string | null
+          phone_4_dnc?: boolean | null
+          phone_5?: string | null
+          phone_5_dnc?: boolean | null
           population_growth_5yr?: number | null
           price_growth_3yr?: number | null
+          property_condition?: string | null
           property_type?: Database["public"]["Enums"]["property_type"]
           proximity_to_development?: string | null
           repair_cost?: number | null
@@ -733,23 +763,28 @@ export type Database = {
           absentee_type?: string | null
           active_liens_count?: number | null
           address?: string
+          apn?: string | null
           arv?: number | null
           auction_date?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string
+          county?: string | null
           created_at?: string
           crime_index?: number | null
           data_fetched_at?: string | null
           data_source?: string | null
           days_on_market?: number | null
           days_on_market_avg?: number | null
+          do_not_mail?: boolean | null
           equity_percent?: number | null
           estimated_monthly_rent?: number | null
           eviction_count?: number | null
+          exterior_condition?: string | null
           id?: string
           is_absentee_owner?: boolean | null
           is_foreclosure?: boolean | null
+          is_litigator?: boolean | null
           is_probate?: boolean | null
           is_vacant?: boolean | null
           last_refinance_date?: string | null
@@ -770,8 +805,18 @@ export type Database = {
           owner_phone?: string | null
           owner_tenure_years?: number | null
           owner_type?: string | null
+          phone_1_dnc?: boolean | null
+          phone_2?: string | null
+          phone_2_dnc?: boolean | null
+          phone_3?: string | null
+          phone_3_dnc?: boolean | null
+          phone_4?: string | null
+          phone_4_dnc?: boolean | null
+          phone_5?: string | null
+          phone_5_dnc?: boolean | null
           population_growth_5yr?: number | null
           price_growth_3yr?: number | null
+          property_condition?: string | null
           property_type?: Database["public"]["Enums"]["property_type"]
           proximity_to_development?: string | null
           repair_cost?: number | null
