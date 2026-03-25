@@ -102,9 +102,7 @@ export default function ResetPassword() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
-              <TrendingUp className="w-7 h-7 text-primary-foreground" />
-            </div>
+            <img src={kloseLogo} alt="KLOSE" className="w-12 h-12 object-contain" />
             <span className="text-3xl font-bold text-foreground">KLOSE</span>
           </div>
         </div>
