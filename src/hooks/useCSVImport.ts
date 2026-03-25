@@ -224,6 +224,22 @@ export const useCSVImport = () => {
                 tax_debt: propertyData.tax_debt || null,
                 mortgage_balance: propertyData.est_remaining_balance || null,
                 auction_date: propertyData.auction_date || null,
+                // New fields
+                phone_2: propertyData.phone_2 || null,
+                phone_3: propertyData.phone_3 || null,
+                phone_4: propertyData.phone_4 || null,
+                phone_5: propertyData.phone_5 || null,
+                phone_1_dnc: propertyData.phone_1_dnc || false,
+                phone_2_dnc: propertyData.phone_2_dnc || false,
+                phone_3_dnc: propertyData.phone_3_dnc || false,
+                phone_4_dnc: propertyData.phone_4_dnc || false,
+                phone_5_dnc: propertyData.phone_5_dnc || false,
+                property_condition: propertyData.property_condition || null,
+                exterior_condition: propertyData.exterior_condition || null,
+                is_litigator: propertyData.is_litigator || false,
+                do_not_mail: propertyData.do_not_mail || false,
+                county: propertyData.county || null,
+                apn: propertyData.apn || null,
                 data_source: source,
                 data_fetched_at: new Date().toISOString(),
               })
@@ -234,6 +250,17 @@ export const useCSVImport = () => {
               result.failed++;
               result.errors.push(`Fila ${i + batch.indexOf(row) + 2}: ${propertyError.message}`);
               continue;
+            }
+            
+            // === HOT LEAD WITHOUT PHONE ALERT ===
+            const netEquity = (property.arv || 0) - (property.mortgage_balance || 0);
+            const hasPhone = !!(property.owner_phone || property.phone_2 || property.phone_3 || property.phone_4 || property.phone_5);
+            const isHotOpportunity = (
+              netEquity > 50000 &&
+              (isForeclosure || isAbsentee || (daysOnMarket && daysOnMarket > 90) || mlsStatus === 'FAIL' || mlsStatus === 'EXPIRED')
+            );
+            if (isHotOpportunity && !hasPhone) {
+              result.hotLeadsNoPhone.push(`${property.address}, ${property.city} (Equity: $${netEquity.toLocaleString()})`);
             }
             
             const leadInsertData: any = { property_id: property.id, source: source, status: 'captacion' as const };
