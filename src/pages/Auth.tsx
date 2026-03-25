@@ -128,7 +128,7 @@ export default function Auth() {
     } else {
       toast({
         title: '¡Cuenta creada!',
-        description: 'Bienvenido a PIW Navigator',
+        description: 'Bienvenido a KLOSE',
       });
     }
   };
@@ -150,7 +150,7 @@ export default function Auth() {
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
               <TrendingUp className="w-7 h-7 text-primary-foreground" />
             </div>
-            <span className="text-3xl font-bold text-foreground">PIW Navigator</span>
+            <span className="text-3xl font-bold text-foreground">KLOSE</span>
           </div>
           <p className="text-muted-foreground">Plataforma Integral de Wholesaling</p>
         </div>
@@ -314,7 +314,7 @@ export default function Auth() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground">
-          PIW Navigator © 2024 • Alabama, USA
+          KLOSE © 2024 • Alabama, USA
         </p>
       </div>
     </div>

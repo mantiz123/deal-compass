@@ -42,12 +42,12 @@ const steps = [
         ]
       },
       {
-        title: "Importar CSV a PIW Navigator",
+        title: "Importar CSV a KLOSE",
         description: "Sube el archivo CSV para crear leads automáticamente",
         where: "Menú → Importar → Subir CSV",
         tips: [
           "El sistema mapea automáticamente las columnas de PropWire",
-          "Se calculan PIW-Scores automáticamente para cada lead",
+          "Se calculan K-Scores automáticamente para cada lead",
           "Se detectan duplicados por dirección + ZIP"
         ]
       },
@@ -57,7 +57,7 @@ const steps = [
         where: "Dashboard → Leads del Día",
         tips: [
           "Ordenados por Spread (ganancia potencial) descendente",
-          "PIW-Score ≥80% = HOT (alta probabilidad de cierre)",
+          "K-Score ≥80% = HOT (alta probabilidad de cierre)",
           "Prioriza los que tienen más indicadores de motivación"
         ]
       }
@@ -141,14 +141,14 @@ const steps = [
       },
       {
         title: "Registrar conversación",
-        description: "Documenta los insights de la llamada para ajustar PIW-Score",
+        description: "Documenta los insights de la llamada para ajustar K-Score",
         where: "Lead → Pestaña Conversaciones → Log Llamada",
         tips: [
           "Nivel de urgencia real (bajo, moderado, alto, desesperado)",
           "Dolor principal detectado",
           "Objeción clave (si hay)",
           "Flexibilidad de precio",
-          "El AI ajusta automáticamente el PIW-Score"
+          "El AI ajusta automáticamente el K-Score"
         ]
       },
       {
@@ -291,7 +291,7 @@ const steps = [
 
 const keyMetrics = [
   { 
-    name: "PIW-Score", 
+    name: "K-Score", 
     description: "Probabilidad de cierre (0-100%)", 
     interpretation: "≥80% = HOT, 60-79% = WARM, <60% = COLD",
     icon: Target

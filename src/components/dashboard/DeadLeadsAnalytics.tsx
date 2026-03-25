@@ -111,7 +111,7 @@ export function DeadLeadsAnalytics() {
                 </div>
                 {item.avg_piw_score !== null && (
                   <div className="text-xs text-muted-foreground">
-                    PIW: {Math.round(Number(item.avg_piw_score))}
+                    K: {Math.round(Number(item.avg_piw_score))}
                   </div>
                 )}
               </div>
