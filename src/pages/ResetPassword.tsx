@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, TrendingUp, ShieldCheck } from 'lucide-react';
+import { Loader2, ShieldCheck } from 'lucide-react';
+import kloseLogo from '@/assets/klose-logo.png';
 import { z } from 'zod';
 
 const passwordSchema = z.string().min(6, 'La contraseña debe tener al menos 6 caracteres');
