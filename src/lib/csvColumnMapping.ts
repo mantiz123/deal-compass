@@ -131,7 +131,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'equity_percent',
     label: 'Porcentaje de Equity',
-    aliases: ['estimatedequitypercent', 'equitypercent', 'equitypct'],
+    aliases: ['estimatedequitypercent', 'equitypercent', 'equitypct', 'estequitypercent', 'equitypercentage', 'estimatedequity'],
     required: false,
     transform: (value: string) => {
       const num = parseFloat(value.replace(/%/g, ''));
@@ -144,7 +144,7 @@ export const propertyFields: PropertyField[] = [
     key: 'est_ltv',
     label: 'Loan-to-Value Estimado',
     // PropStream: "Est. Loan-to-Value" → normalize → "estloantovalue"
-    aliases: ['estloantovalue', 'loantovalue', 'ltv', 'ltvpercent'],
+    aliases: ['estloantovalue', 'loantovalue', 'ltv', 'ltvpercent', 'estltv', 'estimatedltv', 'estimatedloantovalue'],
     required: false,
     transform: (value: string) => {
       const num = parseFloat(value.replace(/%/g, ''));
@@ -211,7 +211,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'tax_delinquent',
     label: 'Impuestos Atrasados',
-    aliases: ['taxdelinquent', 'delinquent', 'taxlien', 'taxdefault', 'impuestosatrasados'],
+    aliases: ['taxdelinquent', 'delinquent', 'taxlien', 'taxdefault', 'impuestosatrasados', 'istaxdelinquent', 'taxdelinquentflag', 'taxstatus'],
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
@@ -221,7 +221,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'is_foreclosure',
     label: 'En Foreclosure',
-    aliases: ['foreclosure', 'preforeclosure', 'reo', 'bankowned', 'foreclosing', 'nod', 'lis'],
+    aliases: ['foreclosure', 'preforeclosure', 'reo', 'bankowned', 'foreclosing', 'nod', 'lis', 'inforeclosure', 'isforeclosure', 'foreclosurestatus'],
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
@@ -361,14 +361,14 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'est_remaining_balance',
     label: 'Balance Restante Estimado',
-    aliases: ['estremainingbalanceofopenloans', 'remainingbalance', 'mortgagebalance', 'loanbalance', 'estremainingbalance', 'openmortgagebalance', 'openmortgagebal'],
+    aliases: ['estremainingbalanceofopenloans', 'remainingbalance', 'mortgagebalance', 'loanbalance', 'estremainingbalance', 'openmortgagebalance', 'openmortgagebal', 'estremainingbal', 'estimatedremainingbalance', 'totalloansbalance', 'estimatedremainingbalanceofopenloans', 'estremainingbalancetotal'],
     required: false,
     transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
   },
   {
     key: 'auction_date',
     label: 'Fecha de Subasta',
-    aliases: ['auctiondate', 'foreclosuresaledate', 'saledate_foreclosure', 'trusteedatesale', 'sheriffsaledate'],
+    aliases: ['auctiondate', 'foreclosuresaledate', 'saledateforeclosure', 'trusteedatesale', 'sheriffsaledate', 'foreclosureauctiondate', 'trusteesaledate', 'foreclosuresale'],
     required: false,
     transform: (value: string) => {
       if (!value) return null;
