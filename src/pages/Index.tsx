@@ -103,6 +103,11 @@ const Index = () => {
         <StaleLeadsAlert />
       </div>
 
+      {/* Hot Leads Widget */}
+      <div className="mb-6">
+        <HotLeadsWidget />
+      </div>
+
       {/* Centro de Acción - Full Width */}
       <div className="mb-6">
         <LeadsDelDia />
