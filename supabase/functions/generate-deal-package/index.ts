@@ -199,8 +199,8 @@ serve(async (req) => {
       { label: "Mortgage", value: mortgageBalance > 0 ? `$${mortgageBalance.toLocaleString()}` : "N/A" },
       { label: "Net Equity", value: netEquity > 0 ? `$${netEquity.toLocaleString()}` : "N/A" },
       { label: "Equity %", value: equityPct > 0 ? `${equityPct}%` : "N/A" },
-      { label: "Acquisition", value: acqCost > 0 ? `$${acqCost.toLocaleString()}` : "TBD" },
-      { label: "Spread", value: spread !== 0 ? `$${spread.toLocaleString()}` : "TBD" },
+      { label: "Our Offer", value: acqCost > 0 ? `$${acqCost.toLocaleString()}` : "Pending" },
+      { label: "Spread", value: acqCost > 0 && spread !== 0 ? `$${spread.toLocaleString()}` : (acqCost === 0 ? "Set offer first" : "TBD") },
       { label: "Fee Range", value: feeMin > 0 ? `$${(feeMin/1000).toFixed(0)}K - $${(feeMax/1000).toFixed(0)}K` : (actualFee > 0 ? `$${actualFee.toLocaleString()}` : "Negotiable") },
     ];
 
@@ -349,8 +349,8 @@ serve(async (req) => {
       { label: "x 70% Rule", value: arv > 0 ? `$${Math.round(arv * 0.7).toLocaleString()}` : "TBD", note: "Standard investor discount" },
       { label: "- Repair Cost", value: repairCost > 0 ? `$${repairCost.toLocaleString()}` : "TBD", note: "Estimated rehab budget" },
       { label: "= MAO", value: mao > 0 ? `$${mao.toLocaleString()}` : "TBD", note: "Maximum Allowable Offer" },
-      { label: "- Acquisition Cost", value: acqCost > 0 ? `$${acqCost.toLocaleString()}` : "TBD", note: "Your contract price with seller" },
-      { label: "= Spread", value: spread !== 0 ? `$${spread.toLocaleString()}` : "TBD", note: "Available margin for assignment" },
+      { label: "- Our Offer", value: acqCost > 0 ? `$${acqCost.toLocaleString()}` : "Pending", note: "Your contract price with seller" },
+      { label: "= Spread", value: acqCost > 0 && spread !== 0 ? `$${spread.toLocaleString()}` : "Pending", note: "Available margin for assignment" },
     ];
 
     for (const item of breakdownItems) {
