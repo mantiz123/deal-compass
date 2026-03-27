@@ -176,12 +176,12 @@ const Leads = () => {
                 try {
                   const { data: exportData } = await fetchExport();
                   const exportLeads = exportData || [];
-                  const headers = ['Nombre', 'Dirección', 'Teléfono', 'K-Score', 'ARV', 'MAO', 'Spread', 'Estado', 'Días sin actividad'];
+                   const headers = ['Nombre', 'Dirección', 'Teléfono', 'K-Score', 'ARV', 'MAO', 'Spread', 'Estado', 'Días sin actividad'];
                   const rows = exportLeads.map(lead => {
                     const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
                     const mao = lead.property?.mao ? Number(lead.property.mao) : (arv > 0 ? Math.round(arv * 0.7 - (Number(lead.property?.repair_cost) || 0)) : 0);
-                    const acquisition = Number(lead.offer_amount) || Number(lead.listing_price) || Number(lead.property?.last_sale_price) || 0;
-                    const spread = mao > 0 && acquisition > 0 ? mao - acquisition : 0;
+                    const offerAmt = Number(lead.offer_amount) || 0;
+                    const spread = mao > 0 && offerAmt > 0 ? mao - offerAmt : 0;
                     const statusLabel = statusConfig[lead.status]?.label || lead.status;
                     return [
                       lead.property?.owner_name || '',
@@ -504,7 +504,7 @@ const Leads = () => {
                         </TooltipTrigger>
                         <TooltipContent className="max-w-[250px]">
                           <p className="text-xs">
-                            <strong>Margen de Ganancia</strong>: MAO menos precio de adquisición (oferta/listing/última venta). Verde = ganancia potencial, Rojo = pérdida. Ordenado de mayor a menor.
+                            <strong>Margen de Ganancia</strong>: MAO menos tu oferta al vendedor. Solo se calcula cuando tienes una oferta registrada. Verde = ganancia potencial, Rojo = pérdida.
                           </p>
                         </TooltipContent>
                       </Tooltip>
@@ -704,15 +704,24 @@ const Leads = () => {
                             const savedMao = lead.property?.mao ? Number(lead.property.mao) : 0;
                             const mao = savedMao || (arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0);
                             
-                            // Use listing_price, offer_amount, or last_sale_price as acquisition cost
-                            const listingPrice = lead.listing_price ? Number(lead.listing_price) : 0;
                             const offerAmount = lead.offer_amount ? Number(lead.offer_amount) : 0;
-                            const lastSalePrice = lead.property?.last_sale_price ? Number(lead.property.last_sale_price) : 0;
                             
-                            const acquisitionCost = offerAmount || listingPrice || lastSalePrice;
-                            const spread = mao > 0 && acquisitionCost > 0 ? mao - acquisitionCost : 0;
+                            if (mao > 0 && offerAmount === 0) {
+                              return (
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <span className="text-muted-foreground text-xs">Sin oferta</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs max-w-[220px]">
+                                      Registra tu oferta al vendedor para calcular el spread. MAO disponible: ${mao.toLocaleString()}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              );
+                            }
                             
-                            const sourceLabel = offerAmount ? 'Oferta' : listingPrice ? 'Listing' : lastSalePrice ? 'Últ. Venta' : '';
+                            const spread = mao > 0 && offerAmount > 0 ? mao - offerAmount : 0;
                             
                             return spread !== 0 ? (
                               <Tooltip>
@@ -723,8 +732,8 @@ const Leads = () => {
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p className="max-w-[220px] text-xs">
-                                    MAO (${mao.toLocaleString()}) - {sourceLabel} (${acquisitionCost.toLocaleString()})
-                                    {spread > 0 ? ' = Ganancia potencial' : ' = Pérdida potencial'}
+                                    MAO (${mao.toLocaleString()}) - Oferta (${offerAmount.toLocaleString()})
+                                    {spread > 0 ? ' = Margen para assignment fee' : ' = Oferta por encima del MAO'}
                                   </p>
                                 </TooltipContent>
                               </Tooltip>
@@ -784,10 +793,7 @@ const Leads = () => {
                             const savedMao = lead.property?.mao ? Number(lead.property.mao) : 0;
                             const mao = savedMao || (arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0);
                             const offerAmount = lead.offer_amount ? Number(lead.offer_amount) : 0;
-                            const listingPrice = lead.listing_price ? Number(lead.listing_price) : 0;
-                            const lastSalePrice = lead.property?.last_sale_price ? Number(lead.property.last_sale_price) : 0;
-                            const acquisitionCost = offerAmount || listingPrice || lastSalePrice;
-                            const spread = mao > 0 && acquisitionCost > 0 ? mao - acquisitionCost : 0;
+                            const spread = mao > 0 && offerAmount > 0 ? mao - offerAmount : 0;
                             
                             if (spread <= 0) return <span className="text-muted-foreground text-xs">-</span>;
                             
