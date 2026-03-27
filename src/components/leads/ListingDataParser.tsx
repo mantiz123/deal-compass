@@ -398,7 +398,6 @@ export function ListingDataParser({
             bedrooms: comp.bedrooms || undefined,
             bathrooms: comp.bathrooms || undefined,
             distance_miles: comp.distance_miles || undefined,
-            price_per_sqft: comp.price_per_sqft || undefined,
             sale_date: comp.sale_date || undefined,
             source: compSource,
           });
