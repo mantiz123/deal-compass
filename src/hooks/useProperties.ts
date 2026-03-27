@@ -138,12 +138,6 @@ export function useUpdateProperty() {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: TablesUpdate<'properties'> & { id: string }) => {
-      const { data: property, error } = await supabase
-        .from('properties')
-        .select()
-        .eq('id', id)
-        .single();
-
       const { data: updated, error: updateError } = await supabase
         .from('properties')
         .update(data)

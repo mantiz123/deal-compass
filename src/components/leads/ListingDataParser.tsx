@@ -198,42 +198,42 @@ export function ListingDataParser({
     setIsApplying(true);
 
     try {
-      // Build property update object
+      // Build property update object with proper type coercion
       const propertyUpdate: Record<string, unknown> = {};
       
+      // Integer fields need Math.round()
       if (selectedFields.has('property.bedrooms') && parsedData.property.bedrooms) {
-        propertyUpdate.bedrooms = parsedData.property.bedrooms;
+        propertyUpdate.bedrooms = Math.round(Number(parsedData.property.bedrooms));
       }
       if (selectedFields.has('property.bathrooms') && parsedData.property.bathrooms) {
-        propertyUpdate.bathrooms = parsedData.property.bathrooms;
+        propertyUpdate.bathrooms = Number(parsedData.property.bathrooms);
       }
       if (selectedFields.has('property.sqft') && parsedData.property.sqft) {
-        propertyUpdate.sqft = parsedData.property.sqft;
+        propertyUpdate.sqft = Math.round(Number(parsedData.property.sqft));
       }
       if (selectedFields.has('property.lot_size') && parsedData.property.lot_size) {
-        propertyUpdate.lot_size = parsedData.property.lot_size;
+        propertyUpdate.lot_size = Number(parsedData.property.lot_size);
       }
       if (selectedFields.has('property.year_built') && parsedData.property.year_built) {
-        propertyUpdate.year_built = parsedData.property.year_built;
+        propertyUpdate.year_built = Math.round(Number(parsedData.property.year_built));
       }
       if (selectedFields.has('market.estimated_monthly_rent') && parsedData.market_data.estimated_monthly_rent) {
-        propertyUpdate.estimated_monthly_rent = parsedData.market_data.estimated_monthly_rent;
+        propertyUpdate.estimated_monthly_rent = Number(parsedData.market_data.estimated_monthly_rent);
       }
       if (selectedFields.has('market.walkability_score') && parsedData.market_data.walkability_score) {
-        propertyUpdate.walkability_score = parsedData.market_data.walkability_score;
+        propertyUpdate.walkability_score = Math.round(Number(parsedData.market_data.walkability_score));
       }
       if (selectedFields.has('market.school_rating') && parsedData.market_data.school_rating) {
-        propertyUpdate.school_rating = parsedData.market_data.school_rating;
+        propertyUpdate.school_rating = Number(parsedData.market_data.school_rating);
       }
       if (selectedFields.has('market.days_on_market') && parsedData.market_data.days_on_market) {
-        propertyUpdate.days_on_market_avg = parsedData.market_data.days_on_market;
+        propertyUpdate.days_on_market = Math.round(Number(parsedData.market_data.days_on_market));
       }
       if (selectedFields.has('market.crime_index') && parsedData.market_data.crime_index) {
-        propertyUpdate.crime_index = parsedData.market_data.crime_index;
+        propertyUpdate.crime_index = Number(parsedData.market_data.crime_index);
       }
-      // Fix: Check for !== undefined instead of truthy to allow 0 values
       if (selectedFields.has('repair.estimated_repair_cost') && parsedData.repair_estimate?.estimated_repair_cost !== undefined) {
-        propertyUpdate.repair_cost = parsedData.repair_estimate.estimated_repair_cost;
+        propertyUpdate.repair_cost = Number(parsedData.repair_estimate.estimated_repair_cost);
       }
 
       // Update property if there are fields to update
