@@ -183,10 +183,10 @@ serve(async (req) => {
     const netEquity = arv > 0 && mortgageBalance > 0 ? arv - mortgageBalance : 0;
     const equityPct = property?.equity_percent ? Number(property.equity_percent) : 0;
     const actualFee = assignment_fee || Number(lead.assignment_fee) || 0;
-    const acqCost = Number(lead.offer_amount) || Number(lead.listing_price) || Number(property?.last_sale_price) || 0;
+    const acqCost = Number(lead.offer_amount) || 0;
     const spread = mao > 0 && acqCost > 0 ? mao - acqCost : 0;
-    const feeMin = spread > 0 ? Math.max(5000, Math.round(spread * 0.3)) : 0;
-    const feeMax = spread > 0 ? Math.round(spread * 0.6) : 0;
+    const feeMin = spread > 0 ? Math.max(5000, Math.round(spread * 0.3)) : (actualFee > 0 ? actualFee : 0);
+    const feeMax = spread > 0 ? Math.round(spread * 0.6) : (actualFee > 0 ? actualFee : 0);
 
     // Financial box
     const finBoxH = 100;
@@ -304,9 +304,10 @@ serve(async (req) => {
     // --- RECOMMENDED OFFER STRATEGY ---
     y2 = drawSectionTitle(page2, "RECOMMENDED OFFER STRATEGY", M, y2, bold, primary, primary, CW);
 
-    if (spread > 0 || mao > 0) {
-      const offerStart = acqCost > 0 ? Math.round(acqCost * 0.75) : Math.round(mao * 0.8);
-      const offerMax = mao > 0 ? mao : acqCost;
+    if (mao > 0) {
+      const offerStart = acqCost > 0 ? acqCost : Math.round(mao * 0.85);
+      const offerMax = mao;
+      const displaySpread = spread;
 
       // Offer range box
       const offerBoxH = 90;
