@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Property, useDeleteProperty } from '@/hooks/useProperties';
 import { PropertyImageGallery } from './PropertyImageGallery';
 import { EditPropertyDialog } from './EditPropertyDialog';
+import { PropStreamCMAUploader } from './PropStreamCMAUploader';
 import {
   Building2,
   MapPin,
@@ -258,6 +259,9 @@ export function PropertyDetailSheet({ property, open, onOpenChange }: PropertyDe
                 )}
               </div>
             </Card>
+
+            {/* PropStream CMA Upload */}
+            <PropStreamCMAUploader property={property} onComplete={() => onOpenChange(false)} />
 
             {/* Notes */}
             {property.notes && (
