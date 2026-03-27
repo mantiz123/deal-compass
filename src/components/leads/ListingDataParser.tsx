@@ -3,15 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Sparkles, Check, AlertCircle, Home, DollarSign, MapPin, GraduationCap, TrendingUp, Brain, Wrench } from 'lucide-react';
+import { Loader2, Sparkles, Check, AlertCircle, Home, DollarSign, MapPin, GraduationCap, TrendingUp, Brain, Wrench, FileText, Landmark, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUpdateProperty } from '@/hooks/useProperties';
 import { useAddPropertyComp } from '@/hooks/usePropertyComps';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ParsedProperty {
   address: string | null;
@@ -37,6 +38,47 @@ interface ParsedMarketData {
   zestimate: number | null;
   crime_index: number | null;
   median_price_sqft: number | null;
+  avg_dom?: number | null;
+  price_change_30d?: number | null;
+  rent_change_30d?: number | null;
+}
+
+interface PropStreamData {
+  estimated_value: number | null;
+  mortgage_balance: number | null;
+  equity_amount: number | null;
+  equity_percent: number | null;
+  monthly_rent: number | null;
+  arv: number | null;
+  tax_assessed_value: number | null;
+  annual_tax: number | null;
+  is_foreclosure: boolean | null;
+  auction_date: string | null;
+  prefc_recording_date: string | null;
+  prefc_default_amount: number | null;
+  prefc_unpaid_balance: number | null;
+  lien_amount: number | null;
+  lien_type: string | null;
+  lien_date: string | null;
+  active_liens_count: number | null;
+  last_sale_price: number | null;
+  last_sale_date: string | null;
+  owner_name: string | null;
+  owner_tenure_years: number | null;
+  days_on_market: number | null;
+  days_on_market_avg: number | null;
+  is_vacant: boolean | null;
+  is_absentee_owner: boolean | null;
+  combined_ltv: number | null;
+}
+
+interface OpenLien {
+  date: string | null;
+  type: string;
+  amount: number;
+  lender: string | null;
+  loan_type: string | null;
+  term: string | null;
 }
 
 interface SchoolDetail {
@@ -69,18 +111,24 @@ interface RepairEstimate {
 interface ParsedComp {
   address: string;
   sale_price: number;
+  sale_date?: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
   sqft: number | null;
+  distance_miles?: number | null;
+  price_per_sqft?: number | null;
 }
 
 interface ParsedData {
+  _source?: 'propstream' | 'listing';
   property: ParsedProperty;
+  propstream_data?: PropStreamData;
   market_data: ParsedMarketData;
   repair_estimate?: RepairEstimate;
   school_details?: SchoolDetail[];
   price_history: Array<{ date: string | null; event: string; price: number }>;
   comps: ParsedComp[];
+  open_liens?: OpenLien[];
   seller_motivation_signals: string[];
   listing_description: string | null;
   offer_analysis?: OfferAnalysis;
@@ -101,6 +149,9 @@ interface ListingDataParserProps {
     days_on_market_avg?: number | null;
     crime_index?: number | null;
     repair_cost?: number | null;
+    arv?: number | null;
+    mortgage_balance?: number | null;
+    equity_percent?: number | null;
   };
   onDataApplied?: () => void;
   onRecalculatePIW?: () => void;
@@ -125,9 +176,11 @@ export function ListingDataParser({
   const updateProperty = useUpdateProperty();
   const addComp = useAddPropertyComp();
 
+  const isPropStream = parsedData?._source === 'propstream';
+
   const handleParse = async () => {
     if (!rawText.trim()) {
-      toast.error('Pega el texto del listing primero');
+      toast.error('Pega el texto primero');
       return;
     }
 
@@ -145,28 +198,35 @@ export function ListingDataParser({
 
       if (data.success && data.data) {
         setParsedData(data.data);
-        // Auto-select all fields by default
         const allFields = new Set<string>();
-        Object.keys(data.data.property || {}).forEach(k => {
+        Object.keys(data.data.property || {}).forEach((k: string) => {
           if (data.data.property[k] !== null) allFields.add(`property.${k}`);
         });
-        Object.keys(data.data.market_data || {}).forEach(k => {
+        Object.keys(data.data.market_data || {}).forEach((k: string) => {
           if (data.data.market_data[k] !== null) allFields.add(`market.${k}`);
         });
-        // Auto-select repair estimate if present
+        // Auto-select PropStream fields
+        if (data.data.propstream_data) {
+          Object.keys(data.data.propstream_data).forEach((k: string) => {
+            if (data.data.propstream_data[k] !== null && data.data.propstream_data[k] !== false) {
+              allFields.add(`ps.${k}`);
+            }
+          });
+        }
         if (data.data.repair_estimate?.estimated_repair_cost) {
           allFields.add('repair.estimated_repair_cost');
         }
         setSelectedFields(allFields);
-        // Auto-select all comps
         setSelectedComps(new Set(data.data.comps?.map((_: ParsedComp, i: number) => i) || []));
-        toast.success('Datos extraídos exitosamente');
+        toast.success(data.data._source === 'propstream' 
+          ? '📊 Datos PropStream extraídos exitosamente' 
+          : 'Datos extraídos exitosamente');
       } else {
         toast.error(data.error || 'Error al parsear');
       }
     } catch (error) {
       console.error('Parse error:', error);
-      toast.error('Error al procesar el listing');
+      toast.error('Error al procesar los datos');
     } finally {
       setIsParsing(false);
     }
@@ -198,10 +258,10 @@ export function ListingDataParser({
     setIsApplying(true);
 
     try {
-      // Build property update object with proper type coercion
       const propertyUpdate: Record<string, unknown> = {};
+      const ps = parsedData.propstream_data;
       
-      // Integer fields need Math.round()
+      // Property fields
       if (selectedFields.has('property.bedrooms') && parsedData.property.bedrooms) {
         propertyUpdate.bedrooms = Math.round(Number(parsedData.property.bedrooms));
       }
@@ -217,6 +277,8 @@ export function ListingDataParser({
       if (selectedFields.has('property.year_built') && parsedData.property.year_built) {
         propertyUpdate.year_built = Math.round(Number(parsedData.property.year_built));
       }
+
+      // Market data fields
       if (selectedFields.has('market.estimated_monthly_rent') && parsedData.market_data.estimated_monthly_rent) {
         propertyUpdate.estimated_monthly_rent = Number(parsedData.market_data.estimated_monthly_rent);
       }
@@ -236,12 +298,81 @@ export function ListingDataParser({
         propertyUpdate.repair_cost = Number(parsedData.repair_estimate.estimated_repair_cost);
       }
 
-      // Update property if there are fields to update
+      // PropStream-specific fields
+      if (ps) {
+        if (selectedFields.has('ps.arv') && ps.arv) {
+          propertyUpdate.arv = Number(ps.arv);
+        }
+        if (selectedFields.has('ps.estimated_value') && ps.estimated_value && !selectedFields.has('ps.arv')) {
+          propertyUpdate.arv = Number(ps.estimated_value);
+        }
+        if (selectedFields.has('ps.mortgage_balance') && ps.mortgage_balance != null) {
+          propertyUpdate.mortgage_balance = Number(ps.mortgage_balance);
+        }
+        if (selectedFields.has('ps.equity_percent') && ps.equity_percent != null) {
+          propertyUpdate.equity_percent = Number(ps.equity_percent);
+        }
+        if (selectedFields.has('ps.monthly_rent') && ps.monthly_rent) {
+          propertyUpdate.estimated_monthly_rent = Number(ps.monthly_rent);
+        }
+        if (selectedFields.has('ps.is_foreclosure') && ps.is_foreclosure) {
+          propertyUpdate.is_foreclosure = true;
+        }
+        if (selectedFields.has('ps.auction_date') && ps.auction_date) {
+          propertyUpdate.auction_date = ps.auction_date;
+        }
+        if (selectedFields.has('ps.prefc_recording_date') && ps.prefc_recording_date) {
+          propertyUpdate.prefc_recording_date = ps.prefc_recording_date;
+        }
+        if (selectedFields.has('ps.prefc_default_amount') && ps.prefc_default_amount) {
+          propertyUpdate.prefc_default_amount = Number(ps.prefc_default_amount);
+        }
+        if (selectedFields.has('ps.prefc_unpaid_balance') && ps.prefc_unpaid_balance) {
+          propertyUpdate.prefc_unpaid_balance = Number(ps.prefc_unpaid_balance);
+        }
+        if (selectedFields.has('ps.lien_amount') && ps.lien_amount != null) {
+          propertyUpdate.lien_amount = Number(ps.lien_amount);
+        }
+        if (selectedFields.has('ps.lien_type') && ps.lien_type) {
+          propertyUpdate.lien_type = ps.lien_type;
+        }
+        if (selectedFields.has('ps.lien_date') && ps.lien_date) {
+          propertyUpdate.lien_date = ps.lien_date;
+        }
+        if (selectedFields.has('ps.active_liens_count') && ps.active_liens_count != null) {
+          propertyUpdate.active_liens_count = Number(ps.active_liens_count);
+        }
+        if (selectedFields.has('ps.last_sale_price') && ps.last_sale_price) {
+          propertyUpdate.last_sale_price = Number(ps.last_sale_price);
+        }
+        if (selectedFields.has('ps.last_sale_date') && ps.last_sale_date) {
+          propertyUpdate.last_sale_date = ps.last_sale_date;
+        }
+        if (selectedFields.has('ps.owner_name') && ps.owner_name) {
+          propertyUpdate.owner_name = ps.owner_name;
+        }
+        if (selectedFields.has('ps.owner_tenure_years') && ps.owner_tenure_years != null) {
+          propertyUpdate.owner_tenure_years = Math.round(Number(ps.owner_tenure_years));
+        }
+        if (selectedFields.has('ps.days_on_market') && ps.days_on_market) {
+          propertyUpdate.days_on_market = Math.round(Number(ps.days_on_market));
+        }
+        if (selectedFields.has('ps.days_on_market_avg') && ps.days_on_market_avg) {
+          propertyUpdate.days_on_market_avg = Math.round(Number(ps.days_on_market_avg));
+        }
+        if (selectedFields.has('ps.is_vacant') && ps.is_vacant != null) {
+          propertyUpdate.is_vacant = ps.is_vacant;
+        }
+        if (selectedFields.has('ps.is_absentee_owner') && ps.is_absentee_owner != null) {
+          propertyUpdate.is_absentee_owner = ps.is_absentee_owner;
+        }
+      }
+
       if (Object.keys(propertyUpdate).length > 0) {
         await updateProperty.mutateAsync({ id: propertyId, ...propertyUpdate });
       }
 
-      // Update lead's listing_price if selected and leadId is provided
+      // Update lead's listing_price
       if (selectedFields.has('property.listing_price') && parsedData.property.listing_price && leadId) {
         const { error: leadError } = await supabase
           .from('leads')
@@ -255,6 +386,7 @@ export function ListingDataParser({
       }
 
       // Add selected comps
+      const compSource = isPropStream ? 'propstream' : 'zillow';
       for (const index of selectedComps) {
         const comp = parsedData.comps[index];
         if (comp) {
@@ -265,14 +397,18 @@ export function ListingDataParser({
             sqft: comp.sqft || undefined,
             bedrooms: comp.bedrooms || undefined,
             bathrooms: comp.bathrooms || undefined,
-            source: 'zillow',
+            distance_miles: comp.distance_miles || undefined,
+            price_per_sqft: comp.price_per_sqft || undefined,
+            sale_date: comp.sale_date || undefined,
+            source: compSource,
           });
         }
       }
 
-      toast.success('Datos aplicados correctamente');
+      const fieldsApplied = Object.keys(propertyUpdate).length;
+      const compsApplied = selectedComps.size;
+      toast.success(`✅ ${fieldsApplied} campos y ${compsApplied} comps aplicados`);
       
-      // Trigger PIW recalculation if enabled and callback provided
       if (recalculatePIW && onRecalculatePIW) {
         toast.info('Recalculando K-Score...');
         onRecalculatePIW();
@@ -306,24 +442,27 @@ export function ListingDataParser({
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Sparkles className="h-4 w-4" />
-          Importar de Zillow
+          Importar Datos
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            Importar Datos de Listing
+            Importar Datos de Propiedad
           </DialogTitle>
+          <DialogDescription>
+            Pega texto de PropStream CMA, Zillow, Redfin o cualquier listing. El sistema detecta automáticamente la fuente.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Input Section */}
           <div className="space-y-4">
             <div>
-              <Label>Pega el texto del listing (Zillow, Realtor, Redfin...)</Label>
+              <Label>Pega el texto aquí (PropStream CMA, Zillow, Redfin...)</Label>
               <Textarea
-                placeholder="Copia y pega toda la información del listing aquí..."
+                placeholder="Copia y pega toda la información del CMA o listing aquí..."
                 value={rawText}
                 onChange={(e) => setRawText(e.target.value)}
                 className="h-[300px] mt-2 font-mono text-xs"
@@ -346,13 +485,19 @@ export function ListingDataParser({
                 </>
               )}
             </Button>
+            
+            {parsedData && (
+              <Badge variant={isPropStream ? 'default' : 'secondary'} className="w-fit">
+                {isPropStream ? '📊 PropStream CMA' : '🏠 Listing (Zillow/Redfin)'}
+              </Badge>
+            )}
           </div>
 
           {/* Results Section */}
-          <ScrollArea className="h-[400px] pr-4">
+          <ScrollArea className="h-[450px] pr-4">
             {parsedData ? (
               <div className="space-y-4">
-                {/* Offer Analysis - Most Important! */}
+                {/* Offer Analysis */}
                 {parsedData.offer_analysis && (
                   <Card className="border-primary/50 bg-primary/5">
                     <CardHeader className="py-3">
@@ -370,9 +515,9 @@ export function ListingDataParser({
                         </Badge>
                       </div>
                       {(parsedData.offer_analysis.suggested_offer_min || parsedData.offer_analysis.suggested_offer_max) && (
-                        <div className="p-3 bg-success/10 rounded-lg border border-success/30">
+                        <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/30">
                           <p className="text-xs text-muted-foreground mb-1">Rango de Oferta Sugerido</p>
-                          <p className="text-lg font-bold text-success">
+                          <p className="text-lg font-bold text-green-600 dark:text-green-400">
                             {formatCurrency(parsedData.offer_analysis.suggested_offer_min)} - {formatCurrency(parsedData.offer_analysis.suggested_offer_max)}
                           </p>
                         </div>
@@ -386,7 +531,168 @@ export function ListingDataParser({
                   </Card>
                 )}
 
-                {/* Repair Cost Estimate - Critical for MAO calculation */}
+                {/* PropStream Financial Data */}
+                {isPropStream && parsedData.propstream_data && (
+                  <Card className="border-blue-500/50 bg-blue-500/5">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Landmark className="h-4 w-4 text-blue-500" />
+                        Datos Financieros (PropStream)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {parsedData.propstream_data.arv != null && (
+                        <FieldRow
+                          label="ARV (Comps Avg)"
+                          value={formatCurrency(parsedData.propstream_data.arv)}
+                          current={currentProperty?.arv}
+                          field="ps.arv"
+                          selected={selectedFields.has('ps.arv')}
+                          onToggle={toggleField}
+                          formatCurrent={formatCurrency}
+                        />
+                      )}
+                      {parsedData.propstream_data.estimated_value != null && (
+                        <FieldRow
+                          label="Valor Estimado"
+                          value={formatCurrency(parsedData.propstream_data.estimated_value)}
+                          field="ps.estimated_value"
+                          selected={selectedFields.has('ps.estimated_value')}
+                          onToggle={toggleField}
+                        />
+                      )}
+                      {parsedData.propstream_data.mortgage_balance != null && (
+                        <FieldRow
+                          label="Balance Hipoteca"
+                          value={formatCurrency(parsedData.propstream_data.mortgage_balance)}
+                          current={currentProperty?.mortgage_balance}
+                          field="ps.mortgage_balance"
+                          selected={selectedFields.has('ps.mortgage_balance')}
+                          onToggle={toggleField}
+                          formatCurrent={formatCurrency}
+                        />
+                      )}
+                      {parsedData.propstream_data.equity_percent != null && (
+                        <FieldRow
+                          label="Equity %"
+                          value={`${parsedData.propstream_data.equity_percent}%`}
+                          current={currentProperty?.equity_percent}
+                          field="ps.equity_percent"
+                          selected={selectedFields.has('ps.equity_percent')}
+                          onToggle={toggleField}
+                        />
+                      )}
+                      {parsedData.propstream_data.equity_amount != null && (
+                        <div className="text-xs text-muted-foreground pl-6">
+                          Equity: {formatCurrency(parsedData.propstream_data.equity_amount)}
+                        </div>
+                      )}
+                      {parsedData.propstream_data.monthly_rent != null && (
+                        <FieldRow
+                          label="Renta Mensual"
+                          value={`${formatCurrency(parsedData.propstream_data.monthly_rent)}/mes`}
+                          field="ps.monthly_rent"
+                          selected={selectedFields.has('ps.monthly_rent')}
+                          onToggle={toggleField}
+                        />
+                      )}
+                      {parsedData.propstream_data.last_sale_price != null && (
+                        <FieldRow
+                          label="Última Venta"
+                          value={`${formatCurrency(parsedData.propstream_data.last_sale_price)} (${parsedData.propstream_data.last_sale_date || ''})`}
+                          field="ps.last_sale_price"
+                          selected={selectedFields.has('ps.last_sale_price')}
+                          onToggle={toggleField}
+                        />
+                      )}
+                      {parsedData.propstream_data.owner_name && (
+                        <FieldRow
+                          label="Propietario"
+                          value={parsedData.propstream_data.owner_name}
+                          field="ps.owner_name"
+                          selected={selectedFields.has('ps.owner_name')}
+                          onToggle={toggleField}
+                        />
+                      )}
+                      {parsedData.propstream_data.owner_tenure_years != null && (
+                        <FieldRow
+                          label="Tenencia"
+                          value={`${parsedData.propstream_data.owner_tenure_years} años`}
+                          field="ps.owner_tenure_years"
+                          selected={selectedFields.has('ps.owner_tenure_years')}
+                          onToggle={toggleField}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Foreclosure & Liens */}
+                {isPropStream && parsedData.propstream_data && (
+                  parsedData.propstream_data.is_foreclosure || (parsedData.propstream_data.active_liens_count ?? 0) > 0
+                ) && (
+                  <Card className="border-red-500/50 bg-red-500/5">
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-red-500" />
+                        Distress & Liens
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {parsedData.propstream_data.is_foreclosure && (
+                        <FieldRow
+                          label="Pre-Foreclosure"
+                          value="⚠️ SÍ"
+                          field="ps.is_foreclosure"
+                          selected={selectedFields.has('ps.is_foreclosure')}
+                          onToggle={toggleField}
+                        />
+                      )}
+                      {parsedData.propstream_data.auction_date && (
+                        <FieldRow
+                          label="Fecha Subasta"
+                          value={parsedData.propstream_data.auction_date}
+                          field="ps.auction_date"
+                          selected={selectedFields.has('ps.auction_date')}
+                          onToggle={toggleField}
+                        />
+                      )}
+                      {parsedData.propstream_data.lien_amount != null && (
+                        <FieldRow
+                          label="Total Liens"
+                          value={formatCurrency(parsedData.propstream_data.lien_amount)}
+                          field="ps.lien_amount"
+                          selected={selectedFields.has('ps.lien_amount')}
+                          onToggle={toggleField}
+                        />
+                      )}
+                      {parsedData.propstream_data.active_liens_count != null && (
+                        <FieldRow
+                          label="Liens Activos"
+                          value={parsedData.propstream_data.active_liens_count}
+                          field="ps.active_liens_count"
+                          selected={selectedFields.has('ps.active_liens_count')}
+                          onToggle={toggleField}
+                        />
+                      )}
+
+                      {/* Open Liens Detail */}
+                      {parsedData.open_liens && parsedData.open_liens.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground">Detalle de Liens:</p>
+                          {parsedData.open_liens.map((lien, i) => (
+                            <div key={i} className="text-xs p-2 rounded bg-muted/30 flex justify-between">
+                              <span>{lien.lender || lien.type}</span>
+                              <span className="font-medium">{formatCurrency(lien.amount)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Repair Estimate */}
                 {parsedData.repair_estimate && (
                   <Card className="border-amber-500/50 bg-amber-500/5">
                     <CardHeader className="py-3">
@@ -425,49 +731,22 @@ export function ListingDataParser({
                         <p className="text-xs text-muted-foreground mt-1">
                           ${parsedData.repair_estimate.cost_per_sqft}/sqft × {parsedData.property.sqft?.toLocaleString() || '?'} sqft
                         </p>
-                        {currentProperty?.repair_cost && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Valor actual: {formatCurrency(currentProperty.repair_cost)}
-                          </p>
-                        )}
                       </div>
 
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">Nivel:</span>
-                          <Badge variant="outline" className={
-                            parsedData.repair_estimate.repair_level === 'gut_rehab' ? 'bg-red-500/10 text-red-500' :
-                            parsedData.repair_estimate.repair_level === 'heavy' ? 'bg-orange-500/10 text-orange-500' :
-                            parsedData.repair_estimate.repair_level === 'moderate' ? 'bg-amber-500/10 text-amber-500' :
-                            'bg-green-500/10 text-green-500'
-                          }>
-                            {parsedData.repair_estimate.repair_level === 'gut_rehab' ? '🔨 GUT REHAB' :
-                             parsedData.repair_estimate.repair_level === 'heavy' ? '🛠️ HEAVY' :
-                             parsedData.repair_estimate.repair_level === 'moderate' ? '🔧 MODERADO' :
-                             '✨ COSMÉTICO'}
-                          </Badge>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Nivel:</span>
+                        <Badge variant="outline" className={
+                          parsedData.repair_estimate.repair_level === 'gut_rehab' ? 'bg-red-500/10 text-red-500' :
+                          parsedData.repair_estimate.repair_level === 'heavy' ? 'bg-orange-500/10 text-orange-500' :
+                          parsedData.repair_estimate.repair_level === 'moderate' ? 'bg-amber-500/10 text-amber-500' :
+                          'bg-green-500/10 text-green-500'
+                        }>
+                          {parsedData.repair_estimate.repair_level === 'gut_rehab' ? '🔨 GUT REHAB' :
+                           parsedData.repair_estimate.repair_level === 'heavy' ? '🛠️ HEAVY' :
+                           parsedData.repair_estimate.repair_level === 'moderate' ? '🔧 MODERADO' :
+                           '✨ COSMÉTICO'}
+                        </Badge>
                       </div>
-
-                      {parsedData.repair_estimate.breakdown?.keywords_found?.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {parsedData.repair_estimate.breakdown.keywords_found.map((kw, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs">
-                              {kw}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-
-                      {parsedData.repair_estimate.factors?.length > 0 && (
-                        <ul className="text-xs text-muted-foreground space-y-1">
-                          {parsedData.repair_estimate.factors.slice(0, 3).map((f, i) => (
-                            <li key={i} className="flex items-start gap-1">
-                              <span className="text-amber-500">•</span> {f}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
                     </CardContent>
                   </Card>
                 )}
@@ -482,54 +761,19 @@ export function ListingDataParser({
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {parsedData.property.bedrooms !== null && (
-                      <FieldRow
-                        label="Habitaciones"
-                        value={parsedData.property.bedrooms}
-                        current={currentProperty?.bedrooms}
-                        field="property.bedrooms"
-                        selected={selectedFields.has('property.bedrooms')}
-                        onToggle={toggleField}
-                      />
+                      <FieldRow label="Habitaciones" value={parsedData.property.bedrooms} current={currentProperty?.bedrooms} field="property.bedrooms" selected={selectedFields.has('property.bedrooms')} onToggle={toggleField} />
                     )}
                     {parsedData.property.bathrooms !== null && (
-                      <FieldRow
-                        label="Baños"
-                        value={parsedData.property.bathrooms}
-                        current={currentProperty?.bathrooms}
-                        field="property.bathrooms"
-                        selected={selectedFields.has('property.bathrooms')}
-                        onToggle={toggleField}
-                      />
+                      <FieldRow label="Baños" value={parsedData.property.bathrooms} current={currentProperty?.bathrooms} field="property.bathrooms" selected={selectedFields.has('property.bathrooms')} onToggle={toggleField} />
                     )}
                     {parsedData.property.sqft !== null && (
-                      <FieldRow
-                        label="Pies²"
-                        value={parsedData.property.sqft?.toLocaleString()}
-                        current={currentProperty?.sqft}
-                        field="property.sqft"
-                        selected={selectedFields.has('property.sqft')}
-                        onToggle={toggleField}
-                      />
+                      <FieldRow label="Pies²" value={parsedData.property.sqft?.toLocaleString()} current={currentProperty?.sqft} field="property.sqft" selected={selectedFields.has('property.sqft')} onToggle={toggleField} />
                     )}
                     {parsedData.property.year_built !== null && (
-                      <FieldRow
-                        label="Año Construcción"
-                        value={parsedData.property.year_built}
-                        current={currentProperty?.year_built}
-                        field="property.year_built"
-                        selected={selectedFields.has('property.year_built')}
-                        onToggle={toggleField}
-                      />
+                      <FieldRow label="Año Construcción" value={parsedData.property.year_built} current={currentProperty?.year_built} field="property.year_built" selected={selectedFields.has('property.year_built')} onToggle={toggleField} />
                     )}
                     {parsedData.property.lot_size !== null && (
-                      <FieldRow
-                        label="Tamaño Lote"
-                        value={`${parsedData.property.lot_size?.toLocaleString()} sqft`}
-                        current={currentProperty?.lot_size}
-                        field="property.lot_size"
-                        selected={selectedFields.has('property.lot_size')}
-                        onToggle={toggleField}
-                      />
+                      <FieldRow label="Tamaño Lote" value={`${parsedData.property.lot_size?.toLocaleString()} sqft`} current={currentProperty?.lot_size} field="property.lot_size" selected={selectedFields.has('property.lot_size')} onToggle={toggleField} />
                     )}
                   </CardContent>
                 </Card>
@@ -544,82 +788,22 @@ export function ListingDataParser({
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {parsedData.market_data.estimated_monthly_rent !== null && (
-                      <FieldRow
-                        label="Renta Estimada"
-                        value={formatCurrency(parsedData.market_data.estimated_monthly_rent) + '/mes'}
-                        current={currentProperty?.estimated_monthly_rent}
-                        field="market.estimated_monthly_rent"
-                        selected={selectedFields.has('market.estimated_monthly_rent')}
-                        onToggle={toggleField}
-                      />
-                    )}
-                    {parsedData.market_data.walkability_score !== null && (
-                      <FieldRow
-                        label="Walk Score"
-                        value={parsedData.market_data.walkability_score}
-                        current={currentProperty?.walkability_score}
-                        field="market.walkability_score"
-                        selected={selectedFields.has('market.walkability_score')}
-                        onToggle={toggleField}
-                      />
-                    )}
-                    {parsedData.market_data.school_rating !== null && (
-                      <FieldRow
-                        label="Rating Escuelas"
-                        value={`${parsedData.market_data.school_rating.toFixed(1)}/10`}
-                        current={currentProperty?.school_rating}
-                        field="market.school_rating"
-                        selected={selectedFields.has('market.school_rating')}
-                        onToggle={toggleField}
-                      />
+                      <FieldRow label="Renta Estimada" value={formatCurrency(parsedData.market_data.estimated_monthly_rent) + '/mes'} current={currentProperty?.estimated_monthly_rent} field="market.estimated_monthly_rent" selected={selectedFields.has('market.estimated_monthly_rent')} onToggle={toggleField} />
                     )}
                     {parsedData.market_data.days_on_market !== null && (
-                      <FieldRow
-                        label="Días en Mercado"
-                        value={parsedData.market_data.days_on_market}
-                        current={currentProperty?.days_on_market_avg}
-                        field="market.days_on_market"
-                        selected={selectedFields.has('market.days_on_market')}
-                        onToggle={toggleField}
-                      />
+                      <FieldRow label="Días en Mercado" value={parsedData.market_data.days_on_market} current={currentProperty?.days_on_market_avg} field="market.days_on_market" selected={selectedFields.has('market.days_on_market')} onToggle={toggleField} />
                     )}
-                    {parsedData.market_data.crime_index !== null && (
-                      <FieldRow
-                        label="Índice Crimen"
-                        value={parsedData.market_data.crime_index}
-                        current={currentProperty?.crime_index}
-                        field="market.crime_index"
-                        selected={selectedFields.has('market.crime_index')}
-                        onToggle={toggleField}
-                      />
+                    {parsedData.market_data.median_price_sqft !== null && (
+                      <FieldRow label="$/sqft Mercado" value={`$${parsedData.market_data.median_price_sqft}`} field="market.median_price_sqft" selected={selectedFields.has('market.median_price_sqft')} onToggle={toggleField} />
+                    )}
+                    {parsedData.market_data.walkability_score !== null && (
+                      <FieldRow label="Walk Score" value={parsedData.market_data.walkability_score} current={currentProperty?.walkability_score} field="market.walkability_score" selected={selectedFields.has('market.walkability_score')} onToggle={toggleField} />
+                    )}
+                    {parsedData.market_data.school_rating !== null && (
+                      <FieldRow label="Rating Escuelas" value={`${parsedData.market_data.school_rating.toFixed(1)}/10`} current={currentProperty?.school_rating} field="market.school_rating" selected={selectedFields.has('market.school_rating')} onToggle={toggleField} />
                     )}
                   </CardContent>
                 </Card>
-
-                {/* School Details */}
-                {parsedData.school_details && parsedData.school_details.length > 0 && (
-                  <Card>
-                    <CardHeader className="py-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <GraduationCap className="h-4 w-4" />
-                        Escuelas Cercanas
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {parsedData.school_details.map((school, i) => (
-                        <div key={i} className="flex items-center justify-between text-xs p-2 rounded bg-muted/30">
-                          <div>
-                            <p className="font-medium">{school.name}</p>
-                            <p className="text-muted-foreground capitalize">{school.type} {school.distance && `• ${school.distance}`}</p>
-                          </div>
-                          <Badge variant={school.rating >= 7 ? 'default' : school.rating >= 4 ? 'secondary' : 'outline'}>
-                            {school.rating}/10
-                          </Badge>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
 
                 {/* Motivation Signals */}
                 {parsedData.seller_motivation_signals?.length > 0 && (
@@ -627,7 +811,7 @@ export function ListingDataParser({
                     <CardHeader className="py-3">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-amber-500" />
-                        Señales de Motivación
+                        Señales de Motivación ({parsedData.seller_motivation_signals.length})
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -651,7 +835,7 @@ export function ListingDataParser({
                         Comparables ({parsedData.comps.length})
                       </CardTitle>
                       <CardDescription className="text-xs">
-                        Propiedades cercanas para agregar como comps
+                        {isPropStream ? 'Comps de PropStream CMA' : 'Propiedades cercanas'}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
@@ -671,6 +855,8 @@ export function ListingDataParser({
                               {comp.bedrooms && ` • ${comp.bedrooms}bd`}
                               {comp.bathrooms && ` ${comp.bathrooms}ba`}
                               {comp.sqft && ` • ${comp.sqft.toLocaleString()} sqft`}
+                              {comp.distance_miles && ` • ${comp.distance_miles}mi`}
+                              {comp.sale_date && ` • ${comp.sale_date}`}
                             </p>
                           </div>
                         </div>
@@ -679,7 +865,7 @@ export function ListingDataParser({
                   </Card>
                 )}
 
-                {/* PIW Recalculation Option */}
+                {/* K-Score Recalculation */}
                 {onRecalculatePIW && (
                   <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30">
                     <Checkbox
@@ -707,14 +893,18 @@ export function ListingDataParser({
                   ) : (
                     <>
                       <Check className="h-4 w-4 mr-2" />
-                      Aplicar Datos Seleccionados
+                      Aplicar Datos Seleccionados ({selectedFields.size} campos, {selectedComps.size} comps)
                     </>
                   )}
                 </Button>
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-                Pega el texto del listing y haz clic en "Extraer Datos"
+              <div className="h-full flex items-center justify-center text-muted-foreground text-sm text-center p-8">
+                <div className="space-y-2">
+                  <FileText className="h-8 w-8 mx-auto opacity-50" />
+                  <p>Pega el texto del CMA de PropStream o de un listing (Zillow, Redfin) y haz clic en "Extraer Datos"</p>
+                  <p className="text-xs">El sistema detecta automáticamente la fuente y extrae los datos relevantes</p>
+                </div>
               </div>
             )}
           </ScrollArea>
@@ -731,9 +921,10 @@ interface FieldRowProps {
   field: string;
   selected: boolean;
   onToggle: (field: string) => void;
+  formatCurrent?: (val: number | null) => string;
 }
 
-function FieldRow({ label, value, current, field, selected, onToggle }: FieldRowProps) {
+function FieldRow({ label, value, current, field, selected, onToggle, formatCurrent }: FieldRowProps) {
   const hasCurrentValue = current !== null && current !== undefined;
   
   return (
@@ -742,10 +933,12 @@ function FieldRow({ label, value, current, field, selected, onToggle }: FieldRow
         checked={selected}
         onCheckedChange={() => onToggle(field)}
       />
-      <span className="text-muted-foreground w-32">{label}:</span>
+      <span className="text-muted-foreground w-32 shrink-0">{label}:</span>
       <span className="font-medium">{value}</span>
       {hasCurrentValue && (
-        <span className="text-xs text-muted-foreground">(actual: {current})</span>
+        <span className="text-xs text-muted-foreground">
+          (actual: {formatCurrent ? formatCurrent(current) : current})
+        </span>
       )}
     </div>
   );
