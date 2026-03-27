@@ -342,22 +342,22 @@ export function PropStreamCMAUploader({ property, onComplete }: PropStreamCMAUpl
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-success" />
               <span>{result.fieldsApplied} campos aplicados</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-success" />
               <span>{result.compsAdded} comps añadidos</span>
             </div>
             {result.leadCreated && (
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                 <span>Lead creado</span>
               </div>
             )}
             {result.kScore && (
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                 <span>K-Score: {result.kScore}</span>
               </div>
             )}
