@@ -27,7 +27,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import kloseLogo from "@/assets/klose-logo.png";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Guía", href: "/guide", icon: BookOpen },
   { name: "Importar", href: "/import", icon: Upload },
   { name: "Leads", href: "/leads", icon: Target },
@@ -58,13 +58,13 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center justify-between border-b border-border px-4">
         {(!collapsed || isMobile) && (
-          <Link to="/" className="flex items-center gap-2" onClick={handleNavClick}>
+          <Link to="/dashboard" className="flex items-center gap-2" onClick={handleNavClick}>
             <img src={kloseLogo} alt="KLOSE" className="h-8 w-8 object-contain" />
             <span className="text-lg font-bold text-foreground">KLOSE</span>
           </Link>
         )}
         {collapsed && !isMobile && (
-          <Link to="/" className="mx-auto">
+          <Link to="/dashboard" className="mx-auto">
             <img src={kloseLogo} alt="KLOSE" className="h-8 w-8 object-contain" />
           </Link>
         )}
