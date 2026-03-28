@@ -20,7 +20,9 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Settings from "./pages/Settings";
 import Guide from "./pages/Guide";
+import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import "@/styles/landing.css";
 
 const queryClient = new QueryClient();
 
