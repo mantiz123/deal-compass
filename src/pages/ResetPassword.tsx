@@ -66,7 +66,7 @@ export default function ResetPassword() {
       toast({ title: 'Error', description: 'No se pudo actualizar la contraseña. Intenta de nuevo.', variant: 'destructive' });
     } else {
       toast({ title: '✅ Contraseña actualizada', description: 'Tu contraseña se ha cambiado exitosamente.' });
-      navigate('/');
+      navigate('/dashboard');
     }
   };
 
