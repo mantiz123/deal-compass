@@ -31,7 +31,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [user, navigate]);
 
@@ -144,6 +144,15 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="absolute top-6 left-6"
+        onClick={() => navigate('/')}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Home
+      </Button>
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center">
