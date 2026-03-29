@@ -67,6 +67,12 @@ export default function Settings() {
               <Cog className="h-4 w-4" />
               <span className="hidden sm:inline">Cuenta</span>
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="users" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Usuarios</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="profile" className="mt-0 animate-fade-in">
@@ -80,6 +86,12 @@ export default function Settings() {
           <TabsContent value="account" className="mt-0 animate-fade-in">
             <AccountSettings />
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="users" className="mt-0 animate-fade-in">
+              <AdminUsersPanel />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </Layout>
