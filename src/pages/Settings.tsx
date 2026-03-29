@@ -1,16 +1,20 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useProfile';
 import { Layout } from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
 import { SecuritySettings } from '@/components/settings/SecuritySettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
-import { Settings as SettingsIcon, User, Shield, Cog } from 'lucide-react';
+import { AdminUsersPanel } from '@/components/settings/AdminUsersPanel';
+import { Settings as SettingsIcon, User, Shield, Cog, Users } from 'lucide-react';
 
 export default function Settings() {
   const { user, loading } = useAuth();
+  const { data: role } = useUserRole();
   const navigate = useNavigate();
+  const isAdmin = role === 'admin';
 
   useEffect(() => {
     if (!loading && !user) {
@@ -63,6 +67,12 @@ export default function Settings() {
               <Cog className="h-4 w-4" />
               <span className="hidden sm:inline">Cuenta</span>
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="users" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Usuarios</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="profile" className="mt-0 animate-fade-in">
@@ -76,6 +86,12 @@ export default function Settings() {
           <TabsContent value="account" className="mt-0 animate-fade-in">
             <AccountSettings />
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="users" className="mt-0 animate-fade-in">
+              <AdminUsersPanel />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </Layout>
