@@ -12,7 +12,9 @@ import { Settings as SettingsIcon, User, Shield, Cog, Users } from 'lucide-react
 
 export default function Settings() {
   const { user, loading } = useAuth();
+  const { data: role } = useUserRole();
   const navigate = useNavigate();
+  const isAdmin = role === 'admin';
 
   useEffect(() => {
     if (!loading && !user) {
