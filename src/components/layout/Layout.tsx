@@ -12,7 +12,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, isApproved } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
@@ -22,8 +22,10 @@ export function Layout({ children }: LayoutProps) {
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
+    } else if (!loading && user && isApproved === false) {
+      navigate('/pending-approval');
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, isApproved, navigate]);
 
   if (loading) {
     return (

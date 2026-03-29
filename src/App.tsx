@@ -18,6 +18,7 @@ import Payments from "./pages/Payments";
 import Import from "./pages/Import";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import PendingApproval from "./pages/PendingApproval";
 import Settings from "./pages/Settings";
 import Guide from "./pages/Guide";
 import Landing from "./pages/Landing";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/dashboard" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/reset" element={<ResetPassword />} />
+              <Route path="/pending-approval" element={<PendingApproval />} />
               <Route path="/guide" element={<Guide />} />
               <Route path="/pipeline" element={<Pipeline />} />
               <Route path="/leads" element={<Leads />} />
