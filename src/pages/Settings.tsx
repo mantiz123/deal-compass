@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useProfile';
 import { Layout } from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
 import { SecuritySettings } from '@/components/settings/SecuritySettings';
 import { AccountSettings } from '@/components/settings/AccountSettings';
-import { Settings as SettingsIcon, User, Shield, Cog } from 'lucide-react';
+import { AdminUsersPanel } from '@/components/settings/AdminUsersPanel';
+import { Settings as SettingsIcon, User, Shield, Cog, Users } from 'lucide-react';
 
 export default function Settings() {
   const { user, loading } = useAuth();
