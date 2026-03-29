@@ -38,22 +38,19 @@ export default function PendingApproval() {
             <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center">
               <Clock className="h-8 w-8 text-amber-500" />
             </div>
-            <CardTitle className="text-xl">Cuenta Pendiente de Aprobación</CardTitle>
+            <CardTitle className="text-xl">Account Pending Approval</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Tu cuenta ha sido registrada exitosamente. Un administrador revisará tu solicitud 
-              y te notificará por email cuando tu acceso sea aprobado.
+              Your account has been registered successfully. An administrator will review your request 
+              and notify you by email when your access is approved.
             </p>
             <p className="text-muted-foreground text-xs">
-              Si crees que esto es un error, contacta a{' '}
-              <a href="mailto:sergio@goklose.com" className="text-primary hover:underline">
-                sergio@goklose.com
-              </a>
+              If you believe this is an error, please contact the administrator.
             </p>
             <Button variant="outline" className="w-full mt-4" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              Cerrar sesión
+              Sign Out
             </Button>
           </CardContent>
         </Card>
