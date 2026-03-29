@@ -17,7 +17,7 @@ const passwordSchema = z.string().min(6, 'La contraseña debe tener al menos 6 c
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { user, signIn, signUp, loading: authLoading } = useAuth();
+  const { user, signIn, signUp, loading: authLoading, isApproved } = useAuth();
   const { toast } = useToast();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -30,10 +30,12 @@ export default function Auth() {
   const [signupName, setSignupName] = useState('');
 
   useEffect(() => {
-    if (user) {
+    if (user && isApproved === true) {
       navigate('/dashboard');
+    } else if (user && isApproved === false) {
+      navigate('/pending-approval');
     }
-  }, [user, navigate]);
+  }, [user, isApproved, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
