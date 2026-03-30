@@ -1,0 +1,1 @@
+ALTER TABLE public.properties ADD COLUMN IF NOT EXISTS owner_email_2 text, ADD COLUMN IF NOT EXISTS owner_email_3 text;

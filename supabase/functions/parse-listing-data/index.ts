@@ -151,7 +151,8 @@ Extract ALL available data from the PropStream CMA report. Return a JSON object 
     "days_on_market_avg": "number or null (Average DOM from market statistics)",
     "is_vacant": "boolean or null",
     "is_absentee_owner": "boolean (true if mailing address differs from property address)",
-    "combined_ltv": "number or null (Combined Loan To Value percentage)"
+    "combined_ltv": "number or null (Combined Loan To Value percentage)",
+    "owner_emails": ["array of all email addresses found in the report, include owner emails, contact emails, mailing emails"]
   },
   "market_data": {
     "estimated_monthly_rent": "number or null",

@@ -155,6 +155,13 @@ export function PropStreamCMAUploader({ property, onComplete }: PropStreamCMAUpl
         if (ps.days_on_market_avg) propertyUpdate.days_on_market_avg = Math.round(Number(ps.days_on_market_avg));
         if (ps.is_vacant != null) propertyUpdate.is_vacant = ps.is_vacant;
         if (ps.is_absentee_owner != null) propertyUpdate.is_absentee_owner = ps.is_absentee_owner;
+        
+        // Multiple emails support
+        if (ps.owner_emails && Array.isArray(ps.owner_emails) && ps.owner_emails.length > 0) {
+          propertyUpdate.owner_email = ps.owner_emails[0];
+          if (ps.owner_emails[1]) propertyUpdate.owner_email_2 = ps.owner_emails[1];
+          if (ps.owner_emails[2]) propertyUpdate.owner_email_3 = ps.owner_emails[2];
+        }
       }
 
       propertyUpdate.data_source = 'propstream_cma';
