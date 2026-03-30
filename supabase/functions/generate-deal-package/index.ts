@@ -197,9 +197,6 @@ serve(async (req) => {
     const feeMax = spread > 0 ? Math.round(spread * 0.6) : (actualFee > 0 ? actualFee : 0);
 
     // Financial box
-    const finBoxH = 100;
-    page.drawRectangle({ x: M, y: y - finBoxH, width: CW, height: finBoxH, color: bgLight, borderColor: lightGray, borderWidth: 1 });
-
     const finData = [
       { label: "ARV", value: arv > 0 ? `$${arv.toLocaleString()}` : "TBD" },
       { label: "Repairs", value: repairCost > 0 ? `$${repairCost.toLocaleString()}` : "TBD" },
@@ -209,8 +206,14 @@ serve(async (req) => {
       { label: "Equity %", value: equityPct > 0 ? `${equityPct}%` : "N/A" },
       { label: "Our Offer", value: acqCost > 0 ? `$${acqCost.toLocaleString()}` : "Pending" },
       { label: "Spread", value: acqCost > 0 && spread !== 0 ? `$${spread.toLocaleString()}` : (acqCost === 0 ? "Set offer first" : "TBD") },
+      { label: "Assign. Fee", value: actualFee > 0 ? `$${actualFee.toLocaleString()}` : "Negotiable" },
+      { label: "Lowest Price", value: lowestSourcePrice > 0 ? `$${lowestSourcePrice.toLocaleString()}` : "N/A" },
       { label: "Fee Range", value: feeMin > 0 ? `$${(feeMin/1000).toFixed(0)}K - $${(feeMax/1000).toFixed(0)}K` : (actualFee > 0 ? `$${actualFee.toLocaleString()}` : "Negotiable") },
     ];
+
+    const finRows = Math.ceil(finData.length / 3);
+    const finBoxH = finRows * 30 + 10;
+    page.drawRectangle({ x: M, y: y - finBoxH, width: CW, height: finBoxH, color: bgLight, borderColor: lightGray, borderWidth: 1 });
 
     let col = 0, row = 0;
     for (const item of finData) {
