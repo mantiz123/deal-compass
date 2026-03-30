@@ -6,14 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  Users, CheckCircle, XCircle, Clock, Search, 
-  Mail, Phone, Calendar, Shield, Loader2, UserCheck, UserX 
+  Users, CheckCircle, Clock, Search, 
+  Phone, Calendar, Loader2, UserCheck, UserX, Shield
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
 
-interface UserProfile {
+type AppRole = Database['public']['Enums']['app_role'];
+
+interface UserWithEmail {
   id: string;
   user_id: string;
   full_name: string | null;
@@ -22,11 +26,8 @@ interface UserProfile {
   is_approved: boolean;
   created_at: string;
   updated_at: string;
-}
-
-interface UserWithEmail extends UserProfile {
   email?: string;
-  role?: string;
+  role?: AppRole;
 }
 
 export function AdminUsersPanel() {
@@ -43,7 +44,6 @@ export function AdminUsersPanel() {
 
       if (error) throw error;
 
-      // Fetch roles for all users
       const userIds = profiles.map(p => p.user_id);
       const { data: roles } = await supabase
         .from('user_roles')
@@ -69,7 +69,7 @@ export function AdminUsersPanel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Usuario aprobado correctamente');
+      toast.success('User approved successfully');
     },
     onError: (e) => toast.error('Error: ' + e.message),
   });
@@ -84,7 +84,23 @@ export function AdminUsersPanel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Acceso del usuario revocado');
+      toast.success('User access revoked');
+    },
+    onError: (e) => toast.error('Error: ' + e.message),
+  });
+
+  const changeRole = useMutation({
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: AppRole }) => {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: newRole })
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['user-role'] });
+      toast.success('Role updated successfully');
     },
     onError: (e) => toast.error('Error: ' + e.message),
   });
@@ -130,12 +146,12 @@ export function AdminUsersPanel() {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-medium truncate">{user.full_name || 'Sin nombre'}</p>
+            <p className="text-sm font-medium truncate">{user.full_name || 'No name'}</p>
             {getRoleBadge(user.role || 'agent')}
             {!user.is_approved && (
               <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10 text-[10px]">
                 <Clock className="h-3 w-3 mr-1" />
-                Pendiente
+                Pending
               </Badge>
             )}
           </div>
@@ -148,13 +164,27 @@ export function AdminUsersPanel() {
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Calendar className="h-3 w-3" /> {format(new Date(user.created_at), 'MMM d, yyyy')}
             </span>
-            <span className="text-xs text-muted-foreground font-mono">
-              {user.user_id.slice(0, 8)}...
-            </span>
           </div>
         </div>
       </div>
       <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+        {/* Role selector */}
+        <div className="flex items-center gap-1">
+          <Shield className="h-3 w-3 text-muted-foreground" />
+          <Select
+            value={user.role || 'agent'}
+            onValueChange={(value) => changeRole.mutate({ userId: user.user_id, newRole: value as AppRole })}
+          >
+            <SelectTrigger className="h-8 w-24 text-xs bg-secondary/50 border-border/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="agent">Agent</SelectItem>
+              <SelectItem value="buyer">Buyer</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         {showApprove && (
           <Button
             size="sm"
@@ -163,7 +193,7 @@ export function AdminUsersPanel() {
             className="gap-1"
           >
             {approveUser.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserCheck className="h-3 w-3" />}
-            Aprobar
+            Approve
           </Button>
         )}
         {showRevoke && (
@@ -175,7 +205,7 @@ export function AdminUsersPanel() {
             className="gap-1"
           >
             {rejectUser.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserX className="h-3 w-3" />}
-            Revocar
+            Revoke
           </Button>
         )}
       </div>
@@ -199,17 +229,17 @@ export function AdminUsersPanel() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              Gestión de Usuarios
+              User Management
             </CardTitle>
             <CardDescription>
-              Aprueba o revoca el acceso de usuarios registrados
+              Approve, revoke access, and assign roles to registered users
             </CardDescription>
           </div>
           <div className="flex items-center gap-3">
             {pendingUsers.length > 0 && (
               <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10">
                 <Clock className="h-3 w-3 mr-1" />
-                {pendingUsers.length} pendiente{pendingUsers.length > 1 ? 's' : ''}
+                {pendingUsers.length} pending
               </Badge>
             )}
             <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10">
@@ -219,11 +249,10 @@ export function AdminUsersPanel() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nombre, teléfono o ID..."
+            placeholder="Search by name, phone, or ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 bg-secondary/30 border-border/50"
@@ -234,11 +263,11 @@ export function AdminUsersPanel() {
           <TabsList className="bg-secondary/50 border border-border/50">
             <TabsTrigger value="pending" className="gap-1.5 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300">
               <Clock className="h-3.5 w-3.5" />
-              Pendientes ({pendingUsers.length})
+              Pending ({pendingUsers.length})
             </TabsTrigger>
             <TabsTrigger value="approved" className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <CheckCircle className="h-3.5 w-3.5" />
-              Aprobados ({approvedUsers.length})
+              Approved ({approvedUsers.length})
             </TabsTrigger>
           </TabsList>
 
@@ -246,7 +275,7 @@ export function AdminUsersPanel() {
             {filterUsers(pendingUsers).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <UserCheck className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No hay usuarios pendientes de aprobación</p>
+                <p className="text-sm">No pending users</p>
               </div>
             ) : (
               filterUsers(pendingUsers).map(user => (
@@ -259,7 +288,7 @@ export function AdminUsersPanel() {
             {filterUsers(approvedUsers).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No hay usuarios aprobados</p>
+                <p className="text-sm">No approved users</p>
               </div>
             ) : (
               filterUsers(approvedUsers).map(user => (
