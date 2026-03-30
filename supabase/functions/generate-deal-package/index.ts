@@ -313,12 +313,19 @@ serve(async (req) => {
     y2 = drawSectionTitle(page2, "RECOMMENDED OFFER STRATEGY", M, y2, bold, primary, primary, CW);
 
     if (mao > 0) {
-      const offerStart = acqCost > 0 ? acqCost : Math.round(mao * 0.85);
+      // Smart offer: if we have source prices, average the lowest with MAO*85%; otherwise use our offer or MAO*85%
+      let offerStart: number;
+      if (acqCost > 0) {
+        offerStart = acqCost;
+      } else if (lowestSourcePrice > 0) {
+        offerStart = Math.round((lowestSourcePrice + mao * 0.85) / 2);
+      } else {
+        offerStart = Math.round(mao * 0.85);
+      }
       const offerMax = mao;
-      const displaySpread = spread;
 
       // Offer range box
-      const offerBoxH = 90;
+      const offerBoxH = 105;
       page2.drawRectangle({ x: M, y: y2 - offerBoxH, width: CW, height: offerBoxH, color: bgLight, borderColor: green, borderWidth: 1.5 });
 
       page2.drawText("START OFFER AT:", { x: M + 15, y: y2 - 20, size: 9, font: regular, color: gray });
@@ -327,7 +334,10 @@ serve(async (req) => {
       page2.drawText("MAX OFFER (MAO):", { x: M + CW / 3 + 10, y: y2 - 20, size: 9, font: regular, color: gray });
       page2.drawText(`$${offerMax.toLocaleString()}`, { x: M + CW / 3 + 10, y: y2 - 36, size: 16, font: bold, color: darkText });
 
-      if (feeMin > 0) {
+      if (actualFee > 0) {
+        page2.drawText("ASSIGNMENT FEE:", { x: M + (CW * 2 / 3) + 10, y: y2 - 20, size: 9, font: regular, color: gray });
+        page2.drawText(`$${actualFee.toLocaleString()}`, { x: M + (CW * 2 / 3) + 10, y: y2 - 36, size: 16, font: bold, color: green });
+      } else if (feeMin > 0) {
         page2.drawText("YOUR PROFIT:", { x: M + (CW * 2 / 3) + 10, y: y2 - 20, size: 9, font: regular, color: gray });
         page2.drawText(`$${(feeMin/1000).toFixed(0)}K - $${(feeMax/1000).toFixed(0)}K`, { x: M + (CW * 2 / 3) + 10, y: y2 - 36, size: 16, font: bold, color: green });
       }
@@ -341,6 +351,11 @@ serve(async (req) => {
       }
       if (equityPct > 0) leverageText += ` | Equity: ${equityPct}%`;
       page2.drawText(leverageText, { x: M + 15, y: y2 - 72, size: 8, font: regular, color: bodyText });
+
+      // Source price reference
+      if (lowestSourcePrice > 0 && !acqCost) {
+        page2.drawText(`Lowest source price: $${lowestSourcePrice.toLocaleString()} (averaged into start offer)`, { x: M + 15, y: y2 - 86, size: 7, font: regular, color: gray });
+      }
 
       y2 = y2 - offerBoxH - 25;
     } else {
