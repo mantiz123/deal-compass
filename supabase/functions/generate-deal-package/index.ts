@@ -184,6 +184,14 @@ serve(async (req) => {
     const equityPct = property?.equity_percent ? Number(property.equity_percent) : 0;
     const actualFee = assignment_fee || Number(lead.assignment_fee) || 0;
     const acqCost = Number(lead.offer_amount) || 0;
+
+    // Collect all available prices from different sources for smart offer calculation
+    const availablePrices: number[] = [];
+    if (Number(lead.listing_price) > 0) availablePrices.push(Number(lead.listing_price));
+    if (Number(property?.last_sale_price) > 0) availablePrices.push(Number(property.last_sale_price));
+    if (acqCost > 0) availablePrices.push(acqCost);
+    const lowestSourcePrice = availablePrices.length > 0 ? Math.min(...availablePrices) : 0;
+
     const spread = mao > 0 && acqCost > 0 ? mao - acqCost : 0;
     const feeMin = spread > 0 ? Math.max(5000, Math.round(spread * 0.3)) : (actualFee > 0 ? actualFee : 0);
     const feeMax = spread > 0 ? Math.round(spread * 0.6) : (actualFee > 0 ? actualFee : 0);
