@@ -184,14 +184,19 @@ serve(async (req) => {
     const equityPct = property?.equity_percent ? Number(property.equity_percent) : 0;
     const actualFee = assignment_fee || Number(lead.assignment_fee) || 0;
     const acqCost = Number(lead.offer_amount) || 0;
+
+    // Collect all available prices from different sources for smart offer calculation
+    const availablePrices: number[] = [];
+    if (Number(lead.listing_price) > 0) availablePrices.push(Number(lead.listing_price));
+    if (Number(property?.last_sale_price) > 0) availablePrices.push(Number(property.last_sale_price));
+    if (acqCost > 0) availablePrices.push(acqCost);
+    const lowestSourcePrice = availablePrices.length > 0 ? Math.min(...availablePrices) : 0;
+
     const spread = mao > 0 && acqCost > 0 ? mao - acqCost : 0;
     const feeMin = spread > 0 ? Math.max(5000, Math.round(spread * 0.3)) : (actualFee > 0 ? actualFee : 0);
     const feeMax = spread > 0 ? Math.round(spread * 0.6) : (actualFee > 0 ? actualFee : 0);
 
     // Financial box
-    const finBoxH = 100;
-    page.drawRectangle({ x: M, y: y - finBoxH, width: CW, height: finBoxH, color: bgLight, borderColor: lightGray, borderWidth: 1 });
-
     const finData = [
       { label: "ARV", value: arv > 0 ? `$${arv.toLocaleString()}` : "TBD" },
       { label: "Repairs", value: repairCost > 0 ? `$${repairCost.toLocaleString()}` : "TBD" },
@@ -201,8 +206,14 @@ serve(async (req) => {
       { label: "Equity %", value: equityPct > 0 ? `${equityPct}%` : "N/A" },
       { label: "Our Offer", value: acqCost > 0 ? `$${acqCost.toLocaleString()}` : "Pending" },
       { label: "Spread", value: acqCost > 0 && spread !== 0 ? `$${spread.toLocaleString()}` : (acqCost === 0 ? "Set offer first" : "TBD") },
+      { label: "Assign. Fee", value: actualFee > 0 ? `$${actualFee.toLocaleString()}` : "Negotiable" },
+      { label: "Lowest Price", value: lowestSourcePrice > 0 ? `$${lowestSourcePrice.toLocaleString()}` : "N/A" },
       { label: "Fee Range", value: feeMin > 0 ? `$${(feeMin/1000).toFixed(0)}K - $${(feeMax/1000).toFixed(0)}K` : (actualFee > 0 ? `$${actualFee.toLocaleString()}` : "Negotiable") },
     ];
+
+    const finRows = Math.ceil(finData.length / 3);
+    const finBoxH = finRows * 30 + 10;
+    page.drawRectangle({ x: M, y: y - finBoxH, width: CW, height: finBoxH, color: bgLight, borderColor: lightGray, borderWidth: 1 });
 
     let col = 0, row = 0;
     for (const item of finData) {
@@ -305,12 +316,19 @@ serve(async (req) => {
     y2 = drawSectionTitle(page2, "RECOMMENDED OFFER STRATEGY", M, y2, bold, primary, primary, CW);
 
     if (mao > 0) {
-      const offerStart = acqCost > 0 ? acqCost : Math.round(mao * 0.85);
+      // Smart offer: if we have source prices, average the lowest with MAO*85%; otherwise use our offer or MAO*85%
+      let offerStart: number;
+      if (acqCost > 0) {
+        offerStart = acqCost;
+      } else if (lowestSourcePrice > 0) {
+        offerStart = Math.round((lowestSourcePrice + mao * 0.85) / 2);
+      } else {
+        offerStart = Math.round(mao * 0.85);
+      }
       const offerMax = mao;
-      const displaySpread = spread;
 
       // Offer range box
-      const offerBoxH = 90;
+      const offerBoxH = 105;
       page2.drawRectangle({ x: M, y: y2 - offerBoxH, width: CW, height: offerBoxH, color: bgLight, borderColor: green, borderWidth: 1.5 });
 
       page2.drawText("START OFFER AT:", { x: M + 15, y: y2 - 20, size: 9, font: regular, color: gray });
@@ -319,7 +337,10 @@ serve(async (req) => {
       page2.drawText("MAX OFFER (MAO):", { x: M + CW / 3 + 10, y: y2 - 20, size: 9, font: regular, color: gray });
       page2.drawText(`$${offerMax.toLocaleString()}`, { x: M + CW / 3 + 10, y: y2 - 36, size: 16, font: bold, color: darkText });
 
-      if (feeMin > 0) {
+      if (actualFee > 0) {
+        page2.drawText("ASSIGNMENT FEE:", { x: M + (CW * 2 / 3) + 10, y: y2 - 20, size: 9, font: regular, color: gray });
+        page2.drawText(`$${actualFee.toLocaleString()}`, { x: M + (CW * 2 / 3) + 10, y: y2 - 36, size: 16, font: bold, color: green });
+      } else if (feeMin > 0) {
         page2.drawText("YOUR PROFIT:", { x: M + (CW * 2 / 3) + 10, y: y2 - 20, size: 9, font: regular, color: gray });
         page2.drawText(`$${(feeMin/1000).toFixed(0)}K - $${(feeMax/1000).toFixed(0)}K`, { x: M + (CW * 2 / 3) + 10, y: y2 - 36, size: 16, font: bold, color: green });
       }
@@ -333,6 +354,11 @@ serve(async (req) => {
       }
       if (equityPct > 0) leverageText += ` | Equity: ${equityPct}%`;
       page2.drawText(leverageText, { x: M + 15, y: y2 - 72, size: 8, font: regular, color: bodyText });
+
+      // Source price reference
+      if (lowestSourcePrice > 0 && !acqCost) {
+        page2.drawText(`Lowest source price: $${lowestSourcePrice.toLocaleString()} (averaged into start offer)`, { x: M + 15, y: y2 - 86, size: 7, font: regular, color: gray });
+      }
 
       y2 = y2 - offerBoxH - 25;
     } else {
