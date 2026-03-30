@@ -582,18 +582,25 @@ export function LeadDetailSheet({
                       ));
                     })()}
 
-                    {/* Email */}
-                    {property?.owner_email ? (
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <a href={`mailto:${property.owner_email}`} className="hover:text-primary text-xs">{property.owner_email}</a>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Mail className="h-4 w-4" />
-                        <span className="text-xs">Sin email</span>
-                      </div>
-                    )}
+                    {/* Emails */}
+                    {(() => {
+                      const emails = [
+                        property?.owner_email,
+                        (property as any)?.owner_email_2,
+                        (property as any)?.owner_email_3,
+                      ].filter(Boolean);
+                      return emails.length > 0 ? emails.map((email, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <a href={`mailto:${email}`} className="hover:text-primary text-xs">{email}</a>
+                        </div>
+                      )) : (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Mail className="h-4 w-4" />
+                          <span className="text-xs">Sin email</span>
+                        </div>
+                      );
+                    })()}
 
                     <Separator />
                     

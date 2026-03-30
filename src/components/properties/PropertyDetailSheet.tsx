@@ -206,14 +206,14 @@ export function PropertyDetailSheet({ property, open, onOpenChange }: PropertyDe
                   {property.owner_name && (
                     <p className="font-medium">{property.owner_name}</p>
                   )}
-                  {property.owner_email && (
-                    <div className="flex items-center gap-2 text-sm">
+                  {[property.owner_email, (property as any).owner_email_2, (property as any).owner_email_3].filter(Boolean).map((email, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <a href={`mailto:${property.owner_email}`} className="text-primary hover:underline">
-                        {property.owner_email}
+                      <a href={`mailto:${email}`} className="text-primary hover:underline">
+                        {email}
                       </a>
                     </div>
-                  )}
+                  ))}
                   {property.owner_phone && (
                     <div className="flex items-center gap-2 text-sm">
                       <Phone className="h-4 w-4 text-muted-foreground" />
