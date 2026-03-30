@@ -668,6 +668,8 @@ export type Database = {
           neighborhood_vacancy_rate: number | null
           notes: string | null
           owner_email: string | null
+          owner_email_2: string | null
+          owner_email_3: string | null
           owner_mailing_city: string | null
           owner_mailing_state: string | null
           owner_name: string | null
@@ -756,6 +758,8 @@ export type Database = {
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
           owner_email?: string | null
+          owner_email_2?: string | null
+          owner_email_3?: string | null
           owner_mailing_city?: string | null
           owner_mailing_state?: string | null
           owner_name?: string | null
@@ -844,6 +848,8 @@ export type Database = {
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
           owner_email?: string | null
+          owner_email_2?: string | null
+          owner_email_3?: string | null
           owner_mailing_city?: string | null
           owner_mailing_state?: string | null
           owner_name?: string | null
