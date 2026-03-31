@@ -6,6 +6,7 @@ import {
   Users,
   Target,
   FileText,
+  FileSignature,
   Settings,
   ChevronLeft,
   ChevronRight,
