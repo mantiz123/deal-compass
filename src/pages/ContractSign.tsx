@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle, AlertTriangle, FileText, Eraser } from 'lucide-react';
+import { Loader2, CheckCircle, AlertTriangle, FileText, Eraser, Eye } from 'lucide-react';
 import kloseLogo from '@/assets/klose-logo.png';
 
 type PageState = 'loading' | 'expired' | 'already_signed' | 'signing' | 'confirming' | 'success' | 'error';

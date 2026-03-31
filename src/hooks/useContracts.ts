@@ -64,10 +64,10 @@ export function useContracts(filters?: {
         .order('created_at', { ascending: false });
 
       if (filters?.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status);
+        query = query.eq('status', filters.status as any);
       }
       if (filters?.contract_type && filters.contract_type !== 'all') {
-        query = query.eq('contract_type', filters.contract_type);
+        query = query.eq('contract_type', filters.contract_type as any);
       }
 
       const { data, error } = await query;

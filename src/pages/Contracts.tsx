@@ -11,7 +11,7 @@ import { ContractDetailSheet } from '@/components/contracts/ContractDetailSheet'
 import { Search, Download, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { supabase } from '@/integrations/supabase/client';
+
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   draft: { label: 'Borrador', color: 'bg-muted text-muted-foreground' },

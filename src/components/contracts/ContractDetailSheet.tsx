@@ -18,7 +18,6 @@ interface ContractDetailSheetProps {
 
 export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDetailSheetProps) {
   const { data: signatures = [] } = useContractSignatures(contract?.id);
-  const updateContract = useUpdateContract();
   const { toast } = useToast();
 
   if (!contract) return null;

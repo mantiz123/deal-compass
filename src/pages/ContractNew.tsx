@@ -16,10 +16,8 @@ import {
   CONTRACT_TEMPLATES,
   getFieldsForType,
   autoFillFields,
-  type ContractField,
 } from '@/lib/contractTemplates';
-import { ArrowLeft, ArrowRight, CheckCircle, FileText, Loader2, Send, Save, Eye } from 'lucide-react';
-import type { Lead } from '@/hooks/useLeads';
+import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye } from 'lucide-react';
 
 type Step = 'select' | 'fill' | 'preview' | 'send';
 
