@@ -265,6 +265,115 @@ export type Database = {
           },
         ]
       }
+      contract_signatures: {
+        Row: {
+          contract_id: string
+          id: string
+          ip_address: string | null
+          signature_image: string | null
+          signed_at: string
+          signer_email: string | null
+          signer_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          contract_id: string
+          id?: string
+          ip_address?: string | null
+          signature_image?: string | null
+          signed_at?: string
+          signer_email?: string | null
+          signer_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          contract_id?: string
+          id?: string
+          ip_address?: string | null
+          signature_image?: string | null
+          signed_at?: string
+          signer_email?: string | null
+          signer_name?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_signatures_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracts: {
+        Row: {
+          contract_data: Json | null
+          contract_type: Database["public"]["Enums"]["contract_type"]
+          created_at: string
+          created_by: string | null
+          id: string
+          ip_address: string | null
+          lead_id: string
+          pdf_url: string | null
+          seller_email: string | null
+          seller_phone: string | null
+          sent_at: string | null
+          signed_at: string | null
+          signed_pdf_url: string | null
+          signing_token: string | null
+          status: Database["public"]["Enums"]["contract_status"]
+          updated_at: string
+          viewed_at: string | null
+        }
+        Insert: {
+          contract_data?: Json | null
+          contract_type: Database["public"]["Enums"]["contract_type"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ip_address?: string | null
+          lead_id: string
+          pdf_url?: string | null
+          seller_email?: string | null
+          seller_phone?: string | null
+          sent_at?: string | null
+          signed_at?: string | null
+          signed_pdf_url?: string | null
+          signing_token?: string | null
+          status?: Database["public"]["Enums"]["contract_status"]
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          contract_data?: Json | null
+          contract_type?: Database["public"]["Enums"]["contract_type"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ip_address?: string | null
+          lead_id?: string
+          pdf_url?: string | null
+          seller_email?: string | null
+          seller_phone?: string | null
+          sent_at?: string | null
+          signed_at?: string | null
+          signed_pdf_url?: string | null
+          signing_token?: string | null
+          status?: Database["public"]["Enums"]["contract_status"]
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_packages: {
         Row: {
           buyer_id: string
@@ -1232,6 +1341,8 @@ export type Database = {
         | "lost_to_competitor"
         | "other"
       buyer_tier: "platinum" | "gold" | "silver" | "bronze"
+      contract_status: "draft" | "sent" | "viewed" | "signed" | "completed"
+      contract_type: "AB" | "BC" | "AMENDMENT"
       lead_status:
         | "captacion"
         | "contacto"
@@ -1392,6 +1503,8 @@ export const Constants = {
         "other",
       ],
       buyer_tier: ["platinum", "gold", "silver", "bronze"],
+      contract_status: ["draft", "sent", "viewed", "signed", "completed"],
+      contract_type: ["AB", "BC", "AMENDMENT"],
       lead_status: [
         "captacion",
         "contacto",
