@@ -6,6 +6,7 @@ import {
   Users,
   Target,
   FileText,
+  FileSignature,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -38,6 +39,7 @@ const navigation = [
   { name: "Tracking", href: "/tracking", icon: Mail },
   { name: "Campaigns", href: "/campaigns", icon: MessageSquare },
   { name: "Deals", href: "/deals", icon: FileText },
+  { name: "Contratos", href: "/contracts", icon: FileSignature },
   { name: "Properties", href: "/properties", icon: Building2 },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

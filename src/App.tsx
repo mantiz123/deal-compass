@@ -22,6 +22,9 @@ import PendingApproval from "./pages/PendingApproval";
 import Settings from "./pages/Settings";
 import Guide from "./pages/Guide";
 import Landing from "./pages/Landing";
+import Contracts from "./pages/Contracts";
+import ContractNew from "./pages/ContractNew";
+import ContractSign from "./pages/ContractSign";
 import NotFound from "./pages/NotFound";
 import "@/styles/landing.css";
 
@@ -52,6 +55,9 @@ const App = () => (
               <Route path="/realtors" element={<Realtors />} />
               <Route path="/payments" element={<Payments />} />
               <Route path="/import" element={<Import />} />
+              <Route path="/contracts" element={<Contracts />} />
+              <Route path="/contracts/new" element={<ContractNew />} />
+              <Route path="/sign/:token" element={<ContractSign />} />
               <Route path="/settings" element={<Settings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

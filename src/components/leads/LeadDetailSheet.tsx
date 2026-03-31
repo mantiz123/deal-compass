@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sheet,
   SheetContent,
@@ -79,6 +80,7 @@ export function LeadDetailSheet({
   onRecalculate,
   isCalculating 
 }: LeadDetailSheetProps) {
+  const navigate = useNavigate();
   const [showNewInteraction, setShowNewInteraction] = useState(false);
   const [showDealPackage, setShowDealPackage] = useState(false);
   const [showLogConversation, setShowLogConversation] = useState(false);
@@ -217,6 +219,15 @@ export function LeadDetailSheet({
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Deal Package
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => { onOpenChange(false); navigate(`/contracts/new?lead_id=${lead.id}`); }}
+                  size="sm"
+                  className="bg-primary/10 border-primary/30 hover:bg-primary/20"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  📄 Contrato
                 </Button>
               </div>
             </div>
