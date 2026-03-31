@@ -30,7 +30,7 @@ export default function ContractNew() {
   const [step, setStep] = useState<Step>('select');
   const [contractType, setContractType] = useState<'AB' | 'BC' | 'AMENDMENT' | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [lead, setLead] = useState<Lead | null>(null);
+  const [lead, setLead] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
