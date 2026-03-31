@@ -80,6 +80,7 @@ export function LeadDetailSheet({
   onRecalculate,
   isCalculating 
 }: LeadDetailSheetProps) {
+  const navigate = useNavigate();
   const [showNewInteraction, setShowNewInteraction] = useState(false);
   const [showDealPackage, setShowDealPackage] = useState(false);
   const [showLogConversation, setShowLogConversation] = useState(false);
