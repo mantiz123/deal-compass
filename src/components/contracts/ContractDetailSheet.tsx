@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useContractSignatures, useUpdateContract, type Contract } from '@/hooks/useContracts';
-import { Download, Eye, Send, FileText, Clock, MapPin, User } from 'lucide-react';
+import { Download, Eye, Send, FileText, Clock, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
