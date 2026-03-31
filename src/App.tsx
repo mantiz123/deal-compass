@@ -22,6 +22,9 @@ import PendingApproval from "./pages/PendingApproval";
 import Settings from "./pages/Settings";
 import Guide from "./pages/Guide";
 import Landing from "./pages/Landing";
+import Contracts from "./pages/Contracts";
+import ContractNew from "./pages/ContractNew";
+import ContractSign from "./pages/ContractSign";
 import NotFound from "./pages/NotFound";
 import "@/styles/landing.css";
 
