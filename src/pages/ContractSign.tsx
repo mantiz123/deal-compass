@@ -99,7 +99,29 @@ export default function ContractSign() {
   if (pageState === 'loading') return <div className="min-h-screen bg-background"><Header /><div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></div>;
   if (pageState === 'expired') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><AlertTriangle className="h-16 w-16 text-yellow-400 mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Link Expired</h2><p className="text-muted-foreground">This signing link has expired or is no longer valid. Please contact Klose LLC for a new link.</p></div></div>;
   if (pageState === 'already_signed') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Already Signed</h2><p className="text-muted-foreground">This document has already been signed. Thank you!</p></div></div>;
-  if (pageState === 'success') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">✅ Thank You!</h2><p className="text-muted-foreground mb-4">Your documents have been signed successfully. Klose LLC will be in touch shortly.</p><p className="text-xs text-muted-foreground">You may close this window.</p></div></div>;
+  if (pageState === 'success') return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="max-w-md mx-auto mt-20 text-center p-6">
+        <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-foreground mb-2">✅ Thank You!</h2>
+        <p className="text-muted-foreground mb-4">Your documents have been signed successfully. Klose LLC will be in touch shortly.</p>
+        {(contract?.signed_pdf_url || contract?.pdf_url) && (
+          <a
+            href={contract.signed_pdf_url || contract.pdf_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+          >
+            <Button variant="outline" className="mb-4">
+              <FileText className="h-4 w-4 mr-2" /> Download Signed Contract
+            </Button>
+          </a>
+        )}
+        <p className="text-xs text-muted-foreground">You may close this window.</p>
+      </div>
+    </div>
+  );
   if (pageState === 'error') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Error</h2><p className="text-muted-foreground">{errorMsg || 'Something went wrong. Please try again or contact Klose LLC.'}</p></div></div>;
 
   const property = (contract?.lead as any)?.property;
