@@ -1,5 +1,5 @@
 import { Separator } from '@/components/ui/separator';
-import { PenTool, CheckCircle } from 'lucide-react';
+import { PenTool } from 'lucide-react';
 
 export interface KloseSignatureData {
   pageNum: number;
