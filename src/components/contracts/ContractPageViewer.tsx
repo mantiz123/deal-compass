@@ -370,7 +370,7 @@ export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB', kloseSi
           <p className="text-sm leading-relaxed">This contract contains the entire agreement of the parties and cannot be changed except by their written agreement.</p>
           <h4 className="font-bold mt-4 mb-2">20. SPECIAL PROVISIONS:</h4>
           <p className="text-sm leading-relaxed">{d.special_provisions || '______________________________________________________________________'}</p>
-          <DualSignatureMarker leftLabel="Seller Signature" rightLabel="Buyer Signature" leftPrint="Seller Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} />
+          <DualSignatureMarker leftLabel="Seller Signature" rightLabel="Buyer Signature" leftPrint="Seller Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} kloseSignature={kloseForPage} />
         </PageWrapper>
       );
 
