@@ -467,7 +467,7 @@ export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB', kloseSi
           <p className="text-sm leading-relaxed">Klose LLC and/or its affiliated companies and/or its management may have relationships with certain service providers, including title companies and lenders. Referrals to such providers may provide Klose LLC with a financial benefit.</p>
           <p className="text-sm leading-relaxed mt-2">You are NOT required to use any specific title company, lender, or settlement service provider as a condition of your purchase or sale. There are frequently other providers available with similar services. You are free to inquire with other providers to determine whether you are receiving best services at competitive rates.</p>
           <p className="text-sm leading-relaxed mt-2">By signing below, I/We acknowledge receipt of the Fair Housing Statement and the Affiliated Business Disclosure.</p>
-          <SignatureMarker label="Seller Signature — Fair Housing" mode={mode} />
+          <SignatureMarker label="Seller Signature — Fair Housing" mode={mode} kloseSignature={kloseForPage} />
         </PageWrapper>
       );
 
