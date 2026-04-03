@@ -46,6 +46,7 @@ export default function ContractNew() {
   const [createdContractId, setCreatedContractId] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [kloseSignatures, setKloseSignatures] = useState<Record<number, string>>({});
+  const [kloseSignerName, setKloseSignerName] = useState('');
 
   const createContract = useCreateContract();
   const updateContract = useUpdateContract();
@@ -74,6 +75,13 @@ export default function ContractNew() {
       setFormValues(prev => ({ ...autoValues, ...prev }));
     }
   }, [contractType, lead, fields]);
+
+  // Set default Klose signer name from profile
+  useEffect(() => {
+    if (profile?.full_name && !kloseSignerName) {
+      setKloseSignerName(profile.full_name);
+    }
+  }, [profile]);
 
   const handleSelectType = (type: 'AB' | 'BC' | 'AMENDMENT') => {
     setContractType(type);
@@ -136,7 +144,7 @@ export default function ContractNew() {
     if (!createdContractId) return;
 
     try {
-      const repName = profile?.full_name || 'Klose LLC Representative';
+      const repName = kloseSignerName || profile?.full_name || 'Klose LLC Representative';
 
       // Store Klose rep signatures
       const sigInserts = Object.entries(signatures).map(([pageNum, sig]) => ({
@@ -346,22 +354,31 @@ export default function ContractNew() {
         {step === 'klose_sign' && contractType && (
           <div className="space-y-4">
             <Card className="border-primary/30 bg-primary/5">
-              <CardContent className="py-4">
+              <CardContent className="py-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <PenTool className="h-5 w-5 text-primary" />
                   <div>
                     <p className="font-semibold text-foreground">Firma del Representante de Klose LLC</p>
                     <p className="text-sm text-muted-foreground">
-                      Firmando como: <strong>{profile?.full_name || 'Representante Klose'}</strong> — Revisa cada página y firma en los bloques correspondientes.
+                      Ingresa el nombre completo del firmante y firma en cada bloque.
                     </p>
                   </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Nombre completo del firmante</Label>
+                  <Input
+                    value={kloseSignerName}
+                    onChange={(e) => setKloseSignerName(e.target.value)}
+                    placeholder="Ej: Sergio Mantilla, Luz Paula Rojas"
+                    className="mt-1"
+                  />
                 </div>
               </CardContent>
             </Card>
 
             <SigningWizard
               pages={buildKloseWizardPages()}
-              signerName={profile?.full_name || 'Klose LLC Representative'}
+              signerName={kloseSignerName || 'Klose LLC Representative'}
               onComplete={handleKloseSignComplete}
               onBack={() => setStep('fill')}
             />
