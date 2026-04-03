@@ -193,7 +193,7 @@ export default function ContractSign() {
         <div className="max-w-3xl mx-auto p-4 space-y-4 mt-4">
           <SigningWizard
             pages={buildWizardPages()}
-            signerName={contractData.seller_name || property?.owner_name || ''}
+            signerName={contractData.seller_name || ''}
             onComplete={handleSigningComplete}
             onBack={() => contract?.contract_type === 'AB' ? setFlowStep('seller_info') : null}
           />
