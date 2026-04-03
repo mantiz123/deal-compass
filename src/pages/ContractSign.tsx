@@ -214,7 +214,7 @@ export default function ContractSign() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground">Property</p>
-                <p className="font-medium">{property?.address}, {property?.city}, {property?.state}</p>
+                <p className="font-medium">{propAddress}, {propCity}, {propState}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Signer</p>
