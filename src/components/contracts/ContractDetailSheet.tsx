@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useContractSignatures, useUpdateContract, type Contract } from '@/hooks/useContracts';
-import { Download, Eye, Send, FileText, Clock, MapPin } from 'lucide-react';
+import { Download, Eye, Send, FileText, Clock, MapPin, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +20,47 @@ interface ContractDetailSheetProps {
 export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDetailSheetProps) {
   const { data: signatures = [] } = useContractSignatures(contract?.id);
   const { toast } = useToast();
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPdf = async (url: string, filename: string) => {
+    setDownloading(true);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // Fallback: try extracting storage path and downloading via Supabase client
+      try {
+        const path = url.split('/storage/v1/object/public/contracts/')[1];
+        if (path) {
+          const { data, error } = await supabase.storage.from('contracts').download(path);
+          if (error) throw error;
+          const blobUrl = URL.createObjectURL(data);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(blobUrl);
+        } else {
+          throw new Error('Cannot parse path');
+        }
+      } catch {
+        toast({ title: 'Error', description: 'No se pudo descargar el PDF. Intenta desactivar tu bloqueador de anuncios.', variant: 'destructive' });
+      }
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (!contract) return null;
 
@@ -169,13 +211,13 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
           {/* Actions */}
           <div className="flex flex-col gap-2">
             {contract.pdf_url && (
-              <Button variant="outline" onClick={() => window.open(contract.pdf_url!, '_blank')}>
-                <Eye className="h-4 w-4 mr-2" /> Ver PDF Original
+              <Button variant="outline" disabled={downloading} onClick={() => handleDownloadPdf(contract.pdf_url!, `Contrato_${contract.contract_type}.pdf`)}>
+                {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Eye className="h-4 w-4 mr-2" />} Ver PDF Original
               </Button>
             )}
             {contract.signed_pdf_url && (
-              <Button variant="outline" onClick={() => window.open(contract.signed_pdf_url!, '_blank')}>
-                <Download className="h-4 w-4 mr-2" /> Descargar PDF Firmado
+              <Button variant="outline" disabled={downloading} onClick={() => handleDownloadPdf(contract.signed_pdf_url!, `Contrato_Firmado_${contract.contract_type}.pdf`)}>
+                {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />} Descargar PDF Firmado
               </Button>
             )}
             {contract.status !== 'signed' && contract.status !== 'completed' && (
