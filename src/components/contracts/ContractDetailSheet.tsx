@@ -185,23 +185,63 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
             <>
               <Separator />
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3">Firmas</h3>
-                {signatures.map((sig) => (
-                  <Card key={sig.id} className="p-3 mb-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-sm">{sig.signer_name}</p>
-                        <p className="text-xs text-muted-foreground">{sig.signer_email}</p>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(sig.signed_at), 'dd MMM yyyy HH:mm')}
-                      </span>
-                    </div>
-                    {sig.signature_image && (
-                      <img src={sig.signature_image} alt="Firma" className="mt-2 h-16 bg-white rounded p-1" />
-                    )}
-                  </Card>
-                ))}
+                {/* Klose Rep Signatures */}
+                {(() => {
+                  const kloseSigs = signatures.filter(s => s.user_agent?.includes('Klose Rep'));
+                  const sellerSigs = signatures.filter(s => !s.user_agent?.includes('Klose Rep'));
+                  return (
+                    <>
+                      {kloseSigs.length > 0 && (
+                        <div className="mb-4">
+                          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                            🏢 Firmas Klose LLC
+                            <Badge variant="outline" className="text-xs">{kloseSigs.length}</Badge>
+                          </h3>
+                          {kloseSigs.map((sig) => (
+                            <Card key={sig.id} className="p-3 mb-2 border-primary/20">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-sm">{sig.signer_name}</p>
+                                  <p className="text-xs text-muted-foreground">{sig.user_agent?.replace('Klose Rep | ', 'Pág. ')}</p>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(sig.signed_at), 'dd MMM yyyy HH:mm')}
+                                </span>
+                              </div>
+                              {sig.signature_image && (
+                                <img src={sig.signature_image} alt="Firma Klose" className="mt-2 h-14 bg-white rounded p-1" />
+                              )}
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                      {sellerSigs.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                            ✍️ Firmas del Seller
+                            <Badge variant="outline" className="text-xs">{sellerSigs.length}</Badge>
+                          </h3>
+                          {sellerSigs.map((sig) => (
+                            <Card key={sig.id} className="p-3 mb-2">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-sm">{sig.signer_name}</p>
+                                  <p className="text-xs text-muted-foreground">{sig.signer_email}</p>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(sig.signed_at), 'dd MMM yyyy HH:mm')}
+                                </span>
+                              </div>
+                              {sig.signature_image && (
+                                <img src={sig.signature_image} alt="Firma" className="mt-2 h-16 bg-white rounded p-1" />
+                              )}
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </>
           )}
