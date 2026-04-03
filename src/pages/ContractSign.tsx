@@ -56,6 +56,26 @@ export default function ContractSign() {
         await supabase.from('contracts').update({ viewed_at: new Date().toISOString(), ip_address: ip, status: 'viewed' as any }).eq('id', data.id);
       }
 
+      // Fetch Klose rep signatures to display to seller
+      const { data: existingSigs } = await supabase
+        .from('contract_signatures')
+        .select('*')
+        .eq('contract_id', data.id)
+        .like('user_agent', 'Klose Rep%');
+      
+      if (existingSigs && existingSigs.length > 0) {
+        const parsed: KloseSignatureData[] = existingSigs.map(sig => {
+          const pageMatch = sig.user_agent?.match(/Page (\d+)/);
+          return {
+            pageNum: pageMatch ? parseInt(pageMatch[1]) : 0,
+            signerName: sig.signer_name,
+            signatureImage: sig.signature_image || '',
+            signedAt: sig.signed_at,
+          };
+        });
+        setKloseSignatures(parsed);
+      }
+
       // For AB contracts, go to seller info first; for others, go straight to signing
       setFlowStep(data.contract_type === 'AB' ? 'seller_info' : 'signing');
     } catch { setFlowStep('error'); }
