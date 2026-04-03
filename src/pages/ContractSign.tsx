@@ -110,7 +110,7 @@ export default function ContractSign() {
     }
   };
 
-  // Build signable pages for the wizard
+  // Build signable pages for the wizard — AB uses individual page renderer
   const buildWizardPages = (): SignablePage[] => {
     const type = contract?.contract_type;
     const pageInfos = type === 'AB' ? getABSignablePages() : type === 'BC' ? getBCSignablePages() : getAmendmentSignablePages();
@@ -120,7 +120,7 @@ export default function ContractSign() {
       title: info.title,
       requiresSignature: info.requiresSignature,
       signatureLabel: info.signatureLabel,
-      content: <ABPage pageNum={info.pageNum} d={contractData} mode="signing" />,
+      content: <ABPage pageNum={info.pageNum} d={contractData} mode="signing" contractType={type} />,
     }));
   };
 
@@ -156,6 +156,10 @@ export default function ContractSign() {
   if (flowStep === 'error') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Error</h2><p className="text-muted-foreground">{errorMsg || 'Something went wrong. Please try again or contact Klose LLC.'}</p></div></div>;
 
   const property = (contract?.lead as any)?.property;
+  // Fallback to contract_data when property join fails (anon user, no RLS on leads/properties)
+  const propAddress = property?.address || contractData.property_address || '';
+  const propCity = property?.city || contractData.property_city || '';
+  const propState = property?.state || contractData.property_state || '';
 
   // Step 1: Seller Info Form (AB only)
   if (flowStep === 'seller_info') {
@@ -171,7 +175,7 @@ export default function ContractSign() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Property: <strong>{property?.address}, {property?.city}, {property?.state}</strong></p>
+              <p className="text-sm text-muted-foreground">Property: <strong>{propAddress}, {propCity}, {propState}</strong></p>
               <p className="text-xs text-muted-foreground mt-1">Step 1 of 3 — Please fill out your information first, then review and sign each page.</p>
             </CardContent>
           </Card>
@@ -189,7 +193,7 @@ export default function ContractSign() {
         <div className="max-w-3xl mx-auto p-4 space-y-4 mt-4">
           <SigningWizard
             pages={buildWizardPages()}
-            signerName={contractData.seller_name || property?.owner_name || ''}
+            signerName={contractData.seller_name || ''}
             onComplete={handleSigningComplete}
             onBack={() => contract?.contract_type === 'AB' ? setFlowStep('seller_info') : null}
           />
@@ -210,7 +214,7 @@ export default function ContractSign() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground">Property</p>
-                <p className="font-medium">{property?.address}, {property?.city}, {property?.state}</p>
+                <p className="font-medium">{propAddress}, {propCity}, {propState}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Signer</p>
