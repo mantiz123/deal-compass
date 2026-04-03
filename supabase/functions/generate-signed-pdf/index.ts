@@ -78,11 +78,11 @@ Deno.serve(async (req) => {
     const ctx: PdfCtx = { pdfDoc, font, fontBold, fontItalic, data: d, sigByPage }
 
     if (contractType === 'AB') {
-      buildABPdf(ctx)
+      await buildABPdf(ctx)
     } else if (contractType === 'BC') {
-      buildBCPdf(ctx)
+      await buildBCPdf(ctx)
     } else {
-      buildAmendmentPdf(ctx)
+      await buildAmendmentPdf(ctx)
     }
 
     const pdfBytes = await pdfDoc.save()
