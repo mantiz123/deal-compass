@@ -157,7 +157,7 @@ export default function ContractSign() {
       title: info.title,
       requiresSignature: info.requiresSignature,
       signatureLabel: info.signatureLabel,
-      content: <ABPage pageNum={info.pageNum} d={contractData} mode="signing" contractType={type} />,
+      content: <ABPage pageNum={info.pageNum} d={contractData} mode="signing" contractType={type} kloseSignatures={kloseSignatures} />,
     }));
   };
 
