@@ -317,10 +317,9 @@ async function embedDualSignature(ctx: PdfCtx, cursor: Cursor, pageNum: number, 
 
 // ─── AB Contract (with signatures) ─────────────────────────────────
 
-function buildABPdf(ctx: PdfCtx) {
+async function buildABPdf(ctx: PdfCtx) {
   const d = ctx.data
 
-  // Page 1-3: Main Agreement (signature on page 3)
   let c = addPage(ctx, 1)
   c = drawHeader(ctx, c)
   c.y -= 10
@@ -328,30 +327,28 @@ function buildABPdf(ctx: PdfCtx) {
   c = drawCenteredText(ctx, c, '"AS IS" CASH-OFFER', 11)
   c.y -= 5
 
-  c = drawClause(ctx, c, '1', 'PARTIES', `Klose LLC, a Wyoming Limited Liability Company (hereinafter "BUYER"), and ${v(d,'seller_name')} (hereinafter "SELLER"), which terms may be singular or plural and will include the heirs, successors, personal representatives, and assigns of Seller and Buyer, hereby agree that Seller will sell and Buyer will buy the following property, upon the following terms and conditions.`)
-  c = drawClause(ctx, c, '2', 'PROPERTY', `(Street Address): ${v(d,'property_address')} (City): ${v(d,'property_city')} (County): ${v(d,'property_county')} (State): ${v(d,'property_state','___')}. The Property includes the land and all appurtenant rights, privileges and easements, all buildings and fixtures. NOT Included: ${v(d,'not_included_items','None')}. All property sold by this contract is called the "Property".`)
+  c = drawClause(ctx, c, '1', 'PARTIES', `Klose LLC, a Wyoming Limited Liability Company (hereinafter "BUYER"), and ${v(d,'seller_name')} (hereinafter "SELLER"), hereby agree that Seller will sell and Buyer will buy the following property.`)
+  c = drawClause(ctx, c, '2', 'PROPERTY', `(Street Address): ${v(d,'property_address')} (City): ${v(d,'property_city')} (County): ${v(d,'property_county')} (State): ${v(d,'property_state','___')}. NOT Included: ${v(d,'not_included_items','None')}.`)
   c = drawClause(ctx, c, '3', 'CONTRACT TERMS', `Sale Price: $ ${money(d.sale_price)}`)
-  c = drawClause(ctx, c, '4', 'NON-FINANCING / ALL CASH', 'This is an all-cash sale; no financing is involved, unless agreed upon in writing by both parties at a later date.')
-  c = drawClause(ctx, c, '5', 'CLOSING', `Buyer will deliver contract to ${v(d,'title_company')} (the "Title Company") upon execution of the contract by both parties. Closing shall occur within ${v(d,'closing_days','30')} business days from the execution of this agreement.`)
-  c = drawClause(ctx, c, '6', 'TITLE POLICY', "Seller shall furnish to Buyer at Buyer's expense an Owner's Policy of Title Insurance.")
-  c = drawClause(ctx, c, '7', 'PROPERTY CONDITION', `The Buyer is purchasing the Property in an "AS-IS" condition subject to a ${v(d,'due_diligence_days','10')} Business Day Due Diligence Period.`)
-  c = drawClause(ctx, c, '8', 'POSSESSION', 'The possession of the Property shall be delivered to the Buyer at closing.')
-  c = drawClause(ctx, c, '9', 'PRE-MARKETING AGREEMENT', "Seller is to furnish Buyer a key or combination to lockbox and give Buyer permission to enter the premises for inspections prior to closing.")
-  c = drawClause(ctx, c, '10', 'PRORATIONS', 'Property Taxes, insurance, rents, maintenance fees shall be prorated through the Closing Date.')
-  c = drawClause(ctx, c, '11', 'PROPERTY DOCUMENTATION', 'Seller to furnish Buyer a General Warranty Deed conveying title.')
-  c = drawClause(ctx, c, '12', 'CASUALTY LOSS', 'If any part of Property is damaged by fire or casualty, Seller shall restore the same.')
-  c = drawClause(ctx, c, '13', 'DEFAULT', 'If Seller fails to comply, Buyer may enforce specific performance or terminate this contract.')
-  c = drawClause(ctx, c, '14', 'REPRESENTATIONS', 'Seller represents no unrecorded liens at Closing Date.')
-  c = drawClause(ctx, c, '15', 'SALES EXPENSES', "A. Buyer's Expenses. B. Seller's Expenses: Releases of existing liens. C. If Seller fails to perform, they are responsible for consequential damages.")
-  c = drawClause(ctx, c, '16', 'RESALE OF PROPERTY', 'Seller agrees Buyer retains all profit in event of resale or assignment.')
-  c = drawClause(ctx, c, '17', 'ASSIGNMENT OF CONTRACT', 'Buyer may assign the contract.')
-  c = drawClause(ctx, c, '18', 'HOLD HARMLESS', 'Buyer is to be held harmless by the Seller for third-party damages.')
-  c = drawClause(ctx, c, '19', 'ENTIRE AGREEMENT', 'This contract contains the entire agreement of the parties.')
+  c = drawClause(ctx, c, '4', 'NON-FINANCING / ALL CASH', 'This is an all-cash sale.')
+  c = drawClause(ctx, c, '5', 'CLOSING', `Closing within ${v(d,'closing_days','30')} business days via ${v(d,'title_company')}.`)
+  c = drawClause(ctx, c, '6', 'TITLE POLICY', "Owner's Policy of Title Insurance at Buyer's expense.")
+  c = drawClause(ctx, c, '7', 'PROPERTY CONDITION', `"AS-IS" with ${v(d,'due_diligence_days','10')} day Due Diligence Period.`)
+  c = drawClause(ctx, c, '8', 'POSSESSION', 'Delivered at closing.')
+  c = drawClause(ctx, c, '9', 'PRE-MARKETING', "Seller furnishes key; Buyer may market the Property.")
+  c = drawClause(ctx, c, '10', 'PRORATIONS', 'Prorated through Closing Date.')
+  c = drawClause(ctx, c, '11', 'DOCUMENTATION', 'General Warranty Deed.')
+  c = drawClause(ctx, c, '12', 'CASUALTY LOSS', 'Seller restores if damaged.')
+  c = drawClause(ctx, c, '13', 'DEFAULT', 'Buyer may enforce specific performance or terminate.')
+  c = drawClause(ctx, c, '14', 'REPRESENTATIONS', 'No unrecorded liens at Closing.')
+  c = drawClause(ctx, c, '15', 'SALES EXPENSES', "Seller pays releases of liens; Buyer pays stipulated expenses.")
+  c = drawClause(ctx, c, '16', 'RESALE', 'Buyer retains all profit.')
+  c = drawClause(ctx, c, '17', 'ASSIGNMENT', 'Buyer may assign.')
+  c = drawClause(ctx, c, '18', 'HOLD HARMLESS', 'Buyer held harmless by Seller.')
+  c = drawClause(ctx, c, '19', 'ENTIRE AGREEMENT', 'Contains entire agreement.')
   c = drawClause(ctx, c, '20', 'SPECIAL PROVISIONS', v(d, 'special_provisions', 'None'))
   c.y -= 5
-  // Page 3 signature
-  c = embedDualSignature(ctx, c, 3, 'Seller Signature', v(d,'seller_name','_________________'), 'Buyer Signature', 'Klose LLC / Authorized Signatory').then ? 
-    await embedDualSignature(ctx, c, 3, 'Seller Signature', v(d,'seller_name','_________________'), 'Buyer Signature', 'Klose LLC / Authorized Signatory') : c
+  c = await embedDualSignature(ctx, c, 3, 'Seller Signature', v(d,'seller_name','_________________'), 'Buyer Signature', 'Klose LLC / Authorized Signatory')
 
   // Page 4-5: Seller Info
   c = addPage(ctx, 4)
