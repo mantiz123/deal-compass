@@ -1,5 +1,12 @@
 import { Separator } from '@/components/ui/separator';
-import { PenTool } from 'lucide-react';
+import { PenTool, CheckCircle } from 'lucide-react';
+
+export interface KloseSignatureData {
+  pageNum: number;
+  signerName: string;
+  signatureImage: string;
+  signedAt: string;
+}
 
 interface ContractPageViewerProps {
   contractType: 'AB' | 'BC' | 'AMENDMENT';
