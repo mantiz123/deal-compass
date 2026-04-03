@@ -1,35 +1,33 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import SignatureCanvas from 'react-signature-canvas';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle, AlertTriangle, FileText, Eraser, ChevronDown, ChevronUp } from 'lucide-react';
-import ContractPageViewer from '@/components/contracts/ContractPageViewer';
+import { Loader2, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
+import { ABPage, getABSignablePages, getBCSignablePages, getAmendmentSignablePages } from '@/components/contracts/ContractPageViewer';
+import SellerInfoForm from '@/components/contracts/SellerInfoForm';
+import SigningWizard, { type SignablePage } from '@/components/contracts/SigningWizard';
 import kloseLogo from '@/assets/klose-logo.png';
 
-type PageState = 'loading' | 'expired' | 'already_signed' | 'signing' | 'confirming' | 'success' | 'error';
+type FlowStep = 'loading' | 'expired' | 'already_signed' | 'seller_info' | 'signing' | 'confirming' | 'success' | 'error';
 
 export default function ContractSign() {
   const { token } = useParams<{ token: string }>();
-  const sigRef = useRef<SignatureCanvas | null>(null);
-  
-  const [pageState, setPageState] = useState<PageState>('loading');
+
+  const [flowStep, setFlowStep] = useState<FlowStep>('loading');
   const [contract, setContract] = useState<any>(null);
-  const [signerName, setSignerName] = useState('');
+  const [contractData, setContractData] = useState<Record<string, string>>({});
+  const [pageSignatures, setPageSignatures] = useState<Record<number, string>>({});
   const [agreeBinding, setAgreeBinding] = useState(false);
   const [agreeRead, setAgreeRead] = useState(false);
-  const [signatureData, setSignatureData] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [showContract, setShowContract] = useState(true);
 
   useEffect(() => {
-    if (!token) { setPageState('error'); return; }
+    if (!token) { setFlowStep('error'); return; }
     loadContract();
   }, [token]);
 
@@ -37,55 +35,93 @@ export default function ContractSign() {
     try {
       const { data, error } = await supabase
         .from('contracts')
-        .select('*, lead:leads(id, property:properties(address, city, state, county, owner_name))')
+        .select('*, lead:leads(id, property:properties(address, city, state, county, owner_name, owner_phone, owner_email))')
         .eq('signing_token', token)
         .single();
 
-      if (error || !data) { setPageState('expired'); return; }
-      if (data.status === 'signed' || data.status === 'completed') { setPageState('already_signed'); return; }
+      if (error || !data) { setFlowStep('expired'); return; }
+      if (data.status === 'signed' || data.status === 'completed') { setFlowStep('already_signed'); return; }
 
       const created = new Date(data.created_at);
       const daysDiff = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysDiff > 30) { setPageState('expired'); return; }
+      if (daysDiff > 30) { setFlowStep('expired'); return; }
 
       setContract(data);
-      const property = (data.lead as any)?.property;
-      setSignerName(property?.owner_name || '');
+      setContractData((data.contract_data as Record<string, string>) || {});
 
       if (!data.viewed_at) {
         let ip = '';
         try { const r = await fetch('https://api.ipify.org?format=json'); ip = (await r.json()).ip; } catch {}
         await supabase.from('contracts').update({ viewed_at: new Date().toISOString(), ip_address: ip, status: 'viewed' as any }).eq('id', data.id);
       }
-      setPageState('signing');
-    } catch { setPageState('error'); }
+
+      // For AB contracts, go to seller info first; for others, go straight to signing
+      setFlowStep(data.contract_type === 'AB' ? 'seller_info' : 'signing');
+    } catch { setFlowStep('error'); }
   };
 
-  const handleClearSignature = () => { sigRef.current?.clear(); setSignatureData(null); };
+  const handleSellerInfoComplete = (sellerData: Record<string, string>) => {
+    setContractData(prev => ({ ...prev, ...sellerData }));
+    setFlowStep('signing');
+  };
 
-  const handleSaveSignature = () => {
-    if (sigRef.current && !sigRef.current.isEmpty()) {
-      setSignatureData(sigRef.current.toDataURL('image/png'));
-      setPageState('confirming');
-    }
+  const handleSigningComplete = (signatures: Record<number, string>) => {
+    setPageSignatures(signatures);
+    setFlowStep('confirming');
   };
 
   const handleSubmit = async () => {
-    if (!contract || !signatureData || !signerName) return;
+    if (!contract) return;
     setSubmitting(true);
     try {
       let ip = '';
       try { const r = await fetch('https://api.ipify.org?format=json'); ip = (await r.json()).ip; } catch {}
 
-      const { error: sigError } = await supabase.from('contract_signatures').insert({
-        contract_id: contract.id, signer_name: signerName, signer_email: contract.seller_email,
-        signature_image: signatureData, ip_address: ip, user_agent: navigator.userAgent,
-      });
+      const signerName = contractData.seller_name || '';
+      // Primary signature is the first one collected
+
+      // Insert all page signatures
+      const sigInserts = Object.entries(pageSignatures).map(([pageNum, sig]) => ({
+        contract_id: contract.id,
+        signer_name: signerName,
+        signer_email: contract.seller_email,
+        signature_image: sig,
+        ip_address: ip,
+        user_agent: `${navigator.userAgent} | Page ${pageNum}`,
+      }));
+
+      const { error: sigError } = await supabase.from('contract_signatures').insert(sigInserts);
       if (sigError) throw sigError;
 
-      await supabase.from('contracts').update({ status: 'signed' as any, signed_at: new Date().toISOString(), ip_address: ip }).eq('id', contract.id);
-      setPageState('success');
-    } catch (err: any) { setErrorMsg(err.message); setPageState('error'); } finally { setSubmitting(false); }
+      // Update contract with seller form data merged
+      await supabase.from('contracts').update({
+        status: 'signed' as any,
+        signed_at: new Date().toISOString(),
+        ip_address: ip,
+        contract_data: contractData as any,
+      }).eq('id', contract.id);
+
+      setFlowStep('success');
+    } catch (err: any) {
+      setErrorMsg(err.message);
+      setFlowStep('error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Build signable pages for the wizard
+  const buildWizardPages = (): SignablePage[] => {
+    const type = contract?.contract_type;
+    const pageInfos = type === 'AB' ? getABSignablePages() : type === 'BC' ? getBCSignablePages() : getAmendmentSignablePages();
+
+    return pageInfos.map(info => ({
+      pageNum: info.pageNum,
+      title: info.title,
+      requiresSignature: info.requiresSignature,
+      signatureLabel: info.signatureLabel,
+      content: <ABPage pageNum={info.pageNum} d={contractData} mode="signing" />,
+    }));
   };
 
   const Header = () => (
@@ -96,10 +132,11 @@ export default function ContractSign() {
   );
 
   // Status screens
-  if (pageState === 'loading') return <div className="min-h-screen bg-background"><Header /><div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></div>;
-  if (pageState === 'expired') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><AlertTriangle className="h-16 w-16 text-yellow-400 mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Link Expired</h2><p className="text-muted-foreground">This signing link has expired or is no longer valid. Please contact Klose LLC for a new link.</p></div></div>;
-  if (pageState === 'already_signed') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Already Signed</h2><p className="text-muted-foreground">This document has already been signed. Thank you!</p></div></div>;
-  if (pageState === 'success') return (
+  if (flowStep === 'loading') return <div className="min-h-screen bg-background"><Header /><div className="flex items-center justify-center h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></div>;
+  if (flowStep === 'expired') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><AlertTriangle className="h-16 w-16 text-yellow-400 mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Link Expired</h2><p className="text-muted-foreground">This signing link has expired or is no longer valid. Please contact Klose LLC for a new link.</p></div></div>;
+  if (flowStep === 'already_signed') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Already Signed</h2><p className="text-muted-foreground">This document has already been signed. Thank you!</p></div></div>;
+
+  if (flowStep === 'success') return (
     <div className="min-h-screen bg-background">
       <Header />
       <div className="max-w-md mx-auto mt-20 text-center p-6">
@@ -107,34 +144,69 @@ export default function ContractSign() {
         <h2 className="text-xl font-bold text-foreground mb-2">✅ Thank You!</h2>
         <p className="text-muted-foreground mb-4">Your documents have been signed successfully. Klose LLC will be in touch shortly.</p>
         {(contract?.signed_pdf_url || contract?.pdf_url) && (
-          <a
-            href={contract.signed_pdf_url || contract.pdf_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-          >
-            <Button variant="outline" className="mb-4">
-              <FileText className="h-4 w-4 mr-2" /> Download Signed Contract
-            </Button>
+          <a href={contract.signed_pdf_url || contract.pdf_url} target="_blank" rel="noopener noreferrer" download>
+            <Button variant="outline" className="mb-4"><FileText className="h-4 w-4 mr-2" /> Download Signed Contract</Button>
           </a>
         )}
         <p className="text-xs text-muted-foreground">You may close this window.</p>
       </div>
     </div>
   );
-  if (pageState === 'error') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Error</h2><p className="text-muted-foreground">{errorMsg || 'Something went wrong. Please try again or contact Klose LLC.'}</p></div></div>;
+
+  if (flowStep === 'error') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Error</h2><p className="text-muted-foreground">{errorMsg || 'Something went wrong. Please try again or contact Klose LLC.'}</p></div></div>;
 
   const property = (contract?.lead as any)?.property;
-  const contractData = (contract?.contract_data as Record<string, string>) || {};
 
-  // Confirmation screen
-  if (pageState === 'confirming') {
+  // Step 1: Seller Info Form (AB only)
+  if (flowStep === 'seller_info') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="max-w-3xl mx-auto p-4 space-y-6 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5 text-primary" />
+                Purchase and Sale Agreement
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Property: <strong>{property?.address}, {property?.city}, {property?.state}</strong></p>
+              <p className="text-xs text-muted-foreground mt-1">Step 1 of 3 — Please fill out your information first, then review and sign each page.</p>
+            </CardContent>
+          </Card>
+          <SellerInfoForm initialData={contractData} onComplete={handleSellerInfoComplete} />
+        </div>
+      </div>
+    );
+  }
+
+  // Step 2: Page-by-page signing wizard
+  if (flowStep === 'signing') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="max-w-3xl mx-auto p-4 space-y-4 mt-4">
+          <SigningWizard
+            pages={buildWizardPages()}
+            signerName={contractData.seller_name || property?.owner_name || ''}
+            onComplete={handleSigningComplete}
+            onBack={() => contract?.contract_type === 'AB' ? setFlowStep('seller_info') : null}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Step 3: Final confirmation
+  if (flowStep === 'confirming') {
+    const totalSigs = Object.keys(pageSignatures).length;
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <div className="max-w-lg mx-auto p-4 space-y-6 mt-4">
           <Card>
-            <CardHeader><CardTitle className="text-lg">Review & Confirm</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg">✅ Review & Confirm Submission</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground">Property</p>
@@ -142,13 +214,19 @@ export default function ContractSign() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Signer</p>
-                <p className="font-medium">{signerName}</p>
+                <p className="font-medium">{contractData.seller_name}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-2">Your Signature</p>
-                <div className="bg-white rounded-lg p-2 inline-block">
-                  <img src={signatureData!} alt="Signature" className="h-20" />
-                </div>
+                <p className="text-sm text-muted-foreground">Signatures Collected</p>
+                <p className="font-medium text-green-600">{totalSigs} page(s) signed</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(pageSignatures).map(([pageNum, sig]) => (
+                  <div key={pageNum} className="bg-white rounded border p-1.5">
+                    <img src={sig} alt={`Page ${pageNum}`} className="h-10" />
+                    <p className="text-[10px] text-center text-muted-foreground">Pg {pageNum}</p>
+                  </div>
+                ))}
               </div>
               <Separator />
               <div className="space-y-3">
@@ -162,9 +240,9 @@ export default function ContractSign() {
                 </div>
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" className="flex-1" onClick={() => { setPageState('signing'); setSignatureData(null); }}>Go Back</Button>
+                <Button variant="outline" className="flex-1" onClick={() => { setFlowStep('signing'); setPageSignatures({}); }}>Go Back</Button>
                 <Button className="flex-1" disabled={!agreeBinding || !agreeRead || submitting} onClick={handleSubmit}>
-                  {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</> : '✅ Submit Signatures'}
+                  {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</> : `✅ Submit All ${totalSigs} Signatures`}
                 </Button>
               </div>
             </CardContent>
@@ -174,77 +252,5 @@ export default function ContractSign() {
     );
   }
 
-  // Signing screen with inline contract viewer
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <div className="max-w-3xl mx-auto p-4 space-y-6 mt-4">
-        {/* Contract info */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="h-5 w-5 text-primary" />
-              {contract?.contract_type === 'AB' ? 'Purchase and Sale Agreement' : contract?.contract_type === 'BC' ? 'Assignment Agreement' : 'Amendment to Purchase and Sale'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div>
-              <p className="text-sm text-muted-foreground">Property</p>
-              <p className="font-medium">{property?.address}</p>
-              <p className="text-sm text-muted-foreground">{property?.city}, {property?.state}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Inline Contract Document Viewer */}
-        <div>
-          <Button
-            variant="ghost"
-            className="w-full flex items-center justify-between mb-3 text-base font-semibold"
-            onClick={() => setShowContract(!showContract)}
-          >
-            <span>📄 Contract Documents ({contract?.contract_type === 'AB' ? '11 pages' : contract?.contract_type === 'BC' ? '6 pages' : '2 pages'})</span>
-            {showContract ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-          </Button>
-
-          {showContract && (
-            <ContractPageViewer
-              contractType={contract?.contract_type}
-              data={contractData}
-            />
-          )}
-        </div>
-
-        {/* Signature */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Sign Below</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Full Legal Name</Label>
-              <Input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Enter your full legal name" />
-            </div>
-            <div>
-              <Label className="mb-2 block">Draw Your Signature</Label>
-              <div className="border-2 border-dashed border-border rounded-lg bg-white overflow-hidden touch-none">
-                <SignatureCanvas
-                  ref={sigRef}
-                  canvasProps={{ className: 'w-full h-[200px]', style: { width: '100%', height: '200px' } }}
-                  penColor="#000000"
-                  backgroundColor="#ffffff"
-                />
-              </div>
-              <Button variant="ghost" size="sm" className="mt-2" onClick={handleClearSignature}>
-                <Eraser className="h-4 w-4 mr-1" /> Clear
-              </Button>
-            </div>
-            <Button className="w-full" size="lg" onClick={handleSaveSignature} disabled={!signerName.trim()}>
-              Continue to Review →
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+  return null;
 }
