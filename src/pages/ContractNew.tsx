@@ -354,22 +354,31 @@ export default function ContractNew() {
         {step === 'klose_sign' && contractType && (
           <div className="space-y-4">
             <Card className="border-primary/30 bg-primary/5">
-              <CardContent className="py-4">
+              <CardContent className="py-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <PenTool className="h-5 w-5 text-primary" />
                   <div>
                     <p className="font-semibold text-foreground">Firma del Representante de Klose LLC</p>
                     <p className="text-sm text-muted-foreground">
-                      Firmando como: <strong>{profile?.full_name || 'Representante Klose'}</strong> — Revisa cada página y firma en los bloques correspondientes.
+                      Ingresa el nombre completo del firmante y firma en cada bloque.
                     </p>
                   </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Nombre completo del firmante</Label>
+                  <Input
+                    value={kloseSignerName}
+                    onChange={(e) => setKloseSignerName(e.target.value)}
+                    placeholder="Ej: Sergio Mantilla, Luz Paula Rojas"
+                    className="mt-1"
+                  />
                 </div>
               </CardContent>
             </Card>
 
             <SigningWizard
               pages={buildKloseWizardPages()}
-              signerName={profile?.full_name || 'Klose LLC Representative'}
+              signerName={kloseSignerName || 'Klose LLC Representative'}
               onComplete={handleKloseSignComplete}
               onBack={() => setStep('fill')}
             />
