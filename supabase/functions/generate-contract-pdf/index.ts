@@ -3,9 +3,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { PDFDocument, StandardFonts, rgb, PDFPage, PDFFont } from 'https://esm.sh/pdf-lib@1.17.1'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+// Colors
+const DARK_BG = rgb(10/255, 10/255, 20/255)
+const TEAL = rgb(0, 212/255, 170/255)
+const BLACK = rgb(0, 0, 0)
+const GRAY = rgb(0.4, 0.4, 0.4)
+const DARK_GRAY = rgb(0.15, 0.15, 0.15)
+const WHITE = rgb(1, 1, 1)
+const FIELD_COLOR = rgb(0, 0.53, 0.67)
+
+const PAGE_W = 612
+const PAGE_H = 792
+const MARGIN_L = 50
+const MARGIN_R = 50
+const CONTENT_W = PAGE_W - MARGIN_L - MARGIN_R
+const LINE_HEIGHT = 14
+const PARA_SPACING = 8
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -34,7 +52,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders })
     }
 
-    // Fetch lead + property data
     const { data: lead } = await supabase
       .from('leads')
       .select('*, property:properties(*)')
@@ -46,39 +63,29 @@ Deno.serve(async (req) => {
     }
 
     const property = lead.property
+    const pdfDoc = await PDFDocument.create()
+    const font = await pdfDoc.embedFont(StandardFonts.TimesRoman)
+    const fontBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
+    const fontItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic)
 
-    // Generate PDF content as HTML-styled text
-    // We'll create a simple but professional PDF using basic text rendering
-    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-    
-    // Build contract text based on type
-    let pdfContent = ''
-    let fileName = ''
+    const ctx: PdfCtx = { pdfDoc, font, fontBold, fontItalic, data: contractData }
 
     if (contractType === 'AB') {
-      fileName = `AB_Contract_${(property?.address || 'property').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
-      pdfContent = buildABContract(contractData, today)
+      buildABPdf(ctx)
     } else if (contractType === 'BC') {
-      fileName = `BC_Contract_${(property?.address || 'property').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
-      pdfContent = buildBCContract(contractData, today)
-    } else if (contractType === 'AMENDMENT') {
-      fileName = `Amendment_${(property?.address || 'property').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
-      pdfContent = buildAmendment(contractData, today)
+      buildBCPdf(ctx)
+    } else {
+      buildAmendmentPdf(ctx)
     }
 
-    // Since we can't use pdf-lib in Deno edge functions easily, we'll generate
-    // a simple HTML-based PDF approach. For now, store the contract data and 
-    // generate a basic text file that can be converted client-side.
-    
-    // Store as a simple text/html file in storage
-    const htmlContent = generateHTMLPdf(contractType, contractData, today, property)
-    
-    const filePath = `${contractId}/${fileName.replace('.pdf', '.html')}`
-    
+    const pdfBytes = await pdfDoc.save()
+    const fileName = `${contractType}_Contract_${(property?.address || 'property').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
+    const filePath = `${contractId}/${fileName}`
+
     const { error: uploadError } = await supabase.storage
       .from('contracts')
-      .upload(filePath, new Blob([htmlContent], { type: 'text/html' }), {
-        contentType: 'text/html',
+      .upload(filePath, pdfBytes, {
+        contentType: 'application/pdf',
         upsert: true,
       })
 
@@ -86,7 +93,7 @@ Deno.serve(async (req) => {
 
     const { data: urlData } = supabase.storage.from('contracts').getPublicUrl(filePath)
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       pdfUrl: urlData.publicUrl,
       fileName,
     }), {
@@ -94,6 +101,7 @@ Deno.serve(async (req) => {
     })
 
   } catch (error: any) {
+    console.error('PDF generation error:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -101,431 +109,460 @@ Deno.serve(async (req) => {
   }
 })
 
-function generateHTMLPdf(type: string, data: Record<string, any>, date: string, property: any): string {
-  const header = `
-    <div style="background: #0a0a14; color: white; padding: 20px 30px; text-align: center; border-bottom: 3px solid #00d4aa;">
-      <h1 style="margin: 0; font-size: 28px; letter-spacing: 4px;">KLOSE LLC</h1>
-      <p style="margin: 5px 0 0; font-size: 12px; color: #aaa;">A Wyoming Limited Liability Company | Real Estate Investment</p>
-      <p style="margin: 3px 0 0; font-size: 11px; color: #888;">EIN: 41-4409334</p>
-    </div>
-  `
+// ─── PDF drawing helpers ────────────────────────────────────────────
 
-  const sigBlock = `
-    <div style="margin-top: 40px; display: flex; justify-content: space-between;">
-      <div style="width: 45%;">
-        <div style="border-bottom: 1px solid #333; height: 40px;"></div>
-        <p style="font-size: 11px; color: #666;">Buyer Signature</p>
-        <p style="font-size: 11px;"><strong>Klose LLC</strong> / Authorized Signatory</p>
-        <p style="font-size: 11px;">Date: ____________</p>
-      </div>
-      <div style="width: 45%;">
-        <div style="border-bottom: 1px solid #333; height: 40px;"></div>
-        <p style="font-size: 11px; color: #666;">Seller Signature</p>
-        <p style="font-size: 11px;">${data.seller_name || '_________________'}</p>
-        <p style="font-size: 11px;">Date: ____________</p>
-      </div>
-    </div>
-  `
+interface PdfCtx {
+  pdfDoc: PDFDocument
+  font: PDFFont
+  fontBold: PDFFont
+  fontItalic: PDFFont
+  data: Record<string, any>
+}
 
-  let body = ''
+interface Cursor {
+  page: PDFPage
+  y: number
+}
 
-  if (type === 'AB') {
-    body = buildABHTML(data, date, sigBlock)
-  } else if (type === 'BC') {
-    body = buildBCHTML(data, date, sigBlock)
-  } else {
-    body = buildAmendmentHTML(data, date, sigBlock)
+function addPage(ctx: PdfCtx): Cursor {
+  const page = ctx.pdfDoc.addPage([PAGE_W, PAGE_H])
+  return { page, y: PAGE_H - 50 }
+}
+
+function ensureSpace(ctx: PdfCtx, cursor: Cursor, needed: number): Cursor {
+  if (cursor.y - needed < 60) {
+    return addPage(ctx)
+  }
+  return cursor
+}
+
+function drawHeader(ctx: PdfCtx, cursor: Cursor, showEIN = true): Cursor {
+  const { page } = cursor
+  // Dark header bar
+  page.drawRectangle({ x: 0, y: PAGE_H - 70, width: PAGE_W, height: 70, color: DARK_BG })
+  // Teal bottom line
+  page.drawRectangle({ x: 0, y: PAGE_H - 73, width: PAGE_W, height: 3, color: TEAL })
+  // KLOSE LLC
+  const titleW = ctx.fontBold.widthOfTextAtSize('KLOSE LLC', 22)
+  page.drawText('KLOSE LLC', { x: (PAGE_W - titleW) / 2, y: PAGE_H - 35, size: 22, font: ctx.fontBold, color: WHITE })
+  // Subtitle
+  const sub = 'A Wyoming Limited Liability Company | Real Estate Investment'
+  const subW = ctx.font.widthOfTextAtSize(sub, 9)
+  page.drawText(sub, { x: (PAGE_W - subW) / 2, y: PAGE_H - 50, size: 9, font: ctx.font, color: rgb(0.67, 0.67, 0.67) })
+  if (showEIN) {
+    const ein = 'EIN: 41-4409334'
+    const einW = ctx.font.widthOfTextAtSize(ein, 8)
+    page.drawText(ein, { x: (PAGE_W - einW) / 2, y: PAGE_H - 62, size: 8, font: ctx.font, color: rgb(0.53, 0.53, 0.53) })
+  }
+  return { page, y: PAGE_H - 90 }
+}
+
+function drawCenteredText(ctx: PdfCtx, cursor: Cursor, text: string, size: number, f?: PDFFont): Cursor {
+  cursor = ensureSpace(ctx, cursor, size + 6)
+  const useFont = f || ctx.fontBold
+  const w = useFont.widthOfTextAtSize(text, size)
+  cursor.page.drawText(text, { x: (PAGE_W - w) / 2, y: cursor.y, size, font: useFont, color: BLACK })
+  return { ...cursor, y: cursor.y - size - 6 }
+}
+
+// Wrap text at a given width, returning an array of lines
+function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+  const words = text.split(' ')
+  const lines: string[] = []
+  let current = ''
+  for (const word of words) {
+    const test = current ? current + ' ' + word : word
+    if (font.widthOfTextAtSize(test, size) > maxWidth) {
+      if (current) lines.push(current)
+      current = word
+    } else {
+      current = test
+    }
+  }
+  if (current) lines.push(current)
+  return lines
+}
+
+function drawParagraph(ctx: PdfCtx, cursor: Cursor, text: string, size = 10, indent = 0): Cursor {
+  // Replace field placeholders with plain values
+  const lines = wrapText(text, ctx.font, size, CONTENT_W - indent)
+  for (const line of lines) {
+    cursor = ensureSpace(ctx, cursor, LINE_HEIGHT)
+    cursor.page.drawText(line, { x: MARGIN_L + indent, y: cursor.y, size, font: ctx.font, color: BLACK })
+    cursor.y -= LINE_HEIGHT
+  }
+  cursor.y -= PARA_SPACING
+  return cursor
+}
+
+function drawClause(ctx: PdfCtx, cursor: Cursor, num: string, title: string, body: string, size = 10): Cursor {
+  const prefix = `${num}. ${title}: `
+  // Draw prefix in bold, then body wraps
+  const fullText = prefix + body
+  const lines = wrapText(fullText, ctx.font, size, CONTENT_W)
+  
+  for (let i = 0; i < lines.length; i++) {
+    cursor = ensureSpace(ctx, cursor, LINE_HEIGHT)
+    const line = lines[i]
+    // For first line, try to bold the prefix portion
+    if (i === 0) {
+      const prefixW = ctx.fontBold.widthOfTextAtSize(prefix, size)
+      if (prefixW < CONTENT_W) {
+        cursor.page.drawText(prefix, { x: MARGIN_L, y: cursor.y, size, font: ctx.fontBold, color: BLACK })
+        const rest = line.substring(prefix.length)
+        if (rest) {
+          cursor.page.drawText(rest, { x: MARGIN_L + prefixW, y: cursor.y, size, font: ctx.font, color: BLACK })
+        }
+      } else {
+        cursor.page.drawText(line, { x: MARGIN_L, y: cursor.y, size, font: ctx.fontBold, color: BLACK })
+      }
+    } else {
+      cursor.page.drawText(line, { x: MARGIN_L, y: cursor.y, size, font: ctx.font, color: BLACK })
+    }
+    cursor.y -= LINE_HEIGHT
+  }
+  cursor.y -= PARA_SPACING
+  return cursor
+}
+
+function drawSignatureBlock(ctx: PdfCtx, cursor: Cursor, leftLabel: string, leftName: string, rightLabel: string, rightName: string): Cursor {
+  cursor = ensureSpace(ctx, cursor, 80)
+  const midX = PAGE_W / 2
+  // Left sig line
+  cursor.page.drawLine({ start: { x: MARGIN_L, y: cursor.y }, end: { x: midX - 30, y: cursor.y }, thickness: 0.5, color: GRAY })
+  cursor.page.drawText(leftLabel, { x: MARGIN_L, y: cursor.y - 12, size: 8, font: ctx.font, color: GRAY })
+  cursor.page.drawText(leftName, { x: MARGIN_L, y: cursor.y - 24, size: 9, font: ctx.fontBold, color: BLACK })
+  cursor.page.drawText('Date: ____________', { x: MARGIN_L, y: cursor.y - 36, size: 8, font: ctx.font, color: GRAY })
+  // Right sig line
+  cursor.page.drawLine({ start: { x: midX + 10, y: cursor.y }, end: { x: PAGE_W - MARGIN_R, y: cursor.y }, thickness: 0.5, color: GRAY })
+  cursor.page.drawText(rightLabel, { x: midX + 10, y: cursor.y - 12, size: 8, font: ctx.font, color: GRAY })
+  cursor.page.drawText(rightName, { x: midX + 10, y: cursor.y - 24, size: 9, font: ctx.fontBold, color: BLACK })
+  cursor.page.drawText('Date: ____________', { x: midX + 10, y: cursor.y - 36, size: 8, font: ctx.font, color: GRAY })
+  return { ...cursor, y: cursor.y - 50 }
+}
+
+function drawSingleSigBlock(ctx: PdfCtx, cursor: Cursor, label: string, name: string): Cursor {
+  cursor = ensureSpace(ctx, cursor, 50)
+  cursor.page.drawLine({ start: { x: MARGIN_L, y: cursor.y }, end: { x: MARGIN_L + 250, y: cursor.y }, thickness: 0.5, color: GRAY })
+  cursor.page.drawText(label, { x: MARGIN_L, y: cursor.y - 12, size: 8, font: ctx.font, color: GRAY })
+  cursor.page.drawText(name, { x: MARGIN_L, y: cursor.y - 24, size: 9, font: ctx.font, color: BLACK })
+  cursor.page.drawText('Date: ____________', { x: MARGIN_L, y: cursor.y - 36, size: 8, font: ctx.font, color: GRAY })
+  return { ...cursor, y: cursor.y - 50 }
+}
+
+function v(data: Record<string, any>, key: string, fallback = '______________________________'): string {
+  return data[key] || fallback
+}
+
+function money(val: any): string {
+  const n = Number(val || 0)
+  return n.toLocaleString('en-US')
+}
+
+// ─── AB Contract ────────────────────────────────────────────────────
+
+function buildABPdf(ctx: PdfCtx) {
+  const d = ctx.data
+  
+  // Page 1: Main Agreement
+  let c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c.y -= 10
+  c = drawCenteredText(ctx, c, 'STANDARD PURCHASE AND SALE AGREEMENT', 14)
+  c = drawCenteredText(ctx, c, '"AS IS" CASH-OFFER', 11)
+  c.y -= 5
+
+  c = drawClause(ctx, c, '1', 'PARTIES', `Klose LLC, a Wyoming Limited Liability Company (hereinafter "BUYER"), and ${v(d,'seller_name')} (hereinafter "SELLER"), which terms may be singular or plural and will include the heirs, successors, personal representatives, and assigns of Seller and Buyer, hereby agree that Seller will sell and Buyer will buy the following property, upon the following terms and conditions.`)
+
+  c = drawClause(ctx, c, '2', 'PROPERTY', `(Street Address): ${v(d,'property_address')} (City): ${v(d,'property_city')} (County): ${v(d,'property_county')} (State): ${v(d,'property_state','___')}. The Property includes the land and all appurtenant rights, privileges and easements, all buildings and fixtures, including without limitation, all of the following as are NOW on the Property: electrical, heating, cooling, plumbing, bathroom mirrors and fixtures, awnings, screens, storm windows and doors, landscaping, disposals, TV antennas, built-in electronics wiring, ceiling fans, smoke alarms, security systems, doorbells, thermostats, garage door openers and controls, attached carpeting, ranges/ovens, microwave ovens, kitchen refrigerators, dishwashers, air conditioners, water softeners, existing window treatments, satellite/TV reception systems, affixed gas/oil tanks not including fuel therein unless otherwise agreed by the parties. NOT Included: ${v(d,'not_included_items','None')}. All property sold by this contract is called the "Property".`)
+
+  c = drawClause(ctx, c, '3', 'CONTRACT TERMS', `Sale Price: $ ${money(d.sale_price)}`)
+
+  c = drawClause(ctx, c, '4', 'NON-FINANCING / ALL CASH', 'This is an all-cash sale; no financing is involved, unless agreed upon in writing by both parties at a later date.')
+
+  c = drawClause(ctx, c, '5', 'CLOSING', `Buyer will deliver contract to ${v(d,'title_company')} (the "Title Company") upon execution of the contract by both parties. Closing shall occur within ${v(d,'closing_days','30')} business days from the execution of this agreement, or within seven (7) days after objection to title has been cured, whichever date is later.`)
+
+  c = drawClause(ctx, c, '6', 'TITLE POLICY', "Seller shall furnish to Buyer at Buyer's expense an Owner's Policy of Title Insurance issued by the Title Company in the amount of the Sales Price, dated at or after closing, insuring Buyer against loss under the provisions of the Title Policy.")
+
+  c = drawClause(ctx, c, '7', 'PROPERTY CONDITION', `The Buyer is purchasing the Property in an "AS-IS" condition subject to a ${v(d,'due_diligence_days','10')} Business Day Due Diligence Period. During Due Diligence, Buyer will need to access the property with Inspectors, Appraisers, Investors, Contractors, and potentially others. If Buyer determines, in its sole and absolute discretion, before the expiration of the Due Diligence Period that the Property is unacceptable for Buyer's purposes, Buyer shall have the right to terminate this Agreement by giving Seller written notice before the expiration of the Due Diligence Period.`)
+
+  c = drawClause(ctx, c, '8', 'POSSESSION', 'The possession of the Property shall be delivered to the Buyer at closing. No exceptions, unless specifically agreed upon in writing by all parties.')
+
+  c = drawClause(ctx, c, '9', 'PRE-MARKETING AGREEMENT', "If vacant, and upon acceptance of this contract by Seller, Seller is to furnish Buyer a key or combination to lockbox and give Buyer permission to enter the premises for inspections prior to closing. At Buyer's option, Buyer is allowed to display a For Sale or similar sign in front of the Property. Buyer has the right to market its contract interest in the Property in Buyer's sole discretion.")
+
+  c = drawClause(ctx, c, '10', 'PRORATIONS', 'Property Taxes, flood and hazard insurance, rents, maintenance fees, interest on any present loan, and any prepaid unearned mortgage insurance premium which is refundable in whole or in part shall be prorated through the Closing Date.')
+
+  c = drawClause(ctx, c, '11', 'PROPERTY DOCUMENTATION', 'Seller to furnish Buyer a General Warranty Deed conveying title subject only to liens securing payment of debt created as part of the consideration, taxes for the current year, restrictive covenants and utility easements common to the platted subdivision.')
+
+  c = drawClause(ctx, c, '12', 'CASUALTY LOSS', 'If any part of Property is damaged or destroyed by fire or other casualty loss, Seller shall restore the same to its previous condition as soon as reasonably possible, but in any event by Closing Date.')
+
+  c = drawClause(ctx, c, '13', 'DEFAULT', 'If Seller fails to comply herewith for any reason, Buyer may either (a) enforce specific performance hereof and seek such other relief as may be provided by law, or (b) terminate this contract, thereby releasing Seller from this contract.')
+
+  c = drawClause(ctx, c, '14', 'REPRESENTATIONS', 'Seller represents that as of the Closing Date (a) there will be no unrecorded liens, assessments, or Uniform Commercial Code Security interests against any of the Property, and (b) any loans will be without default.')
+
+  c = drawClause(ctx, c, '15', 'SALES EXPENSES', "A. Buyer's Expenses: Expenses stipulated to be paid by Buyer under other provisions of this contract. B. Seller's Expenses: Releases of existing liens, including prepayment penalties and recording fees; release of Seller's loan liability; tax statements or certificates; real estate transfer tax and/or conveyance fees. C. If Seller(s) fails to perform, they are responsible for any consequential damages.")
+
+  c = drawClause(ctx, c, '16', 'RESALE OF PROPERTY', 'Seller agrees that Buyer retains all profit, whether by note, trade, or cash, in the event of resale, simultaneous close, or assignment of this contract.')
+
+  c = drawClause(ctx, c, '17', 'ASSIGNMENT OF CONTRACT', 'Buyer may assign the contract. If assigned, all rights, interests, suits, claims, and titles in and to the contract will be assigned, and the Assignor will be released of all liability.')
+
+  c = drawClause(ctx, c, '18', 'HOLD HARMLESS AND ASSUMPTION OF LIABILITY', 'In the event the Seller has any damages or other liabilities caused by a third party, Buyer is to be held harmless by the Seller for these damages or other liabilities.')
+
+  c = drawClause(ctx, c, '19', 'ENTIRE AGREEMENT OF PARTIES', 'This contract contains the entire agreement of the parties and cannot be changed except by their written agreement.')
+
+  c = drawClause(ctx, c, '20', 'SPECIAL PROVISIONS', v(d, 'special_provisions', 'None'))
+
+  c.y -= 5
+  c = drawSignatureBlock(ctx, c, 'Buyer Signature', 'Klose LLC / Authorized Signatory', 'Seller Signature', v(d,'seller_name','_________________'))
+
+  // Page 2: Seller Info Worksheet
+  c = addPage(ctx)
+  c = drawHeader(ctx, c, false)
+  c = drawCenteredText(ctx, c, 'PRELIMINARY SELLER INFORMATION WORKSHEET', 13)
+  c.y -= 5
+  c = drawCenteredText(ctx, c, 'SELLER INFORMATION', 11)
+  c.y -= 5
+  c = drawParagraph(ctx, c, `Full Legal Name: ${v(d,'seller_name')}`)
+  c = drawParagraph(ctx, c, `Date of Birth: ${v(d,'seller_dob')}`)
+  c = drawParagraph(ctx, c, `Phone Number: ${v(d,'seller_phone')}`)
+  c = drawParagraph(ctx, c, `Email: ${v(d,'seller_email')}`)
+  c = drawParagraph(ctx, c, `Marital Status: ${v(d,'marital_status')}`)
+  if (d.spouse_name) c = drawParagraph(ctx, c, `Spouse Name: ${d.spouse_name}`)
+  c.y -= 20
+  c = drawSingleSigBlock(ctx, c, 'Seller Signature', v(d,'seller_name',''))
+
+  // Page 3: Investor Disclosure
+  buildInvestorDisclosurePage(ctx, 'Seller')
+
+  // Page 4: Fair Housing
+  buildFairHousingPage(ctx, 'Seller')
+
+  // Page 5: Non-Representation
+  buildNonRepresentationPage(ctx, 'Seller')
+
+  // Page 6: Auth to Sign (POA)
+  buildAuthToSignPage(ctx)
+
+  // Page 7: Release of Info
+  buildReleaseAuthPage(ctx)
+
+  // Page 8: Seller Responsibility
+  buildSellerResponsibilityPage(ctx)
+}
+
+// ─── BC Contract ────────────────────────────────────────────────────
+
+function buildBCPdf(ctx: PdfCtx) {
+  const d = ctx.data
+
+  let c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c.y -= 10
+  c = drawCenteredText(ctx, c, 'ASSIGNMENT OF "AS IS" CASH-OFFER', 14)
+  c = drawCenteredText(ctx, c, 'PURCHASE AND SALE AGREEMENT', 14)
+  c.y -= 5
+
+  c = drawClause(ctx, c, '1', 'PARTIES', `The undersigned Klose LLC, a Wyoming Limited Liability Company (the "ASSIGNOR"), having executed an "As Is" Cash-Offer Purchase and Sale Agreement (the "INITIAL PURCHASE AGREEMENT") with ${v(d,'seller_name')} (the "SELLER"), for the Property identified in Paragraph 2, hereby assigns and otherwise transfers all rights, title, and interest held by Assignor in said Property to ${v(d,'assignee_name')} (the "ASSIGNEE") in exchange for an Assignment Fee as described below.`)
+
+  c = drawClause(ctx, c, '2', 'PROPERTY', `${v(d,'property_address')}, ${v(d,'property_city','')}, ${v(d,'property_state','')}, including all fixtures, appliances, other permanently installed equipment.`)
+
+  c = drawClause(ctx, c, '3', 'AGREEMENT AND ASSIGNMENT TERMS', `Assignee shall pay a gross amount of $ ${money(d.total_assignment_amount)} (which shall include the purchase price in the Purchase and Sale Agreement being assigned and the Assignment Fee due to the Assignor).`)
+
+  let paymentText = `ASSIGNEE warrants that at Closing they will have sufficient cash to complete the purchase. ASSIGNEE'S method of payment: ${v(d,'payment_method')}.`
+  if (d.lender_name) paymentText += ` Lender: ${d.lender_name}.`
+  c = drawClause(ctx, c, '4', 'METHOD OF PAYMENT', paymentText)
+
+  c = drawClause(ctx, c, '5', 'CLOSING COSTS', 'ASSIGNEE expressly agrees to pay all closing costs associated with this transaction.')
+
+  c = drawClause(ctx, c, '6', 'ASSIGNEE REPRESENTATIONS', 'ASSIGNEE represents and acknowledges receipt of the INITIAL PURCHASE AGREEMENT prior to execution. ASSIGNEE further agrees to: 1) Perform as required in good faith; 2) Indemnify and hold harmless the ASSIGNOR from any claim; 3) Indemnify and hold harmless the ASSIGNOR for any cost in junk removal; 4) Waive any right to further assign this ASSIGNMENT; 5) Acknowledge ASSIGNOR makes no warranty.')
+
+  c = drawClause(ctx, c, '7', 'ASSIGNOR REPRESENTATIONS', 'ASSIGNOR represents that the INITIAL PURCHASE AGREEMENT is in full force and effect and is fully assignable.')
+
+  c = drawClause(ctx, c, '8', 'CONDITION OF THE PROPERTY - "AS-IS"', `ASSIGNEE acknowledges purchasing the Property in its present physical condition. EXCEPT: ${v(d,'exceptions','None')}.`)
+
+  c = drawClause(ctx, c, '9', 'NON-REFUNDABLE OPTION FEE', `ASSIGNEE has paid or will pay immediately upon execution a non-refundable Assignment Option Fee of $ ${money(d.option_fee)} to ${v(d,'title_company')} (the "TITLE COMPANY").`)
+
+  c = drawClause(ctx, c, '10', 'CLOSING', `ASSIGNOR will deliver this ASSIGNMENT to the TITLE COMPANY. Closing shall occur on or before ${v(d,'closing_date')}.`)
+
+  c = drawClause(ctx, c, '11', 'TITLE POLICY', "The SELLER shall furnish to ASSIGNEE an Owner's Policy of Title Insurance.")
+
+  c = drawClause(ctx, c, '12', 'DEFAULT', "If the ASSIGNOR is unable to perform, the ASSIGNEE'S sole remedy shall be limited to termination and return of the Non-Refundable Option Fee.")
+
+  c = drawClause(ctx, c, '13', 'MARKETABLE TITLE', 'This sale is contingent upon Seller obtaining marketable title. If unable, Seller shall return option money.')
+
+  c = drawClause(ctx, c, '14', 'HOLD HARMLESS', 'Assignee understands and assumes the risk of loss for any liability caused by a third-party action.')
+
+  c = drawClause(ctx, c, '15', 'ENTIRE AGREEMENT', 'This contract contains the entire agreement of the parties.')
+
+  c = drawClause(ctx, c, '16', 'SPECIAL PROVISIONS', v(d,'special_provisions','None'))
+
+  c.y -= 5
+  c = drawSignatureBlock(ctx, c, 'Assignor Signature', 'Klose LLC / Authorized Signatory', 'Assignee Signature', v(d,'assignee_name','_________________'))
+
+  // Supporting docs
+  buildInvestorDisclosurePage(ctx, 'Buyer/Assignee')
+  buildNonRepresentationPage(ctx, 'Buyer/Assignee')
+  buildFairHousingPage(ctx, 'Buyer/Assignee')
+}
+
+// ─── Amendment ──────────────────────────────────────────────────────
+
+function buildAmendmentPdf(ctx: PdfCtx) {
+  const d = ctx.data
+
+  let c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c.y -= 10
+  c = drawCenteredText(ctx, c, 'AMENDMENT TO PURCHASE AND SALE AGREEMENT', 14)
+  c.y -= 10
+
+  c = drawParagraph(ctx, c, `Buyer: Klose LLC, a Wyoming Limited Liability Company`)
+  c = drawParagraph(ctx, c, `Seller: ${v(d,'seller_name')}`)
+  c = drawParagraph(ctx, c, `Property: ${v(d,'property_address')}`)
+  c.y -= 5
+
+  c = drawParagraph(ctx, c, `In consideration of the mutual covenants herein and other good and valuable consideration, the parties agree to amend that certain Purchase and Sale Agreement with a Binding Agreement Date of ${v(d,'binding_agreement_date')} and any incorporated addenda, exhibits, or prior amendments (collectively referred to herein as "Agreement") as follows:`)
+
+  if (d.new_purchase_price) {
+    c.y -= 5
+    c = drawClause(ctx, c, 'Amendment 1', 'Purchase Price', `Buyer & Seller hereby mutually agree to amend the purchase price to: $ ${money(d.new_purchase_price)}`)
+  }
+  if (d.new_closing_date) {
+    c = drawClause(ctx, c, 'Amendment 2', 'Closing / Expiration / Due Diligence Date', `Buyer & Seller hereby mutually agree to amend the closing, contract expiration, and due diligence date to: ${d.new_closing_date}`)
+  }
+  if (d.additional_terms) {
+    c = drawClause(ctx, c, 'Amendment 3', 'Additional Terms', d.additional_terms)
   }
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Klose LLC Contract</title>
-  <style>
-    @media print { body { margin: 0; } }
-    body { font-family: 'Georgia', serif; font-size: 13px; line-height: 1.6; color: #222; max-width: 800px; margin: 0 auto; }
-    .page { padding: 30px 40px; page-break-after: always; }
-    .page:last-child { page-break-after: auto; }
-    h2 { font-size: 18px; text-align: center; margin: 20px 0; text-transform: uppercase; letter-spacing: 1px; }
-    h3 { font-size: 14px; margin: 15px 0 5px; }
-    .clause { margin: 12px 0; text-align: justify; }
-    .field { color: #0088aa; font-weight: bold; }
-    .sig-line { border-bottom: 1px solid #333; width: 200px; display: inline-block; height: 20px; }
-  </style>
-</head>
-<body>
-${header}
-${body}
-</body>
-</html>`
+  c.y -= 5
+  c = drawParagraph(ctx, c, 'This Amendment shall become binding when signed by all parties and shall be incorporated into the Agreement. All other terms and conditions of the Purchase and Sale Agreement shall remain in full force and effect.')
+
+  c.y -= 10
+  c = drawParagraph(ctx, c, 'The party(ies) below have signed and acknowledge receipt of a copy.', 10)
+  c = drawSignatureBlock(ctx, c, 'Buyer Signature', 'Klose LLC / Authorized Signatory', 'Seller Signature', v(d,'seller_name','_________________'))
 }
 
-function buildABHTML(data: Record<string, any>, date: string, sigBlock: string): string {
-  const fullAddress = `${data.property_address || '___'}, ${data.property_city || '___'}, ${data.property_county || '___'} County, ${data.property_state || '___'}`
-  
-  return `
-<div class="page">
-  <h2>STANDARD PURCHASE AND SALE AGREEMENT</h2>
-  <h3 style="text-align:center;">"AS IS" CASH-OFFER</h3>
+// ─── Supporting Document Pages ──────────────────────────────────────
 
-  <p class="clause"><strong>1. PARTIES:</strong> Klose LLC, a Wyoming Limited Liability Company (hereinafter "BUYER"), and <span class="field">${data.seller_name || '_______________'}</span> (hereinafter "SELLER"), which terms may be singular or plural and will include the heirs, successors, personal representatives, and assigns of Seller and Buyer, hereby agree that Seller will sell and Buyer will buy the following property, upon the following terms and conditions.</p>
+function buildInvestorDisclosurePage(ctx: PdfCtx, role: string) {
+  let c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c = drawCenteredText(ctx, c, 'WORKING WITH KLOSE LLC', 13)
+  c = drawCenteredText(ctx, c, 'INVESTOR DISCLOSURE STATEMENT', 11)
+  c.y -= 5
 
-  <p class="clause"><strong>2. PROPERTY:</strong><br/>
-  (Street Address): <span class="field">${data.property_address || '_______________'}</span><br/>
-  (City): <span class="field">${data.property_city || '_______________'}</span><br/>
-  (County): <span class="field">${data.property_county || '_______________'}</span> (State): <span class="field">${data.property_state || '___'}</span><br/><br/>
-  The Property includes the land and all appurtenant rights, privileges and easements, all buildings and fixtures, including without limitation, all of the following as are NOW on the Property: electrical, heating, cooling, plumbing, bathroom mirrors and fixtures, awnings, screens, storm windows and doors, landscaping, disposals, TV antennas, built-in electronics wiring, ceiling fans, smoke alarms, security systems, doorbells, thermostats, garage door openers and controls, attached carpeting, ranges/ovens, microwave ovens, kitchen refrigerators, dishwashers, air conditioners, water softeners, existing window treatments, satellite/TV reception systems, affixed gas/oil tanks not including fuel therein unless otherwise agreed by the parties. NOT Included: <span class="field">${data.not_included_items || 'None'}</span>. All property sold by this contract is called the "Property".</p>
+  c = drawParagraph(ctx, c, `I, the undersigned, acknowledge and understand that Klose LLC ("Klose") is a for-profit real estate investment company organized under the laws of Wyoming. Accordingly, the undersigned acknowledges the following:`)
 
-  <p class="clause"><strong>3. CONTRACT TERMS:</strong><br/>
-  Sale Price: $ <span class="field">${Number(data.sale_price || 0).toLocaleString()}</span></p>
+  const items = [
+    'Klose is a real estate investor and is NOT a licensed real estate broker or agent.',
+    'Klose holds an equitable interest in the subject property through a Purchase and Sale Agreement.',
+    'Klose is not currently the fee simple owner of the property at the time of assignment.',
+    'This transaction is contingent upon Klose obtaining marketable title.',
+    "Marketable title means the property's title is free from significant liens, disputes, or legal issues.",
+    `The parties agree to use ${v(ctx.data,'title_company')} (Title Company) to determine marketable title.`,
+    'If unable to obtain marketable title, Klose shall return option/earnest money.',
+    'The closing may occur through: (a) Assignment of Contract, (b) Simultaneous Closing, or (c) Traditional Purchase.',
+    'This property is sold as-is, where-is.',
+    'The undersigned is encouraged to seek independent legal counsel.',
+  ]
+  for (let i = 0; i < items.length; i++) {
+    c = drawParagraph(ctx, c, `${i+1}. ${items[i]}`)
+  }
 
-  <p class="clause"><strong>4. NON-FINANCING / ALL CASH:</strong> This is an all-cash sale; no financing is involved, unless agreed upon in writing by both parties at a later date.</p>
-
-  <p class="clause"><strong>5. CLOSING:</strong> Buyer will deliver contract to <span class="field">${data.title_company || '_______________'}</span> (the "Title Company") upon execution of the contract by both parties. Closing shall occur within <span class="field">${data.closing_days || '30'}</span> business days from the execution of this agreement, or within seven (7) days after objection to title has been cured, whichever date is later.</p>
-
-  <p class="clause"><strong>6. TITLE POLICY:</strong> Seller shall furnish to Buyer at Buyer's expense an Owner's Policy of Title Insurance issued by the Title Company in the amount of the Sales Price, dated at or after closing, insuring Buyer against loss under the provisions of the Title Policy.</p>
-
-  <p class="clause"><strong>7. PROPERTY CONDITION:</strong> The Buyer is purchasing the Property in an "AS-IS" condition subject to a <span class="field">${data.due_diligence_days || '10'}</span> – "AS-IS" SUBJECT TO Business Day Due Diligence Period. During Due Diligence, Buyer will need to access the property with Inspectors, Appraisers, Investors, Contractors, and potentially others. If Buyer determines, in its sole and absolute discretion, before the expiration of the Due Diligence Period that the Property is unacceptable for Buyer's purposes, Buyer shall have the right to terminate this Agreement by giving Seller written notice before the expiration of the Due Diligence Period.</p>
-
-  <p class="clause"><strong>8. POSSESSION:</strong> The possession of the Property shall be delivered to the Buyer at closing. No exceptions, unless specifically agreed upon in writing by all parties.</p>
-
-  <p class="clause"><strong>9. PRE-MARKETING AGREEMENT:</strong> If vacant, and upon acceptance of this contract by Seller, Seller is to furnish Buyer a key or combination to lockbox and give Buyer permission to enter the premises for inspections prior to closing. At Buyer's option, Buyer is allowed to display a For Sale or similar sign in front of the Property. Buyer has the right to market its contract interest in the Property in Buyer's sole discretion.</p>
-
-  <p class="clause"><strong>10. PRORATIONS:</strong> Property Taxes, flood and hazard insurance, rents, maintenance fees, interest on any present loan, and any prepaid unearned mortgage insurance premium which is refundable in whole or in part shall be prorated through the Closing Date.</p>
-
-  <p class="clause"><strong>11. PROPERTY DOCUMENTATION:</strong> Seller to furnish Buyer a General Warranty Deed conveying title subject only to liens securing payment of debt created as part of the consideration, taxes for the current year, restrictive covenants and utility easements common to the platted subdivision.</p>
-
-  <p class="clause"><strong>12. CASUALTY LOSS:</strong> If any part of Property is damaged or destroyed by fire or other casualty loss, Seller shall restore the same to its previous condition as soon as reasonably possible, but in any event by Closing Date.</p>
-
-  <p class="clause"><strong>13. DEFAULT:</strong> If Seller fails to comply herewith for any reason, Buyer may either (a) enforce specific performance hereof and seek such other relief as may be provided by law, or (b) terminate this contract, thereby releasing Seller from this contract.</p>
-
-  <p class="clause"><strong>14. REPRESENTATIONS:</strong> Seller represents that as of the Closing Date (a) there will be no unrecorded liens, assessments, or Uniform Commercial Code Security interests against any of the Property, and (b) any loans will be without default.</p>
-
-  <p class="clause"><strong>15. SALES EXPENSES:</strong><br/>
-  A. Buyer's Expenses: Expenses stipulated to be paid by Buyer under other provisions of this contract.<br/>
-  B. Seller's Expenses: Releases of existing liens, including prepayment penalties and recording fees; release of Seller's loan liability; tax statements or certificates; real estate transfer tax and/or conveyance fees.<br/>
-  C. If Seller(s) fails to perform, they are responsible for any consequential damages.</p>
-
-  <p class="clause"><strong>16. RESALE OF PROPERTY:</strong> Seller agrees that Buyer retains all profit, whether by note, trade, or cash, in the event of resale, simultaneous close, or assignment of this contract.</p>
-
-  <p class="clause"><strong>17. ASSIGNMENT OF CONTRACT:</strong> Buyer may assign the contract. If assigned, all rights, interests, suits, claims, and titles in and to the contract will be assigned, and the Assignor will be released of all liability.</p>
-
-  <p class="clause"><strong>18. HOLD HARMLESS AND ASSUMPTION OF LIABILITY:</strong> In the event the Seller has any damages or other liabilities caused by a third party, Buyer is to be held harmless by the Seller for these damages or other liabilities.</p>
-
-  <p class="clause"><strong>19. ENTIRE AGREEMENT OF PARTIES:</strong> This contract contains the entire agreement of the parties and cannot be changed except by their written agreement.</p>
-
-  <p class="clause"><strong>20. SPECIAL PROVISIONS:</strong><br/>
-  <span class="field">${data.special_provisions || '_______________________________________________'}</span></p>
-
-  <p style="margin-top: 10px;"><strong>Klose LLC</strong></p>
-  ${sigBlock}
-</div>
-
-<!-- Preliminary Seller Information Worksheet -->
-<div class="page">
-  ${generateSellerWorksheetHTML(data)}
-</div>
-
-<!-- Investor Disclosure -->
-<div class="page">
-  ${generateInvestorDisclosureHTML(data, 'Seller')}
-</div>
-
-<!-- Fair Housing -->
-<div class="page">
-  ${generateFairHousingHTML(data, 'Seller')}
-</div>
-
-<!-- Notice of Non-Representation -->
-<div class="page">
-  ${generateNonRepresentationHTML(data, 'Seller')}
-</div>
-
-<!-- Authorization to Sign -->
-<div class="page">
-  ${generateAuthToSignHTML(data)}
-</div>
-
-<!-- Authorization for Release -->
-<div class="page">
-  ${generateReleaseAuthHTML(data)}
-</div>
-
-<!-- Seller's Responsibility -->
-<div class="page">
-  ${generateSellerResponsibilityHTML(data)}
-</div>`
+  c.y -= 5
+  c = drawCenteredText(ctx, c, 'ACKNOWLEDGMENT', 11)
+  c = drawParagraph(ctx, c, 'I/We have read and understand this disclosure.')
+  c.y -= 10
+  c = drawSingleSigBlock(ctx, c, `${role} Signature`, v(ctx.data,'seller_name',''))
 }
 
-function buildBCHTML(data: Record<string, any>, date: string, sigBlock: string): string {
-  const assigneeSigBlock = `
-    <div style="margin-top: 40px; display: flex; justify-content: space-between;">
-      <div style="width: 45%;">
-        <div style="border-bottom: 1px solid #333; height: 40px;"></div>
-        <p style="font-size: 11px; color: #666;">Assignor Signature</p>
-        <p style="font-size: 11px;"><strong>Klose LLC</strong> / Authorized Signatory</p>
-        <p style="font-size: 11px;">Date: ____________</p>
-      </div>
-      <div style="width: 45%;">
-        <div style="border-bottom: 1px solid #333; height: 40px;"></div>
-        <p style="font-size: 11px; color: #666;">Assignee Signature</p>
-        <p style="font-size: 11px;">${data.assignee_name || '_________________'}</p>
-        <p style="font-size: 11px;">Date: ____________</p>
-      </div>
-    </div>
-  `
+function buildFairHousingPage(ctx: PdfCtx, role: string) {
+  let c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c = drawCenteredText(ctx, c, 'FAIR HOUSING STATEMENT &', 13)
+  c = drawCenteredText(ctx, c, 'AFFILIATED BUSINESS DISCLOSURE', 13)
+  c.y -= 5
 
-  return `
-<div class="page">
-  <h2>ASSIGNMENT OF "AS IS" CASH-OFFER PURCHASE AND SALE AGREEMENT</h2>
+  c = drawCenteredText(ctx, c, 'FAIR HOUSING STATEMENT', 11)
+  c = drawParagraph(ctx, c, 'It is illegal discrimination under the Federal Fair Housing Law, 42 U.S.C.A. 3601 to take any of the following actions because of race, color, religion, sex (including gender identity and sexual orientation), disability, familial status, or national origin: Refuse to rent or sell housing; Refuse to negotiate for housing; Set different terms, conditions or privileges for sale or rental of a dwelling; Provide different housing services or facilities; Falsely deny that housing is available for inspection, sale or rental; Make, print or publish any notice, statement or advertisement indicating any preference, limitation or discrimination.', 9)
 
-  <p class="clause"><strong>1. PARTIES:</strong> The undersigned Klose LLC, a Wyoming Limited Liability Company (the "ASSIGNOR"), having executed an "As Is" Cash-Offer Purchase and Sale Agreement (the "INITIAL PURCHASE AGREEMENT") with <span class="field">${data.seller_name || '_______________'}</span> (the "SELLER"), for the Property identified in Paragraph 2, hereby assigns and otherwise transfers all rights, title, and interest held by Assignor in said Property to <span class="field">${data.assignee_name || '_______________'}</span> (the "ASSIGNEE") in exchange for an Assignment Fee as described below.</p>
+  c.y -= 5
+  c = drawCenteredText(ctx, c, 'AFFILIATED BUSINESS DISCLOSURE', 11)
+  c = drawParagraph(ctx, c, 'Klose LLC and/or its affiliated companies may have relationships with certain service providers, including title companies and lenders. You are NOT required to use any specific title company, lender, or settlement service provider as a condition of your purchase or sale.', 9)
 
-  <p class="clause"><strong>2. PROPERTY:</strong> <span class="field">${data.property_address || '_______________'}, ${data.property_city || ''}, ${data.property_state || ''}</span>, including all fixtures, appliances, other permanently installed equipment.</p>
-
-  <p class="clause"><strong>3. AGREEMENT AND ASSIGNMENT TERMS:</strong> Assignee shall pay a gross amount of $ <span class="field">${Number(data.total_assignment_amount || 0).toLocaleString()}</span> (which shall include the purchase price in the Purchase and Sale Agreement being assigned and the Assignment Fee due to the Assignor).</p>
-
-  <p class="clause"><strong>4. METHOD OF PAYMENT:</strong> ASSIGNEE warrants that at Closing they will have sufficient cash to complete the purchase. ASSIGNEE'S method of payment: <span class="field">${data.payment_method || '_______________'}</span>${data.lender_name ? `<br/>Lender: <span class="field">${data.lender_name}</span> Contact: <span class="field">${data.lender_contact || ''}</span> Email: <span class="field">${data.lender_email || ''}</span> Phone: <span class="field">${data.lender_phone || ''}</span>` : ''}</p>
-
-  <p class="clause"><strong>5. CLOSING COSTS:</strong> ASSIGNEE expressly agrees to pay all closing costs associated with this transaction.</p>
-
-  <p class="clause"><strong>6. ASSIGNEE REPRESENTATIONS:</strong> ASSIGNEE represents and acknowledges receipt of the INITIAL PURCHASE AGREEMENT prior to execution. ASSIGNEE further agrees to:<br/>
-  1. Perform as required in good faith;<br/>
-  2. Indemnify and hold harmless the ASSIGNOR from any claim;<br/>
-  3. Indemnify and hold harmless the ASSIGNOR for any cost in junk removal;<br/>
-  4. Waive any right to further assign this ASSIGNMENT;<br/>
-  5. Acknowledge ASSIGNOR makes no warranty.</p>
-
-  <p class="clause"><strong>7. ASSIGNOR REPRESENTATIONS:</strong> ASSIGNOR represents that the INITIAL PURCHASE AGREEMENT is in full force and effect and is fully assignable.</p>
-
-  <p class="clause"><strong>8. CONDITION OF THE PROPERTY – "AS-IS":</strong> ASSIGNEE acknowledges purchasing the Property in its present physical condition. EXCEPT: <span class="field">${data.exceptions || 'None'}</span>.</p>
-
-  <p class="clause"><strong>9. NON-REFUNDABLE OPTION FEE:</strong> ASSIGNEE has paid or will pay immediately upon execution a non-refundable Assignment Option Fee of $ <span class="field">${Number(data.option_fee || 0).toLocaleString()}</span> to <span class="field">${data.title_company || '_______________'}</span> (the "TITLE COMPANY").</p>
-
-  <p class="clause"><strong>10. CLOSING:</strong> ASSIGNOR will deliver this ASSIGNMENT to the TITLE COMPANY. Closing shall occur on or before <span class="field">${data.closing_date || '_______________'}</span>.</p>
-
-  <p class="clause"><strong>11. TITLE POLICY:</strong> The SELLER shall furnish to ASSIGNEE an Owner's Policy of Title Insurance.</p>
-
-  <p class="clause"><strong>12. DEFAULT:</strong> If the ASSIGNOR is unable to perform, the ASSIGNEE'S sole remedy shall be limited to termination and return of the Non-Refundable Option Fee.</p>
-
-  <p class="clause"><strong>13. MARKETABLE TITLE:</strong> This sale is contingent upon Seller obtaining marketable title. If unable, Seller shall return option money.</p>
-
-  <p class="clause"><strong>14. HOLD HARMLESS:</strong> Assignee understands and assumes the risk of loss for any liability caused by a third-party action.</p>
-
-  <p class="clause"><strong>15. ENTIRE AGREEMENT:</strong> This contract contains the entire agreement of the parties.</p>
-
-  <p class="clause"><strong>16. SPECIAL PROVISIONS:</strong><br/>
-  <span class="field">${data.special_provisions || '_______________________________________________'}</span></p>
-
-  <p style="margin-top: 10px;"><strong>Klose LLC</strong></p>
-  ${assigneeSigBlock}
-</div>
-
-<!-- Investor Disclosure (Buyer/Assignee version) -->
-<div class="page">
-  ${generateInvestorDisclosureHTML(data, 'Buyer/Assignee')}
-</div>
-
-<!-- Notice of Non-Representation (Buyer/Assignee version) -->
-<div class="page">
-  ${generateNonRepresentationHTML(data, 'Buyer/Assignee')}
-</div>
-
-<!-- Fair Housing -->
-<div class="page">
-  ${generateFairHousingHTML(data, 'Buyer/Assignee')}
-</div>`
+  c.y -= 10
+  c = drawSingleSigBlock(ctx, c, `${role} Signature`, v(ctx.data,'seller_name',''))
 }
 
-function buildAmendmentHTML(data: Record<string, any>, date: string, sigBlock: string): string {
-  const sellerSigBlock = `
-    <div style="margin-top: 40px;">
-      <p><strong>The party(ies) below have signed and acknowledge receipt of a copy.</strong></p>
-      <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-        <div style="width: 45%;">
-          <div style="border-bottom: 1px solid #333; height: 40px;"></div>
-          <p style="font-size: 11px; color: #666;">SELLER Signature</p>
-          <p style="font-size: 11px;">${data.seller_name || '_________________'}</p>
-          <p style="font-size: 11px;">Date: ____________</p>
-        </div>
-        <div style="width: 45%;">
-          <div style="border-bottom: 1px solid #333; height: 40px;"></div>
-          <p style="font-size: 11px; color: #666;">SELLER (2nd, if applicable)</p>
-          <p style="font-size: 11px;">Printed Name</p>
-          <p style="font-size: 11px;">Date: ____________</p>
-        </div>
-      </div>
-    </div>
-  `
+function buildNonRepresentationPage(ctx: PdfCtx, role: string) {
+  let c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c = drawCenteredText(ctx, c, 'NOTICE OF NON-REPRESENTATION', 13)
+  c.y -= 5
 
-  return `
-<div class="page">
-  <h2>AMENDMENT TO PURCHASE AND SALE AGREEMENT</h2>
-
-  <p class="clause"><strong>Buyer:</strong> Klose LLC, a Wyoming Limited Liability Company</p>
-  <p class="clause"><strong>Seller:</strong> <span class="field">${data.seller_name || '_______________'}</span></p>
-  <p class="clause"><strong>Property:</strong> <span class="field">${data.property_address || '_______________'}</span></p>
-
-  <p class="clause">In consideration of the mutual covenants herein and other good and valuable consideration, the parties agree to amend that certain Purchase and Sale Agreement with a Binding Agreement Date of <span class="field">${data.binding_agreement_date || '_______________'}</span> and any incorporated addenda, exhibits, or prior amendments (collectively referred to herein as "Agreement") as follows:</p>
-
-  ${data.new_purchase_price ? `<p class="clause"><strong>Amendment 1 – Purchase Price:</strong><br/>Buyer & Seller hereby mutually agree to amend the purchase price to: $ <span class="field">${Number(data.new_purchase_price).toLocaleString()}</span></p>` : ''}
-
-  ${data.new_closing_date ? `<p class="clause"><strong>Amendment 2 – Closing / Expiration / Due Diligence Date:</strong><br/>Buyer & Seller hereby mutually agree to amend the closing, contract expiration, and due diligence date to: <span class="field">${data.new_closing_date}</span></p>` : ''}
-
-  ${data.additional_terms ? `<p class="clause"><strong>Amendment 3 – Additional Terms:</strong><br/><span class="field">${data.additional_terms}</span></p>` : ''}
-
-  <p class="clause">This Amendment shall become binding when signed by all parties and shall be incorporated into the Agreement. All other terms and conditions of the Purchase and Sale Agreement shall remain in full force and effect.</p>
-
-  <p><strong>The party(ies) below have signed and acknowledge receipt of a copy.</strong></p>
-  ${sigBlock}
-  ${sellerSigBlock}
-</div>`
+  c = drawParagraph(ctx, c, 'You are hereby notified that Klose LLC and its members, managers, and employees do not represent you in any capacity as a real estate broker or agent.')
+  c = drawParagraph(ctx, c, 'You should not assume that any representative of Klose LLC represents your interests unless you separately engage a licensed real estate agent or attorney. You are advised not to disclose any information you want held in confidence until you decide on representation.')
+  c = drawParagraph(ctx, c, 'Your signature below acknowledges receipt of this notice and does not establish a brokerage relationship.')
+  c.y -= 10
+  c = drawSingleSigBlock(ctx, c, `${role} Signature`, v(ctx.data,'seller_name',''))
 }
 
-// Supporting document generators
-function generateSellerWorksheetHTML(data: Record<string, any>): string {
-  return `
-  <div style="background: #0a0a14; color: white; padding: 15px 30px; text-align: center; border-bottom: 3px solid #00d4aa;">
-    <h1 style="margin: 0; font-size: 24px; letter-spacing: 4px;">KLOSE LLC</h1>
-  </div>
-  <h2>PRELIMINARY SELLER INFORMATION WORKSHEET</h2>
-  <h3>SELLER INFORMATION</h3>
-  <p>Full Legal Name: <span class="field">${data.seller_name || '_______________'}</span></p>
-  <p>Date of Birth: <span class="field">${data.seller_dob || '_______________'}</span></p>
-  <p>Phone Number: <span class="field">${data.seller_phone || '_______________'}</span></p>
-  <p>Email: <span class="field">${data.seller_email || '_______________'}</span></p>
-  <p>Marital Status: <span class="field">${data.marital_status || '_______________'}</span></p>
-  ${data.spouse_name ? `<p>Spouse Name: <span class="field">${data.spouse_name}</span></p>` : ''}
-  <div style="margin-top: 40px; border-bottom: 1px solid #333; width: 250px; height: 30px;"></div>
-  <p style="font-size: 11px; color: #666;">Seller Signature &nbsp;&nbsp;&nbsp;&nbsp; Date: ____________</p>`
+function buildAuthToSignPage(ctx: PdfCtx) {
+  let c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c = drawCenteredText(ctx, c, 'AUTHORIZATION TO SIGN LISTING', 13)
+  c = drawCenteredText(ctx, c, 'DOCUMENTS AND OFFERS', 13)
+  c = drawCenteredText(ctx, c, '(Special Limited Power of Attorney)', 10, ctx.fontItalic)
+  c.y -= 5
+
+  c = drawParagraph(ctx, c, `BE IT ACKNOWLEDGED that I/we, ${v(ctx.data,'seller_name')}, the "Seller", desire to execute and grant a SPECIAL LIMITED POWER OF ATTORNEY, hereby appointing Klose LLC, a Wyoming Limited Liability Company, as my Attorney-in-Fact to act as follows, GRANTING unto my Attorney-in-Fact full power to:`)
+  c = drawParagraph(ctx, c, `Do all things necessary to close on the sale of the property commonly known as ${v(ctx.data,'property_address')} (hereinafter "Property"), with full power and authority for me and my name to execute any and all documents necessary to list, market, and contract the Property on the Multiple Listing Services ("MLS"), investor networks, Zillow, and/or realtors for the purpose of marketing and selling the Property.`)
+  c = drawParagraph(ctx, c, 'This authorization is effective upon execution and shall be valid until such time as any revocation is executed.')
+  c.y -= 10
+  c = drawSingleSigBlock(ctx, c, 'Seller Signature', v(ctx.data,'seller_name',''))
 }
 
-function generateInvestorDisclosureHTML(data: Record<string, any>, role: string): string {
-  return `
-  <div style="background: #0a0a14; color: white; padding: 15px 30px; text-align: center; border-bottom: 3px solid #00d4aa;">
-    <h1 style="margin: 0; font-size: 24px; letter-spacing: 4px;">KLOSE LLC</h1>
-    <p style="margin: 3px 0 0; font-size: 11px; color: #aaa;">A Wyoming Limited Liability Company | Real Estate Investment</p>
-    <p style="margin: 2px 0 0; font-size: 10px; color: #888;">EIN: 41-4409334</p>
-  </div>
-  <h2>WORKING WITH KLOSE LLC</h2>
-  <h3 style="text-align:center;">INVESTOR DISCLOSURE STATEMENT</h3>
-  <p class="clause">I, the undersigned, acknowledge and understand that Klose LLC ("Klose") is a for-profit real estate investment company organized under the laws of Wyoming. Accordingly, the undersigned acknowledges the following:</p>
-  <p class="clause">1. Klose is a real estate investor and is NOT a licensed real estate broker or agent.</p>
-  <p class="clause">2. Klose holds an equitable interest in the subject property through a Purchase and Sale Agreement.</p>
-  <p class="clause">3. Klose is not currently the fee simple owner of the property at the time of assignment.</p>
-  <p class="clause">4. This transaction is contingent upon Klose obtaining marketable title.</p>
-  <p class="clause">5. Marketable title means the property's title is free from significant liens, disputes, or legal issues.</p>
-  <p class="clause">6. The parties agree to use <span class="field">${data.title_company || '_______________'}</span> (Title Company) to determine marketable title.</p>
-  <p class="clause">7. If unable to obtain marketable title, Klose shall return option/earnest money.</p>
-  <p class="clause">8. The closing may occur through: (a) Assignment of Contract, (b) Simultaneous Closing, or (c) Traditional Purchase.</p>
-  <p class="clause">9. This property is sold as-is, where-is.</p>
-  <p class="clause">10. The undersigned is encouraged to seek independent legal counsel.</p>
-  <h3>ACKNOWLEDGMENT</h3>
-  <p class="clause">I/We have read and understand this disclosure.</p>
-  <div style="margin-top: 30px; border-bottom: 1px solid #333; width: 250px; height: 30px;"></div>
-  <p style="font-size: 11px; color: #666;">${role} Signature &nbsp;&nbsp;&nbsp;&nbsp; Date: ____________</p>`
+function buildReleaseAuthPage(ctx: PdfCtx) {
+  let c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c = drawCenteredText(ctx, c, 'AUTHORIZATION FOR THE RELEASE OF INFORMATION', 13)
+  c.y -= 5
+
+  c = drawParagraph(ctx, c, `1. I/We have entered into a real property sales contract. As part of this process, ${v(ctx.data,'title_company')} (Title Company) may request information related to my current open mortgage(s), judgments, and other documents required in connection with and in preparation of a closing.`)
+  c = drawParagraph(ctx, c, '2. I/We authorize you to provide to the Title Company any and all information and documentation they request, including but not limited to: judgment and lien payoffs, payoff information on open mortgages, deeds of trust, etc.')
+  c = drawParagraph(ctx, c, '3. The Title Company or any title company substituted in their place may address this authorization to any party named in the loan application or related to any outstanding liens on the property.')
+  c = drawParagraph(ctx, c, '4. I agree to hold the Title Company and its agents and employees harmless for any judgment or lien payoff obtained that differs from one obtained independently.')
+  c = drawParagraph(ctx, c, '5. A copy of this authorization may be accepted as an original.')
+  c.y -= 10
+
+  c = ensureSpace(ctx, c, 60)
+  const midX = PAGE_W / 2
+  c.page.drawLine({ start: { x: MARGIN_L, y: c.y }, end: { x: midX - 30, y: c.y }, thickness: 0.5, color: GRAY })
+  c.page.drawText('Seller Signature', { x: MARGIN_L, y: c.y - 12, size: 8, font: ctx.font, color: GRAY })
+  c.page.drawLine({ start: { x: midX + 10, y: c.y }, end: { x: PAGE_W - MARGIN_R, y: c.y }, thickness: 0.5, color: GRAY })
+  c.page.drawText('SSN (if required by title company)', { x: midX + 10, y: c.y - 12, size: 8, font: ctx.font, color: GRAY })
+  c.y -= 30
+  c = drawParagraph(ctx, c, `Seller Printed Name: ${v(ctx.data,'seller_name')}`, 9)
+  c = drawParagraph(ctx, c, 'Date: ____________', 9)
 }
 
-function generateFairHousingHTML(data: Record<string, any>, role: string): string {
-  return `
-  <div style="background: #0a0a14; color: white; padding: 15px 30px; text-align: center; border-bottom: 3px solid #00d4aa;">
-    <h1 style="margin: 0; font-size: 24px; letter-spacing: 4px;">KLOSE LLC</h1>
-    <p style="margin: 3px 0 0; font-size: 11px; color: #aaa;">A Wyoming Limited Liability Company | Real Estate Investment</p>
-    <p style="margin: 2px 0 0; font-size: 10px; color: #888;">EIN: 41-4409334</p>
-  </div>
-  <h2>FAIR HOUSING STATEMENT & AFFILIATED BUSINESS DISCLOSURE</h2>
-  <h3>FAIR HOUSING STATEMENT</h3>
-  <p class="clause" style="font-size: 11px;">It is illegal discrimination under the Federal Fair Housing Law, 42 U.S.C.A. 3601 to take any of the following actions because of race, color, religion, sex (including gender identity and sexual orientation), disability, familial status, or national origin: Refuse to rent or sell housing; Refuse to negotiate for housing; Set different terms, conditions or privileges for sale or rental of a dwelling; Provide different housing services or facilities; Falsely deny that housing is available for inspection, sale or rental; Make, print or publish any notice, statement or advertisement indicating any preference, limitation or discrimination.</p>
-  <h3>AFFILIATED BUSINESS DISCLOSURE</h3>
-  <p class="clause" style="font-size: 11px;">Klose LLC and/or its affiliated companies may have relationships with certain service providers, including title companies and lenders. You are NOT required to use any specific title company, lender, or settlement service provider as a condition of your purchase or sale.</p>
-  <div style="margin-top: 30px; border-bottom: 1px solid #333; width: 250px; height: 30px;"></div>
-  <p style="font-size: 11px; color: #666;">${role} Signature &nbsp;&nbsp;&nbsp;&nbsp; Date: ____________</p>`
-}
+function buildSellerResponsibilityPage(ctx: PdfCtx) {
+  let c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c = drawCenteredText(ctx, c, "SELLER'S RESPONSIBILITY ACKNOWLEDGEMENT", 13)
+  c.y -= 5
 
-function generateNonRepresentationHTML(data: Record<string, any>, role: string): string {
-  return `
-  <div style="background: #0a0a14; color: white; padding: 15px 30px; text-align: center; border-bottom: 3px solid #00d4aa;">
-    <h1 style="margin: 0; font-size: 24px; letter-spacing: 4px;">KLOSE LLC</h1>
-    <p style="margin: 3px 0 0; font-size: 11px; color: #aaa;">A Wyoming Limited Liability Company | Real Estate Investment</p>
-    <p style="margin: 2px 0 0; font-size: 10px; color: #888;">EIN: 41-4409334</p>
-  </div>
-  <h2>NOTICE OF NON-REPRESENTATION</h2>
-  <p class="clause">You are hereby notified that Klose LLC and its members, managers, and employees do not represent you in any capacity as a real estate broker or agent.</p>
-  <p class="clause">You should not assume that any representative of Klose LLC represents your interests unless you separately engage a licensed real estate agent or attorney. You are advised not to disclose any information you want held in confidence until you decide on representation.</p>
-  <p class="clause">Your signature below acknowledges receipt of this notice and does not establish a brokerage relationship.</p>
-  <div style="margin-top: 30px; border-bottom: 1px solid #333; width: 250px; height: 30px;"></div>
-  <p style="font-size: 11px; color: #666;">${role} Signature &nbsp;&nbsp;&nbsp;&nbsp; Date: ____________</p>`
+  c = drawCenteredText(ctx, c, '15. SALES EXPENSES:', 11)
+  c = drawParagraph(ctx, c, 'The following expenses shall be paid at or prior to closing:')
+  c = drawParagraph(ctx, c, "A. Buyer's Expenses: Expenses stipulated to be paid by Buyer under other provisions of this contract.")
+  c = drawParagraph(ctx, c, "B. Seller's Expenses: Releases of existing liens, including prepayment penalties and recording fees; release of Seller's loan liability; tax statements or certificates; real estate transfer tax and/or conveyance fees.")
+  c = drawParagraph(ctx, c, "C. If Seller(s) fails to perform, they are responsible for any consequential damages, including indirect expenses, incurred by Buyer or Buyer's assignee.")
+  c = drawParagraph(ctx, c, 'To facilitate a clear title transfer, the Seller is required to pay off any outstanding mortgages, utility bills, property taxes, assessments, judgments, legal fees, and any other lien or encumbrance on the property.')
+  c = drawParagraph(ctx, c, "Klose LLC's cash offer is based on the assumption that the Seller will use the proceeds from the sale of their property to cover the above-described expenses.")
+  c.y -= 5
+  c = drawParagraph(ctx, c, 'Klose LLC is not responsible for directly paying any liens, property taxes, or any other cost discovered in the title examination.')
+  c.y -= 5
+  c = drawParagraph(ctx, c, 'By signing this Acknowledgement, I/we confirm that: (i) I/we have carefully read, fully understand, and agree to all terms and conditions herein; (ii) this Acknowledgement constitutes the entire understanding between me/us and Klose LLC regarding my/our payment obligations associated with selling the property; and (iii) my/our payment obligations for the items outlined above will be deducted from the total purchase price.')
+  c.y -= 10
+  c = drawSingleSigBlock(ctx, c, 'Seller Signature', v(ctx.data,'seller_name',''))
 }
-
-function generateAuthToSignHTML(data: Record<string, any>): string {
-  return `
-  <div style="background: #0a0a14; color: white; padding: 15px 30px; text-align: center; border-bottom: 3px solid #00d4aa;">
-    <h1 style="margin: 0; font-size: 24px; letter-spacing: 4px;">KLOSE LLC</h1>
-    <p style="margin: 3px 0 0; font-size: 11px; color: #aaa;">A Wyoming Limited Liability Company | Real Estate Investment</p>
-    <p style="margin: 2px 0 0; font-size: 10px; color: #888;">EIN: 41-4409334</p>
-  </div>
-  <h2>AUTHORIZATION TO SIGN LISTING DOCUMENTS AND OFFERS</h2>
-  <h3 style="text-align:center;">(Special Limited Power of Attorney)</h3>
-  <p class="clause">BE IT ACKNOWLEDGED that I/we, <span class="field">${data.seller_name || '_______________'}</span>, the "Seller", desire to execute and grant a SPECIAL LIMITED POWER OF ATTORNEY, hereby appointing Klose LLC, a Wyoming Limited Liability Company, as my Attorney-in-Fact to act as follows, GRANTING unto my Attorney-in-Fact full power to:</p>
-  <p class="clause">Do all things necessary to close on the sale of the property commonly known as <span class="field">${data.property_address || '_______________'}</span> (hereinafter "Property"), with full power and authority for me and my name to execute any and all documents necessary to list, market, and contract the Property on the Multiple Listing Services ("MLS"), investor networks, Zillow, and/or realtors for the purpose of marketing and selling the Property.</p>
-  <p class="clause">This authorization is effective upon execution and shall be valid until such time as any revocation is executed.</p>
-  <div style="margin-top: 30px; border-bottom: 1px solid #333; width: 250px; height: 30px;"></div>
-  <p style="font-size: 11px; color: #666;">Seller Signature &nbsp;&nbsp;&nbsp;&nbsp; Date: ____________</p>`
-}
-
-function generateReleaseAuthHTML(data: Record<string, any>): string {
-  return `
-  <div style="background: #0a0a14; color: white; padding: 15px 30px; text-align: center; border-bottom: 3px solid #00d4aa;">
-    <h1 style="margin: 0; font-size: 24px; letter-spacing: 4px;">KLOSE LLC</h1>
-    <p style="margin: 3px 0 0; font-size: 11px; color: #aaa;">A Wyoming Limited Liability Company | Real Estate Investment</p>
-    <p style="margin: 2px 0 0; font-size: 10px; color: #888;">EIN: 41-4409334</p>
-  </div>
-  <h2>AUTHORIZATION FOR THE RELEASE OF INFORMATION</h2>
-  <p class="clause">1. I/We have entered into a real property sales contract. As part of this process, <span class="field">${data.title_company || '_______________'}</span> (Title Company) may request information related to my current open mortgage(s), judgments, and other documents required in connection with and in preparation of a closing.</p>
-  <p class="clause">2. I/We authorize you to provide to the Title Company any and all information and documentation they request, including but not limited to: judgment and lien payoffs, payoff information on open mortgages, deeds of trust, etc.</p>
-  <p class="clause">3. The Title Company or any title company substituted in their place may address this authorization to any party named in the loan application or related to any outstanding liens on the property.</p>
-  <p class="clause">4. I agree to hold the Title Company and its agents and employees harmless for any judgment or lien payoff obtained that differs from one obtained independently.</p>
-  <p class="clause">5. A copy of this authorization may be accepted as an original.</p>
-  <div style="margin-top: 30px; display: flex; justify-content: space-between;">
-    <div style="width: 45%;">
-      <div style="border-bottom: 1px solid #333; height: 30px;"></div>
-      <p style="font-size: 11px; color: #666;">Seller Signature</p>
-    </div>
-    <div style="width: 45%;">
-      <div style="border-bottom: 1px solid #333; height: 30px;"></div>
-      <p style="font-size: 11px; color: #666;">SSN (if required by title company)</p>
-    </div>
-  </div>
-  <p style="font-size: 11px;">Seller Printed Name: <span class="field">${data.seller_name || '_______________'}</span></p>
-  <p style="font-size: 11px;">Date: ____________</p>`
-}
-
-function generateSellerResponsibilityHTML(data: Record<string, any>): string {
-  return `
-  <div style="background: #0a0a14; color: white; padding: 15px 30px; text-align: center; border-bottom: 3px solid #00d4aa;">
-    <h1 style="margin: 0; font-size: 24px; letter-spacing: 4px;">KLOSE LLC</h1>
-    <p style="margin: 3px 0 0; font-size: 11px; color: #aaa;">A Wyoming Limited Liability Company | Real Estate Investment</p>
-    <p style="margin: 2px 0 0; font-size: 10px; color: #888;">EIN: 41-4409334</p>
-  </div>
-  <h2>SELLER'S RESPONSIBILITY ACKNOWLEDGEMENT</h2>
-  <h3>15. SALES EXPENSES:</h3>
-  <p class="clause">The following expenses shall be paid at or prior to closing:</p>
-  <p class="clause">A. Buyer's Expenses: Expenses stipulated to be paid by Buyer under other provisions of this contract.</p>
-  <p class="clause">B. Seller's Expenses: Releases of existing liens, including prepayment penalties and recording fees; release of Seller's loan liability; tax statements or certificates; real estate transfer tax and/or conveyance fees.</p>
-  <p class="clause">C. If Seller(s) fails to perform, they are responsible for any consequential damages, including indirect expenses, incurred by Buyer or Buyer's assignee.</p>
-  <p class="clause">To facilitate a clear title transfer, the Seller is required to pay off any outstanding mortgages, utility bills, property taxes, assessments, judgments, legal fees, and any other lien or encumbrance on the property.</p>
-  <p class="clause">Klose LLC's cash offer is based on the assumption that the Seller will use the proceeds from the sale of their property to cover the above-described expenses.</p>
-  <p class="clause"><strong>Klose LLC is not responsible for directly paying any liens, property taxes, or any other cost discovered in the title examination.</strong></p>
-  <p class="clause">By signing this Acknowledgement, I/we confirm that: (i) I/we have carefully read, fully understand, and agree to all terms and conditions herein; (ii) this Acknowledgement constitutes the entire understanding between me/us and Klose LLC regarding my/our payment obligations associated with selling the property; and (iii) my/our payment obligations for the items outlined above will be deducted from the total purchase price.</p>
-  <div style="margin-top: 30px; border-bottom: 1px solid #333; width: 250px; height: 30px;"></div>
-  <p style="font-size: 11px; color: #666;">Seller Signature</p>
-  <p style="font-size: 11px;">Seller Printed Name: <span class="field">${data.seller_name || '_______________'}</span></p>
-  <p style="font-size: 11px;">Date: ____________</p>`
-}
-
-// Placeholder functions used by main build functions
-function buildABContract(data: Record<string, any>, date: string): string { return '' }
-function buildBCContract(data: Record<string, any>, date: string): string { return '' }
-function buildAmendment(data: Record<string, any>, date: string): string { return '' }
