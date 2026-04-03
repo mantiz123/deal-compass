@@ -478,7 +478,7 @@ export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB', kloseSi
           <p className="text-sm leading-relaxed">You are hereby notified that Klose LLC and its members, managers, and employees do not represent you in any capacity as a real estate broker or agent.</p>
           <p className="text-sm leading-relaxed mt-2">You should not assume that any representative of Klose LLC represents your interests unless you separately engage a licensed real estate agent or attorney. You are advised not to disclose any information you want held in confidence until you decide on representation.</p>
           <p className="text-sm leading-relaxed mt-2">Your signature below acknowledges receipt of this notice and does not establish a brokerage relationship.</p>
-          <SignatureMarker label="Seller Signature — Non-Representation" mode={mode} />
+          <SignatureMarker label="Seller Signature — Non-Representation" mode={mode} kloseSignature={kloseForPage} />
         </PageWrapper>
       );
 
