@@ -160,6 +160,7 @@ export default function Contracts() {
                   <TableHead>Propiedad</TableHead>
                   <TableHead>Vendedor</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Klose</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Creado</TableHead>
                   <TableHead>Firmado</TableHead>
