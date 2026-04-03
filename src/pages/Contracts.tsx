@@ -203,6 +203,16 @@ export default function Contracts() {
                           <Badge className={tp.color}>{tp.label}</Badge>
                         </TableCell>
                         <TableCell>
+                          {kloseSignatures[contract.id] ? (
+                            <Badge variant="success" className="gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              {kloseSignatures[contract.id]}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Pendiente</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <Badge className={st.color}>{st.label}</Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
