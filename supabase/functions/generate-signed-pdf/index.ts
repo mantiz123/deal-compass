@@ -131,6 +131,7 @@ interface PdfCtx {
   fontItalic: PDFFont
   data: Record<string, any>
   sigByPage: Record<number, { image: string; name: string; date: string }>
+  kloseSigByPage: Record<number, { image: string; name: string; date: string }>
 }
 
 interface Cursor {
