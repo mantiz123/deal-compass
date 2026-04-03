@@ -136,6 +136,28 @@ export function getAmendmentSignablePages(): SignablePageInfo[] {
   ];
 }
 
+// ─── Klose representative signable pages ───
+export function getABKloseSignablePages(): SignablePageInfo[] {
+  return [
+    { pageNum: 3, title: 'Purchase & Sale Agreement (3/3)', requiresSignature: true, signatureLabel: 'Buyer (Klose LLC) Signature — Purchase & Sale Agreement' },
+    { pageNum: 6, title: 'Investor Disclosure Statement', requiresSignature: true, signatureLabel: 'Buyer (Klose LLC) Signature — Investor Disclosure' },
+    { pageNum: 7, title: 'Fair Housing & Affiliated Business', requiresSignature: true, signatureLabel: 'Buyer (Klose LLC) Signature — Fair Housing' },
+    { pageNum: 8, title: 'Notice of Non-Representation', requiresSignature: true, signatureLabel: 'Buyer (Klose LLC) Signature — Non-Representation' },
+  ];
+}
+
+export function getBCKloseSignablePages(): SignablePageInfo[] {
+  return [
+    { pageNum: 3, title: 'Assignment Agreement (3/3)', requiresSignature: true, signatureLabel: 'Assignor (Klose LLC) Signature — Assignment Agreement' },
+  ];
+}
+
+export function getAmendmentKloseSignablePages(): SignablePageInfo[] {
+  return [
+    { pageNum: 2, title: 'Amendment — Buyer Signature', requiresSignature: true, signatureLabel: 'Buyer (Klose LLC) Signature — Amendment' },
+  ];
+}
+
 // ─── BC single page renderer ───
 function BCPageSingle({ pageNum, d, mode = 'view' }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing' }) {
   const totalPages = 6;

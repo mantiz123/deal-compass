@@ -53,15 +53,22 @@ Deno.serve(async (req) => {
       .eq('contract_id', contractId)
       .order('signed_at', { ascending: true })
 
-    // Parse page numbers from user_agent "... | Page X"
-    const sigByPage: Record<number, { image: string; name: string; date: string }> = {}
+    // Parse page numbers from user_agent "... | Page X" — separate Klose vs Seller
+    const sellerSigByPage: Record<number, { image: string; name: string; date: string }> = {}
+    const kloseSigByPage: Record<number, { image: string; name: string; date: string }> = {}
     for (const sig of signatures) {
       const match = sig.user_agent?.match(/Page\s+(\d+)/)
       if (match && sig.signature_image) {
-        sigByPage[parseInt(match[1])] = {
+        const pageNum = parseInt(match[1])
+        const entry = {
           image: sig.signature_image,
           name: sig.signer_name,
           date: new Date(sig.signed_at).toLocaleDateString('en-US'),
+        }
+        if (sig.user_agent?.includes('Klose Rep')) {
+          kloseSigByPage[pageNum] = entry
+        } else {
+          sellerSigByPage[pageNum] = entry
         }
       }
     }
@@ -75,7 +82,7 @@ Deno.serve(async (req) => {
     const fontBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
     const fontItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic)
 
-    const ctx: PdfCtx = { pdfDoc, font, fontBold, fontItalic, data: d, sigByPage }
+    const ctx: PdfCtx = { pdfDoc, font, fontBold, fontItalic, data: d, sigByPage: sellerSigByPage, kloseSigByPage }
 
     if (contractType === 'AB') {
       await buildABPdf(ctx)
@@ -124,6 +131,7 @@ interface PdfCtx {
   fontItalic: PDFFont
   data: Record<string, any>
   sigByPage: Record<number, { image: string; name: string; date: string }>
+  kloseSigByPage: Record<number, { image: string; name: string; date: string }>
 }
 
 interface Cursor {
@@ -279,6 +287,29 @@ function drawUnsignedBlock(ctx: PdfCtx, cursor: Cursor, label: string): Cursor {
   return { ...cursor, y: cursor.y - 40 }
 }
 
+async function embedKloseSignature(ctx: PdfCtx, cursor: Cursor, pageNum: number, label: string): Promise<Cursor> {
+  const sig = ctx.kloseSigByPage[pageNum]
+  if (!sig?.image) return cursor
+  cursor = ensureSpace(ctx, cursor, 80)
+  try {
+    const base64 = sig.image.split(',')[1]
+    const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+    const sigImage = await ctx.pdfDoc.embedPng(bytes)
+    const sigW = 160
+    const sigH = (sigImage.height / sigImage.width) * sigW
+    cursor.page.drawImage(sigImage, { x: MARGIN_L, y: cursor.y - sigH, width: sigW, height: sigH })
+    cursor.page.drawLine({ start: { x: MARGIN_L, y: cursor.y - sigH - 2 }, end: { x: MARGIN_L + 250, y: cursor.y - sigH - 2 }, thickness: 0.5, color: GRAY })
+    cursor.page.drawText(label, { x: MARGIN_L, y: cursor.y - sigH - 14, size: 8, font: ctx.font, color: GRAY })
+    cursor.page.drawText(`Signed by: ${sig.name}`, { x: MARGIN_L, y: cursor.y - sigH - 26, size: 8, font: ctx.font, color: BLACK })
+    cursor.page.drawText(`Date: ${sig.date}`, { x: MARGIN_L, y: cursor.y - sigH - 38, size: 8, font: ctx.font, color: GRAY })
+    cursor.page.drawText('[ELECTRONICALLY SIGNED - KLOSE LLC]', { x: MARGIN_L + 260, y: cursor.y - sigH / 2, size: 8, font: ctx.fontBold, color: rgb(0, 0.5, 0.35) })
+    cursor.y = cursor.y - sigH - 50
+  } catch (e) {
+    console.error('Failed to embed Klose signature for page', pageNum, e)
+  }
+  return cursor
+}
+
 async function embedDualSignature(ctx: PdfCtx, cursor: Cursor, pageNum: number, leftLabel: string, leftName: string, rightLabel: string, rightName: string): Promise<Cursor> {
   cursor = ensureSpace(ctx, cursor, 80)
   const midX = PAGE_W / 2
@@ -306,11 +337,29 @@ async function embedDualSignature(ctx: PdfCtx, cursor: Cursor, pageNum: number, 
     cursor.page.drawText(leftName, { x: MARGIN_L, y: cursor.y - 24, size: 9, font: ctx.fontBold, color: BLACK })
   }
   
-  // Right side - Klose LLC (no signature needed)
-  cursor.page.drawLine({ start: { x: midX + 10, y: cursor.y }, end: { x: PAGE_W - MARGIN_R, y: cursor.y }, thickness: 0.5, color: GRAY })
-  cursor.page.drawText(rightLabel, { x: midX + 10, y: cursor.y - 12, size: 8, font: ctx.font, color: GRAY })
-  cursor.page.drawText(rightName, { x: midX + 10, y: cursor.y - 24, size: 9, font: ctx.fontBold, color: BLACK })
-  cursor.page.drawText('Date: ____________', { x: midX + 10, y: cursor.y - 36, size: 8, font: ctx.font, color: GRAY })
+  // Right side - Klose LLC signature
+  const kloseSig = ctx.kloseSigByPage[pageNum]
+  if (kloseSig?.image) {
+    try {
+      const base64k = kloseSig.image.split(',')[1]
+      const bytesK = Uint8Array.from(atob(base64k), c => c.charCodeAt(0))
+      const kloseImg = await ctx.pdfDoc.embedPng(bytesK)
+      const kW = 140
+      const kH = (kloseImg.height / kloseImg.width) * kW
+      cursor.page.drawImage(kloseImg, { x: midX + 10, y: cursor.y - kH, width: kW, height: kH })
+      cursor.page.drawLine({ start: { x: midX + 10, y: cursor.y - kH - 2 }, end: { x: PAGE_W - MARGIN_R, y: cursor.y - kH - 2 }, thickness: 0.5, color: GRAY })
+      cursor.page.drawText(rightLabel, { x: midX + 10, y: cursor.y - kH - 14, size: 8, font: ctx.font, color: GRAY })
+      cursor.page.drawText(kloseSig.name, { x: midX + 10, y: cursor.y - kH - 26, size: 9, font: ctx.fontBold, color: BLACK })
+      cursor.page.drawText(`Date: ${kloseSig.date}`, { x: midX + 10, y: cursor.y - kH - 38, size: 8, font: ctx.font, color: GRAY })
+    } catch (e) {
+      console.error('Failed to embed Klose dual sig', e)
+    }
+  } else {
+    cursor.page.drawLine({ start: { x: midX + 10, y: cursor.y }, end: { x: PAGE_W - MARGIN_R, y: cursor.y }, thickness: 0.5, color: GRAY })
+    cursor.page.drawText(rightLabel, { x: midX + 10, y: cursor.y - 12, size: 8, font: ctx.font, color: GRAY })
+    cursor.page.drawText(rightName, { x: midX + 10, y: cursor.y - 24, size: 9, font: ctx.fontBold, color: BLACK })
+    cursor.page.drawText('Date: ____________', { x: midX + 10, y: cursor.y - 36, size: 8, font: ctx.font, color: GRAY })
+  }
   
   return { ...cursor, y: cursor.y - 50 }
 }
@@ -366,12 +415,15 @@ async function buildABPdf(ctx: PdfCtx) {
 
   // Page 6: Investor Disclosure
   c = await buildSignedInvestorDisclosure(ctx, 'Seller', 6)
+  c = await embedKloseSignature(ctx, c, 6, 'Buyer (Klose LLC) Signature - Investor Disclosure')
 
   // Page 7: Fair Housing
   c = await buildSignedFairHousing(ctx, 'Seller', 7)
+  c = await embedKloseSignature(ctx, c, 7, 'Buyer (Klose LLC) Signature - Fair Housing')
 
   // Page 8: Non-Representation
   c = await buildSignedNonRepresentation(ctx, 'Seller', 8)
+  c = await embedKloseSignature(ctx, c, 8, 'Buyer (Klose LLC) Signature - Non-Representation')
 
   // Page 9: Auth to Sign (POA)
   c = await buildSignedAuthToSign(ctx, 9)

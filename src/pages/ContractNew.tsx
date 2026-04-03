@@ -12,20 +12,29 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useCreateContract, useUpdateContract } from '@/hooks/useContracts';
+import { useProfile } from '@/hooks/useProfile';
 import {
   CONTRACT_TEMPLATES,
   getFieldsForType,
   autoFillFields,
 } from '@/lib/contractTemplates';
-import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye, PenTool } from 'lucide-react';
+import SigningWizard, { type SignablePage } from '@/components/contracts/SigningWizard';
+import {
+  ABPage,
+  getABKloseSignablePages,
+  getBCKloseSignablePages,
+  getAmendmentKloseSignablePages,
+} from '@/components/contracts/ContractPageViewer';
 
-type Step = 'select' | 'fill' | 'preview' | 'send';
+type Step = 'select' | 'fill' | 'klose_sign' | 'send';
 
 export default function ContractNew() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const leadId = searchParams.get('lead_id');
+  const { data: profile } = useProfile();
 
   const [step, setStep] = useState<Step>('select');
   const [contractType, setContractType] = useState<'AB' | 'BC' | 'AMENDMENT' | null>(null);
@@ -36,6 +45,7 @@ export default function ContractNew() {
   const [sending, setSending] = useState(false);
   const [createdContractId, setCreatedContractId] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [kloseSignatures, setKloseSignatures] = useState<Record<number, string>>({});
 
   const createContract = useCreateContract();
   const updateContract = useUpdateContract();
@@ -110,13 +120,59 @@ export default function ContractNew() {
         });
       }
 
-      setStep('send');
-      toast({ title: 'PDF Generado', description: 'El contrato ha sido generado exitosamente.' });
+      // Go to Klose signing step
+      setStep('klose_sign');
+      toast({ title: 'Contrato Creado', description: 'Ahora firma como representante de Klose LLC antes de enviar al seller.' });
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleKloseSignComplete = async (signatures: Record<number, string>) => {
+    setKloseSignatures(signatures);
+
+    if (!createdContractId) return;
+
+    try {
+      const repName = profile?.full_name || 'Klose LLC Representative';
+
+      // Store Klose rep signatures
+      const sigInserts = Object.entries(signatures).map(([pageNum, sig]) => ({
+        contract_id: createdContractId,
+        signer_name: repName,
+        signer_email: 'contracts@klosellc.com',
+        signature_image: sig,
+        ip_address: '',
+        user_agent: `Klose Rep | Page ${pageNum}`,
+      }));
+
+      const { error: sigError } = await supabase.from('contract_signatures').insert(sigInserts);
+      if (sigError) throw sigError;
+
+      toast({ title: '✅ Firmado', description: `${Object.keys(signatures).length} firma(s) de Klose LLC registradas.` });
+      setStep('send');
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const buildKloseWizardPages = (): SignablePage[] => {
+    if (!contractType) return [];
+    const pageInfos = contractType === 'AB'
+      ? getABKloseSignablePages()
+      : contractType === 'BC'
+        ? getBCKloseSignablePages()
+        : getAmendmentKloseSignablePages();
+
+    return pageInfos.map(info => ({
+      pageNum: info.pageNum,
+      title: info.title,
+      requiresSignature: info.requiresSignature,
+      signatureLabel: info.signatureLabel,
+      content: <ABPage pageNum={info.pageNum} d={formValues} mode="signing" contractType={contractType} />,
+    }));
   };
 
   const handleSendEmail = async () => {
@@ -151,6 +207,9 @@ export default function ContractNew() {
     );
   }
 
+  const stepOrder: Step[] = ['select', 'fill', 'klose_sign', 'send'];
+  const currentStepIdx = stepOrder.indexOf(step);
+
   return (
     <Layout>
       <div className="max-w-5xl mx-auto space-y-6">
@@ -171,16 +230,16 @@ export default function ContractNew() {
 
         {/* Progress */}
         <div className="flex items-center gap-2">
-          {(['select', 'fill', 'send'] as Step[]).map((s, i) => (
+          {(['select', 'fill', 'klose_sign', 'send'] as Step[]).map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${
                 step === s ? 'bg-primary text-primary-foreground' :
-                (['select', 'fill', 'send'].indexOf(step) > i) ? 'bg-green-500/20 text-green-400' :
+                currentStepIdx > i ? 'bg-green-500/20 text-green-400' :
                 'bg-muted text-muted-foreground'
               }`}>
-                {(['select', 'fill', 'send'].indexOf(step) > i) ? '✓' : i + 1}
+                {currentStepIdx > i ? '✓' : i + 1}
               </div>
-              {i < 2 && <div className="w-12 h-0.5 bg-border" />}
+              {i < 3 && <div className="w-12 h-0.5 bg-border" />}
             </div>
           ))}
         </div>
@@ -274,26 +333,58 @@ export default function ContractNew() {
               </Button>
               <Button onClick={handleGenerate} disabled={generating}>
                 {generating ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generando PDF...</>
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generando...</>
                 ) : (
-                  <><FileText className="h-4 w-4 mr-2" /> Generar Contrato</>
+                  <><PenTool className="h-4 w-4 mr-2" /> Generar y Firmar como Klose</>
                 )}
               </Button>
             </div>
           </div>
         )}
 
-        {/* Step 3: Send */}
+        {/* Step 3: Klose Representative Signing */}
+        {step === 'klose_sign' && contractType && (
+          <div className="space-y-4">
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3">
+                  <PenTool className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-semibold text-foreground">Firma del Representante de Klose LLC</p>
+                    <p className="text-sm text-muted-foreground">
+                      Firmando como: <strong>{profile?.full_name || 'Representante Klose'}</strong> — Revisa cada página y firma en los bloques correspondientes.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <SigningWizard
+              pages={buildKloseWizardPages()}
+              signerName={profile?.full_name || 'Klose LLC Representative'}
+              onComplete={handleKloseSignComplete}
+              onBack={() => setStep('fill')}
+            />
+          </div>
+        )}
+
+        {/* Step 4: Send */}
         {step === 'send' && (
           <div className="space-y-4">
             <Card variant="glass">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-400" />
-                  Contrato Generado
+                  Contrato Firmado por Klose — Listo para Enviar
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                  <p className="text-sm text-green-400 font-medium">
+                    ✅ {Object.keys(kloseSignatures).length} firma(s) de Klose LLC registradas. El seller recibirá el contrato para contrafirmar.
+                  </p>
+                </div>
+
                 {pdfUrl && (
                   <Button variant="outline" onClick={() => window.open(pdfUrl, '_blank')}>
                     <Eye className="h-4 w-4 mr-2" /> Vista Previa del PDF
@@ -336,7 +427,7 @@ export default function ContractNew() {
                 {sending ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
                 ) : (
-                  <><Send className="h-4 w-4 mr-2" /> 📧 Enviar por Email</>
+                  <><Send className="h-4 w-4 mr-2" /> 📧 Enviar al Seller</>
                 )}
               </Button>
             </div>
