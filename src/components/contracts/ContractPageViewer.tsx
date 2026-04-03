@@ -453,7 +453,7 @@ export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB', kloseSi
           </ol>
           <h4 className="font-bold mt-4 mb-2">ACKNOWLEDGMENT</h4>
           <p className="text-sm leading-relaxed">I/We have read and understand this disclosure. By signing below, I/we agree to the terms and conditions stated above.</p>
-          <SignatureMarker label="Seller Signature — Investor Disclosure" mode={mode} />
+          <SignatureMarker label="Seller Signature — Investor Disclosure" mode={mode} kloseSignature={kloseForPage} />
         </PageWrapper>
       );
 
