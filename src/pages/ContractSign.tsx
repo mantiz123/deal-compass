@@ -120,8 +120,7 @@ export default function ContractSign() {
       title: info.title,
       requiresSignature: info.requiresSignature,
       signatureLabel: info.signatureLabel,
-      // ABPage handles all contract types' individual pages via the same renderer
-      content: <ABPage pageNum={info.pageNum} d={contractData} mode="signing" />,
+      content: <ABPage pageNum={info.pageNum} d={contractData} mode="signing" contractType={type} />,
     }));
   };
 
