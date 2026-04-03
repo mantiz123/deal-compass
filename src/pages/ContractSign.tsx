@@ -78,8 +78,7 @@ export default function ContractSign() {
       try { const r = await fetch('https://api.ipify.org?format=json'); ip = (await r.json()).ip; } catch {}
 
       const signerName = contractData.seller_name || '';
-      // Get the first signature as primary
-      const primarySig = Object.values(pageSignatures)[0] || '';
+      // Primary signature is the first one collected
 
       // Insert all page signatures
       const sigInserts = Object.entries(pageSignatures).map(([pageNum, sig]) => ({
