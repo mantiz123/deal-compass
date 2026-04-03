@@ -200,12 +200,12 @@ export default function Contracts() {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                             {contract.pdf_url && (
-                              <Button variant="ghost" size="icon" onClick={() => handleDownload(contract.pdf_url)}>
+                              <Button variant="ghost" size="icon" onClick={() => handleDownload(contract.pdf_url, contract.id)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
                             )}
                             {contract.signed_pdf_url && (
-                              <Button variant="ghost" size="icon" onClick={() => handleDownload(contract.signed_pdf_url)}>
+                              <Button variant="ghost" size="icon" onClick={() => handleDownload(contract.signed_pdf_url, contract.id)}>
                                 <Download className="h-4 w-4" />
                               </Button>
                             )}
