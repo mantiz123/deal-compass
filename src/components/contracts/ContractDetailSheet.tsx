@@ -20,6 +20,47 @@ interface ContractDetailSheetProps {
 export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDetailSheetProps) {
   const { data: signatures = [] } = useContractSignatures(contract?.id);
   const { toast } = useToast();
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPdf = async (url: string, filename: string) => {
+    setDownloading(true);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // Fallback: try extracting storage path and downloading via Supabase client
+      try {
+        const path = url.split('/storage/v1/object/public/contracts/')[1];
+        if (path) {
+          const { data, error } = await supabase.storage.from('contracts').download(path);
+          if (error) throw error;
+          const blobUrl = URL.createObjectURL(data);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(blobUrl);
+        } else {
+          throw new Error('Cannot parse path');
+        }
+      } catch {
+        toast({ title: 'Error', description: 'No se pudo descargar el PDF. Intenta desactivar tu bloqueador de anuncios.', variant: 'destructive' });
+      }
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (!contract) return null;
 
