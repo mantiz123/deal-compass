@@ -55,7 +55,8 @@ Deno.serve(async (req) => {
     }
 
     // Build signing URL
-    const signingUrl = `https://goklose.lovable.app/sign/${contract.signing_token}`
+    const baseUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://goklose.lovable.app'
+    const signingUrl = `${baseUrl}/sign/${contract.signing_token}`
 
     const emailHtml = `
 <!DOCTYPE html>
