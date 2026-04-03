@@ -21,6 +21,7 @@ export default function ContractSign() {
   const [contract, setContract] = useState<any>(null);
   const [contractData, setContractData] = useState<Record<string, string>>({});
   const [pageSignatures, setPageSignatures] = useState<Record<number, string>>({});
+  const [kloseSignatures, setKloseSignatures] = useState<KloseSignatureData[]>([]);
   const [agreeBinding, setAgreeBinding] = useState(false);
   const [agreeRead, setAgreeRead] = useState(false);
   const [submitting, setSubmitting] = useState(false);
