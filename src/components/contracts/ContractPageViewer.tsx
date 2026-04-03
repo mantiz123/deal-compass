@@ -136,6 +136,126 @@ export function getAmendmentSignablePages(): SignablePageInfo[] {
   ];
 }
 
+// ─── BC single page renderer ───
+function BCPageSingle({ pageNum, d, mode = 'view' }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing' }) {
+  const totalPages = 6;
+  const fullAddr = [d.property_address, d.property_city, d.property_state].filter(Boolean).join(', ');
+  switch (pageNum) {
+    case 1: return (
+      <PageWrapper pageNum={1} total={totalPages}>
+        <PageHeader title='ASSIGNMENT OF "AS IS" CASH-OFFER PURCHASE AND SALE AGREEMENT' />
+        <h4 className="font-bold mt-4 mb-2">1. PARTIES:</h4>
+        <p className="text-sm leading-relaxed">The undersigned Klose LLC, a Wyoming Limited Liability Company (the "ASSIGNOR"), having executed an "As Is" Cash-Offer Purchase and Sale Agreement (the "INITIAL PURCHASE AGREEMENT") with <V k="seller_name" data={d} /> (the "SELLER"), for the Property identified in Paragraph 2 of this Assignment Agreement (the "ASSIGNMENT"), hereby assigns and otherwise transfers all rights, title, and interest held by Assignor in said Property to <V k="assignee_name" data={d} /> (the "ASSIGNEE") in exchange for an Assignment Fee as described below.</p>
+        <h4 className="font-bold mt-4 mb-2">2. PROPERTY:</h4>
+        <p className="text-sm leading-relaxed"><V k="property_address" data={d} fallback={fullAddr} />, including all fixtures, appliances, other permanently installed equipment, and all other items stipulated under other provisions of this contract.</p>
+        <h4 className="font-bold mt-4 mb-2">3. AGREEMENT AND ASSIGNMENT TERMS:</h4>
+        <p className="text-sm leading-relaxed">Assignee shall pay a gross amount of $ <V k="total_assignment_amount" data={d} />.</p>
+        <h4 className="font-bold mt-4 mb-2">4. METHOD OF PAYMENT:</h4>
+        <p className="text-sm leading-relaxed">ASSIGNEE'S method of payment: <V k="payment_method" data={d} /></p>
+        <h4 className="font-bold mt-4 mb-2">5. CLOSING COSTS:</h4>
+        <p className="text-sm leading-relaxed">ASSIGNEE expressly agrees to pay all closing costs associated with this transaction.</p>
+        <h4 className="font-bold mt-4 mb-2">6. ASSIGNEE REPRESENTATIONS:</h4>
+        <p className="text-sm leading-relaxed">ASSIGNEE represents and acknowledges receipt of the INITIAL PURCHASE AGREEMENT prior to the execution of this ASSIGNMENT.</p>
+      </PageWrapper>
+    );
+    case 2: return (
+      <PageWrapper pageNum={2} total={totalPages}>
+        <h4 className="font-bold mt-2 mb-2">7. ASSIGNOR REPRESENTATIONS:</h4>
+        <p className="text-sm leading-relaxed">ASSIGNOR represents that the INITIAL PURCHASE AGREEMENT is in full force and effect and is fully assignable.</p>
+        <h4 className="font-bold mt-4 mb-2">8. CONDITION OF THE PROPERTY – "AS-IS":</h4>
+        <p className="text-sm leading-relaxed">ASSIGNEE acknowledges purchasing the Property in its present physical condition. EXCEPT: <V k="exceptions" data={d} fallback="None" />.</p>
+        <h4 className="font-bold mt-4 mb-2">9. NON-REFUNDABLE OPTION FEE:</h4>
+        <p className="text-sm leading-relaxed">Non-refundable Assignment Option Fee of $ <V k="option_fee" data={d} /> to <V k="title_company" data={d} />.</p>
+        <h4 className="font-bold mt-4 mb-2">10. CLOSING:</h4>
+        <p className="text-sm leading-relaxed">Closing shall occur on or before <V k="closing_date" data={d} />.</p>
+        <h4 className="font-bold mt-4 mb-2">11. TITLE POLICY:</h4>
+        <p className="text-sm leading-relaxed">The SELLER shall furnish to ASSIGNEE an Owner's Policy of Title Insurance.</p>
+        <h4 className="font-bold mt-4 mb-2">12. DEFAULT:</h4>
+        <p className="text-sm leading-relaxed">If ASSIGNOR is unable to perform, ASSIGNEE'S sole remedy is termination and return of Option Fee.</p>
+      </PageWrapper>
+    );
+    case 3: return (
+      <PageWrapper pageNum={3} total={totalPages}>
+        <h4 className="font-bold mt-2 mb-2">13. MARKETABLE TITLE</h4>
+        <p className="text-sm leading-relaxed">This sale is contingent upon Seller obtaining marketable title.</p>
+        <h4 className="font-bold mt-4 mb-2">14. HOLD HARMLESS AND ASSUMPTION OF LIABILITY</h4>
+        <p className="text-sm leading-relaxed">Assignor is to be held harmless by the Assignee for third-party damages or liabilities.</p>
+        <h4 className="font-bold mt-4 mb-2">15. ENTIRE AGREEMENT OF PARTIES</h4>
+        <p className="text-sm leading-relaxed">This contract contains the entire agreement of the parties.</p>
+        <h4 className="font-bold mt-4 mb-2">16. SPECIAL PROVISIONS</h4>
+        <p className="text-sm leading-relaxed">{d.special_provisions || '______________________________________________________________________'}</p>
+        <DualSignatureMarker leftLabel="Assignee Signature" rightLabel="Assignor Signature" leftPrint="Assignee Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} />
+      </PageWrapper>
+    );
+    case 4: return (
+      <PageWrapper pageNum={4} total={totalPages}>
+        <PageHeader title="INVESTOR DISCLOSURE STATEMENT" />
+        <p className="text-sm leading-relaxed mb-3">I, the undersigned, acknowledge and understand that Klose LLC is a for-profit real estate investment company.</p>
+        <ol className="list-decimal ml-6 text-sm space-y-2">
+          <li>Klose is a real estate investor and is NOT a licensed broker or agent.</li>
+          <li>Klose holds an equitable interest through a Purchase and Sale Agreement.</li>
+          <li>This transaction is contingent upon Klose obtaining marketable title.</li>
+          <li>The parties agree to use <V k="title_company" data={d} /> (Title Company).</li>
+          <li>This property is sold as-is, where-is.</li>
+          <li>The undersigned is encouraged to seek independent legal counsel.</li>
+        </ol>
+        <SignatureMarker label="Buyer/Assignee Signature — Investor Disclosure" mode={mode} />
+      </PageWrapper>
+    );
+    case 5: return (
+      <PageWrapper pageNum={5} total={totalPages}>
+        <PageHeader title="NOTICES & DISCLOSURES" />
+        <h4 className="font-bold mt-2 mb-2">NOTICE OF NON-REPRESENTATION</h4>
+        <p className="text-sm leading-relaxed">Klose LLC does not represent you as a real estate broker or agent.</p>
+        <SignatureMarker label="Buyer/Assignee Signature — Non-Representation" mode={mode} />
+        <Separator className="my-6" />
+        <h4 className="font-bold mt-2 mb-2">FAIR HOUSING STATEMENT & AFFILIATED BUSINESS DISCLOSURE</h4>
+        <p className="text-sm leading-relaxed">It is illegal discrimination under the Federal Fair Housing Law to discriminate based on protected characteristics.</p>
+      </PageWrapper>
+    );
+    case 6: return (
+      <PageWrapper pageNum={6} total={totalPages}>
+        <p className="text-sm leading-relaxed">By signing below, I/We acknowledge receipt of the Fair Housing Statement and the Affiliated Business Disclosure.</p>
+        <SignatureMarker label="Buyer/Assignee Signature — Fair Housing" mode={mode} />
+      </PageWrapper>
+    );
+    default: return null;
+  }
+}
+
+// ─── Amendment single page renderer ───
+function AmendmentPageSingle({ pageNum, d, mode = 'view' }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing' }) {
+  const totalPages = 2;
+  switch (pageNum) {
+    case 1: return (
+      <PageWrapper pageNum={1} total={totalPages}>
+        <PageHeader showEIN={false} />
+        <h3 className="text-center text-lg font-bold mb-6">AMENDMENT TO PURCHASE AND SALE AGREEMENT</h3>
+        <div className="text-sm space-y-2 mb-4">
+          <p>Buyer: Klose LLC, a Wyoming Limited Liability Company</p>
+          <p>Seller: <V k="seller_name" data={d} /></p>
+          <p>Property: <V k="property_address" data={d} /></p>
+        </div>
+        <p className="text-sm leading-relaxed">The parties agree to amend the Purchase and Sale Agreement with a Binding Agreement Date of <V k="binding_agreement_date" data={d} />.</p>
+        <h4 className="font-bold mt-6 mb-2">Amendment 1 – Purchase Price:</h4>
+        <p className="text-sm leading-relaxed">New purchase price: $ <V k="new_purchase_price" data={d} /></p>
+        <h4 className="font-bold mt-4 mb-2">Amendment 2 – Closing Date:</h4>
+        <p className="text-sm leading-relaxed">New closing date: <V k="new_closing_date" data={d} /></p>
+        <h4 className="font-bold mt-4 mb-2">Amendment 3 – Additional Terms:</h4>
+        <p className="text-sm leading-relaxed">{d.additional_terms || '______________________________________________________________________'}</p>
+        <DualSignatureMarker leftLabel="BUYER Signature" rightLabel="BUYER (2nd)" leftPrint="Klose LLC / Authorized Signatory" rightPrint="Printed Name / Title" mode={mode} />
+      </PageWrapper>
+    );
+    case 2: return (
+      <PageWrapper pageNum={2} total={totalPages}>
+        <p className="text-sm mb-4">The party(ies) below have signed and acknowledge receipt of a copy.</p>
+        <DualSignatureMarker leftLabel="SELLER Signature" rightLabel="SELLER (2nd)" leftPrint="Seller Printed Name" rightPrint="Printed Name" mode={mode} />
+      </PageWrapper>
+    );
+    default: return null;
+  }
+}
+
 // ─── Individual page renderers for wizard mode ───
 export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB' }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; contractType?: 'AB' | 'BC' | 'AMENDMENT' }) {
   if (contractType === 'BC') return <BCPageSingle pageNum={pageNum} d={d} mode={mode} />;
