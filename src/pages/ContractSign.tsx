@@ -110,7 +110,7 @@ export default function ContractSign() {
     }
   };
 
-  // Build signable pages for the wizard
+  // Build signable pages for the wizard — AB uses individual page renderer
   const buildWizardPages = (): SignablePage[] => {
     const type = contract?.contract_type;
     const pageInfos = type === 'AB' ? getABSignablePages() : type === 'BC' ? getBCSignablePages() : getAmendmentSignablePages();
@@ -120,6 +120,7 @@ export default function ContractSign() {
       title: info.title,
       requiresSignature: info.requiresSignature,
       signatureLabel: info.signatureLabel,
+      // ABPage handles all contract types' individual pages via the same renderer
       content: <ABPage pageNum={info.pageNum} d={contractData} mode="signing" />,
     }));
   };
