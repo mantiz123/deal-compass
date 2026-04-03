@@ -156,6 +156,10 @@ export default function ContractSign() {
   if (flowStep === 'error') return <div className="min-h-screen bg-background"><Header /><div className="max-w-md mx-auto mt-20 text-center p-6"><AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Error</h2><p className="text-muted-foreground">{errorMsg || 'Something went wrong. Please try again or contact Klose LLC.'}</p></div></div>;
 
   const property = (contract?.lead as any)?.property;
+  // Fallback to contract_data when property join fails (anon user, no RLS on leads/properties)
+  const propAddress = property?.address || contractData.property_address || '';
+  const propCity = property?.city || contractData.property_city || '';
+  const propState = property?.state || contractData.property_state || '';
 
   // Step 1: Seller Info Form (AB only)
   if (flowStep === 'seller_info') {
