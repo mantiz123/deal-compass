@@ -287,6 +287,29 @@ function drawUnsignedBlock(ctx: PdfCtx, cursor: Cursor, label: string): Cursor {
   return { ...cursor, y: cursor.y - 40 }
 }
 
+async function embedKloseSignature(ctx: PdfCtx, cursor: Cursor, pageNum: number, label: string): Promise<Cursor> {
+  const sig = ctx.kloseSigByPage[pageNum]
+  if (!sig?.image) return cursor
+  cursor = ensureSpace(ctx, cursor, 80)
+  try {
+    const base64 = sig.image.split(',')[1]
+    const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+    const sigImage = await ctx.pdfDoc.embedPng(bytes)
+    const sigW = 160
+    const sigH = (sigImage.height / sigImage.width) * sigW
+    cursor.page.drawImage(sigImage, { x: MARGIN_L, y: cursor.y - sigH, width: sigW, height: sigH })
+    cursor.page.drawLine({ start: { x: MARGIN_L, y: cursor.y - sigH - 2 }, end: { x: MARGIN_L + 250, y: cursor.y - sigH - 2 }, thickness: 0.5, color: GRAY })
+    cursor.page.drawText(label, { x: MARGIN_L, y: cursor.y - sigH - 14, size: 8, font: ctx.font, color: GRAY })
+    cursor.page.drawText(`Signed by: ${sig.name}`, { x: MARGIN_L, y: cursor.y - sigH - 26, size: 8, font: ctx.font, color: BLACK })
+    cursor.page.drawText(`Date: ${sig.date}`, { x: MARGIN_L, y: cursor.y - sigH - 38, size: 8, font: ctx.font, color: GRAY })
+    cursor.page.drawText('[ELECTRONICALLY SIGNED - KLOSE LLC]', { x: MARGIN_L + 260, y: cursor.y - sigH / 2, size: 8, font: ctx.fontBold, color: rgb(0, 0.5, 0.35) })
+    cursor.y = cursor.y - sigH - 50
+  } catch (e) {
+    console.error('Failed to embed Klose signature for page', pageNum, e)
+  }
+  return cursor
+}
+
 async function embedDualSignature(ctx: PdfCtx, cursor: Cursor, pageNum: number, leftLabel: string, leftName: string, rightLabel: string, rightName: string): Promise<Cursor> {
   cursor = ensureSpace(ctx, cursor, 80)
   const midX = PAGE_W / 2
