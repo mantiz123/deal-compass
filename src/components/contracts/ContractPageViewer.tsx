@@ -298,8 +298,9 @@ function AmendmentPageSingle({ pageNum, d, mode = 'view' }: { pageNum: number; d
 }
 
 // ─── Individual page renderers for wizard mode ───
-export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB' }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; contractType?: 'AB' | 'BC' | 'AMENDMENT' }) {
-  if (contractType === 'BC') return <BCPageSingle pageNum={pageNum} d={d} mode={mode} />;
+export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB', kloseSignatures = [] }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; contractType?: 'AB' | 'BC' | 'AMENDMENT'; kloseSignatures?: KloseSignatureData[] }) {
+  const kloseForPage = kloseSignatures.find(s => s.pageNum === pageNum);
+  if (contractType === 'BC') return <BCPageSingle pageNum={pageNum} d={d} mode={mode} kloseSignature={kloseForPage} />;
   if (contractType === 'AMENDMENT') return <AmendmentPageSingle pageNum={pageNum} d={d} mode={mode} />;
   const totalPages = 11;
 
