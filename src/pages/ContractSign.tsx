@@ -175,7 +175,7 @@ export default function ContractSign() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Property: <strong>{property?.address}, {property?.city}, {property?.state}</strong></p>
+              <p className="text-sm text-muted-foreground">Property: <strong>{propAddress}, {propCity}, {propState}</strong></p>
               <p className="text-xs text-muted-foreground mt-1">Step 1 of 3 — Please fill out your information first, then review and sign each page.</p>
             </CardContent>
           </Card>
