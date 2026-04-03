@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
-import { ABPage, getABSignablePages, getBCSignablePages, getAmendmentSignablePages } from '@/components/contracts/ContractPageViewer';
+import { ABPage, getABSignablePages, getBCSignablePages, getAmendmentSignablePages, type KloseSignatureData } from '@/components/contracts/ContractPageViewer';
 import SellerInfoForm from '@/components/contracts/SellerInfoForm';
 import SigningWizard, { type SignablePage } from '@/components/contracts/SigningWizard';
 import kloseLogo from '@/assets/klose-logo.png';
@@ -21,6 +21,7 @@ export default function ContractSign() {
   const [contract, setContract] = useState<any>(null);
   const [contractData, setContractData] = useState<Record<string, string>>({});
   const [pageSignatures, setPageSignatures] = useState<Record<number, string>>({});
+  const [kloseSignatures, setKloseSignatures] = useState<KloseSignatureData[]>([]);
   const [agreeBinding, setAgreeBinding] = useState(false);
   const [agreeRead, setAgreeRead] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -53,6 +54,26 @@ export default function ContractSign() {
         let ip = '';
         try { const r = await fetch('https://api.ipify.org?format=json'); ip = (await r.json()).ip; } catch {}
         await supabase.from('contracts').update({ viewed_at: new Date().toISOString(), ip_address: ip, status: 'viewed' as any }).eq('id', data.id);
+      }
+
+      // Fetch Klose rep signatures to display to seller
+      const { data: existingSigs } = await supabase
+        .from('contract_signatures')
+        .select('*')
+        .eq('contract_id', data.id)
+        .like('user_agent', 'Klose Rep%');
+      
+      if (existingSigs && existingSigs.length > 0) {
+        const parsed: KloseSignatureData[] = existingSigs.map(sig => {
+          const pageMatch = sig.user_agent?.match(/Page (\d+)/);
+          return {
+            pageNum: pageMatch ? parseInt(pageMatch[1]) : 0,
+            signerName: sig.signer_name,
+            signatureImage: sig.signature_image || '',
+            signedAt: sig.signed_at,
+          };
+        });
+        setKloseSignatures(parsed);
       }
 
       // For AB contracts, go to seller info first; for others, go straight to signing
@@ -136,7 +157,7 @@ export default function ContractSign() {
       title: info.title,
       requiresSignature: info.requiresSignature,
       signatureLabel: info.signatureLabel,
-      content: <ABPage pageNum={info.pageNum} d={contractData} mode="signing" contractType={type} />,
+      content: <ABPage pageNum={info.pageNum} d={contractData} mode="signing" contractType={type} kloseSignatures={kloseSignatures} />,
     }));
   };
 

@@ -1,6 +1,13 @@
 import { Separator } from '@/components/ui/separator';
 import { PenTool } from 'lucide-react';
 
+export interface KloseSignatureData {
+  pageNum: number;
+  signerName: string;
+  signatureImage: string;
+  signedAt: string;
+}
+
 interface ContractPageViewerProps {
   contractType: 'AB' | 'BC' | 'AMENDMENT';
   data: Record<string, string>;
@@ -34,10 +41,16 @@ const PageHeader = ({ title, showEIN = true }: { title?: string; showEIN?: boole
   </div>
 );
 
-const SignatureMarker = ({ label, mode }: { label: string; mode?: 'view' | 'signing' }) => {
+const SignatureMarker = ({ label, mode, kloseSignature }: { label: string; mode?: 'view' | 'signing'; kloseSignature?: KloseSignatureData }) => {
   if (mode === 'signing') {
     return (
       <div className="mt-6 pt-4 border-t-2 border-dashed border-amber-400">
+        {kloseSignature && (
+          <div className="mb-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <p className="text-xs font-semibold text-primary mb-1">🏢 Klose LLC — Signed by {kloseSignature.signerName}</p>
+            <img src={kloseSignature.signatureImage} alt="Klose Signature" className="h-12 bg-white rounded p-1" />
+          </div>
+        )}
         <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2">
           <PenTool className="h-4 w-4 shrink-0" />
           <span className="text-sm font-semibold">✍️ {label} — Sign below using the signature pad</span>
@@ -56,12 +69,18 @@ const SignatureMarker = ({ label, mode }: { label: string; mode?: 'view' | 'sign
   );
 };
 
-const DualSignatureMarker = ({ leftLabel, rightLabel, leftPrint, rightPrint, mode }: {
-  leftLabel: string; rightLabel: string; leftPrint: string; rightPrint: string; mode?: 'view' | 'signing';
+const DualSignatureMarker = ({ leftLabel, rightLabel, leftPrint, rightPrint, mode, kloseSignature }: {
+  leftLabel: string; rightLabel: string; leftPrint: string; rightPrint: string; mode?: 'view' | 'signing'; kloseSignature?: KloseSignatureData;
 }) => {
   if (mode === 'signing') {
     return (
       <div className="mt-6 pt-4 border-t-2 border-dashed border-amber-400">
+        {kloseSignature && (
+          <div className="mb-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <p className="text-xs font-semibold text-primary mb-1">🏢 Klose LLC — Signed by {kloseSignature.signerName}</p>
+            <img src={kloseSignature.signatureImage} alt="Klose Signature" className="h-12 bg-white rounded p-1" />
+          </div>
+        )}
         <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2">
           <PenTool className="h-4 w-4 shrink-0" />
           <span className="text-sm font-semibold">✍️ {leftLabel} — Sign below using the signature pad</span>
@@ -159,7 +178,7 @@ export function getAmendmentKloseSignablePages(): SignablePageInfo[] {
 }
 
 // ─── BC single page renderer ───
-function BCPageSingle({ pageNum, d, mode = 'view' }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing' }) {
+function BCPageSingle({ pageNum, d, mode = 'view', kloseSignature }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; kloseSignature?: KloseSignatureData }) {
   const totalPages = 6;
   const fullAddr = [d.property_address, d.property_city, d.property_state].filter(Boolean).join(', ');
   switch (pageNum) {
@@ -206,7 +225,7 @@ function BCPageSingle({ pageNum, d, mode = 'view' }: { pageNum: number; d: Recor
         <p className="text-sm leading-relaxed">This contract contains the entire agreement of the parties.</p>
         <h4 className="font-bold mt-4 mb-2">16. SPECIAL PROVISIONS</h4>
         <p className="text-sm leading-relaxed">{d.special_provisions || '______________________________________________________________________'}</p>
-        <DualSignatureMarker leftLabel="Assignee Signature" rightLabel="Assignor Signature" leftPrint="Assignee Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} />
+        <DualSignatureMarker leftLabel="Assignee Signature" rightLabel="Assignor Signature" leftPrint="Assignee Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} kloseSignature={kloseSignature} />
       </PageWrapper>
     );
     case 4: return (
@@ -279,8 +298,9 @@ function AmendmentPageSingle({ pageNum, d, mode = 'view' }: { pageNum: number; d
 }
 
 // ─── Individual page renderers for wizard mode ───
-export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB' }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; contractType?: 'AB' | 'BC' | 'AMENDMENT' }) {
-  if (contractType === 'BC') return <BCPageSingle pageNum={pageNum} d={d} mode={mode} />;
+export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB', kloseSignatures = [] }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; contractType?: 'AB' | 'BC' | 'AMENDMENT'; kloseSignatures?: KloseSignatureData[] }) {
+  const kloseForPage = kloseSignatures.find(s => s.pageNum === pageNum);
+  if (contractType === 'BC') return <BCPageSingle pageNum={pageNum} d={d} mode={mode} kloseSignature={kloseForPage} />;
   if (contractType === 'AMENDMENT') return <AmendmentPageSingle pageNum={pageNum} d={d} mode={mode} />;
   const totalPages = 11;
 
@@ -350,7 +370,7 @@ export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB' }: { pag
           <p className="text-sm leading-relaxed">This contract contains the entire agreement of the parties and cannot be changed except by their written agreement.</p>
           <h4 className="font-bold mt-4 mb-2">20. SPECIAL PROVISIONS:</h4>
           <p className="text-sm leading-relaxed">{d.special_provisions || '______________________________________________________________________'}</p>
-          <DualSignatureMarker leftLabel="Seller Signature" rightLabel="Buyer Signature" leftPrint="Seller Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} />
+          <DualSignatureMarker leftLabel="Seller Signature" rightLabel="Buyer Signature" leftPrint="Seller Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} kloseSignature={kloseForPage} />
         </PageWrapper>
       );
 
@@ -433,7 +453,7 @@ export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB' }: { pag
           </ol>
           <h4 className="font-bold mt-4 mb-2">ACKNOWLEDGMENT</h4>
           <p className="text-sm leading-relaxed">I/We have read and understand this disclosure. By signing below, I/we agree to the terms and conditions stated above.</p>
-          <SignatureMarker label="Seller Signature — Investor Disclosure" mode={mode} />
+          <SignatureMarker label="Seller Signature — Investor Disclosure" mode={mode} kloseSignature={kloseForPage} />
         </PageWrapper>
       );
 
@@ -447,7 +467,7 @@ export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB' }: { pag
           <p className="text-sm leading-relaxed">Klose LLC and/or its affiliated companies and/or its management may have relationships with certain service providers, including title companies and lenders. Referrals to such providers may provide Klose LLC with a financial benefit.</p>
           <p className="text-sm leading-relaxed mt-2">You are NOT required to use any specific title company, lender, or settlement service provider as a condition of your purchase or sale. There are frequently other providers available with similar services. You are free to inquire with other providers to determine whether you are receiving best services at competitive rates.</p>
           <p className="text-sm leading-relaxed mt-2">By signing below, I/We acknowledge receipt of the Fair Housing Statement and the Affiliated Business Disclosure.</p>
-          <SignatureMarker label="Seller Signature — Fair Housing" mode={mode} />
+          <SignatureMarker label="Seller Signature — Fair Housing" mode={mode} kloseSignature={kloseForPage} />
         </PageWrapper>
       );
 
@@ -458,7 +478,7 @@ export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB' }: { pag
           <p className="text-sm leading-relaxed">You are hereby notified that Klose LLC and its members, managers, and employees do not represent you in any capacity as a real estate broker or agent.</p>
           <p className="text-sm leading-relaxed mt-2">You should not assume that any representative of Klose LLC represents your interests unless you separately engage a licensed real estate agent or attorney. You are advised not to disclose any information you want held in confidence until you decide on representation.</p>
           <p className="text-sm leading-relaxed mt-2">Your signature below acknowledges receipt of this notice and does not establish a brokerage relationship.</p>
-          <SignatureMarker label="Seller Signature — Non-Representation" mode={mode} />
+          <SignatureMarker label="Seller Signature — Non-Representation" mode={mode} kloseSignature={kloseForPage} />
         </PageWrapper>
       );
 
