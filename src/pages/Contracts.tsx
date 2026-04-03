@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useContracts, type Contract } from '@/hooks/useContracts';
 import { ContractDetailSheet } from '@/components/contracts/ContractDetailSheet';
-import { Search, Download, Eye, Loader2 } from 'lucide-react';
+import { Search, Download, Eye, Loader2, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -40,6 +41,20 @@ export default function Contracts() {
     status: statusFilter,
     contract_type: typeFilter,
     search,
+  });
+
+  const { data: kloseSignatures = {} } = useQuery({
+    queryKey: ['klose-signatures-map'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contract_signatures')
+        .select('contract_id, signer_name')
+        .like('user_agent', 'Klose Rep%');
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      data?.forEach((s: any) => { map[s.contract_id] = s.signer_name; });
+      return map;
+    },
   });
 
   const { toast } = useToast();
@@ -145,6 +160,7 @@ export default function Contracts() {
                   <TableHead>Propiedad</TableHead>
                   <TableHead>Vendedor</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Klose</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Creado</TableHead>
                   <TableHead>Firmado</TableHead>
@@ -154,13 +170,13 @@ export default function Contracts() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Cargando contratos...
                     </TableCell>
                   </TableRow>
                 ) : contracts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No hay contratos. Genera uno desde el detalle de un lead.
                     </TableCell>
                   </TableRow>
@@ -185,6 +201,16 @@ export default function Contracts() {
                         <TableCell>{property?.owner_name || 'N/A'}</TableCell>
                         <TableCell>
                           <Badge className={tp.color}>{tp.label}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {kloseSignatures[contract.id] ? (
+                            <Badge variant="success" className="gap-1">
+                              <CheckCircle2 className="h-3 w-3" />
+                              {kloseSignatures[contract.id]}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Pendiente</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge className={st.color}>{st.label}</Badge>
