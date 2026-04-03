@@ -397,12 +397,15 @@ async function buildABPdf(ctx: PdfCtx) {
 
   // Page 6: Investor Disclosure
   c = await buildSignedInvestorDisclosure(ctx, 'Seller', 6)
+  c = await embedKloseSignature(ctx, c, 6, 'Buyer (Klose LLC) Signature - Investor Disclosure')
 
   // Page 7: Fair Housing
   c = await buildSignedFairHousing(ctx, 'Seller', 7)
+  c = await embedKloseSignature(ctx, c, 7, 'Buyer (Klose LLC) Signature - Fair Housing')
 
   // Page 8: Non-Representation
   c = await buildSignedNonRepresentation(ctx, 'Seller', 8)
+  c = await embedKloseSignature(ctx, c, 8, 'Buyer (Klose LLC) Signature - Non-Representation')
 
   // Page 9: Auth to Sign (POA)
   c = await buildSignedAuthToSign(ctx, 9)
