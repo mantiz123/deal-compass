@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
-import { ABPage, getABSignablePages, getBCSignablePages, getAmendmentSignablePages } from '@/components/contracts/ContractPageViewer';
+import ContractPageViewer, { ABPage, getABSignablePages, getBCSignablePages, getAmendmentSignablePages } from '@/components/contracts/ContractPageViewer';
 import SellerInfoForm from '@/components/contracts/SellerInfoForm';
 import SigningWizard, { type SignablePage } from '@/components/contracts/SigningWizard';
 import kloseLogo from '@/assets/klose-logo.png';
