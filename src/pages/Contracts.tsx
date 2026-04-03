@@ -43,6 +43,20 @@ export default function Contracts() {
     search,
   });
 
+  const { data: kloseSignatures = {} } = useQuery({
+    queryKey: ['klose-signatures-map'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contract_signatures')
+        .select('contract_id, signer_name')
+        .like('user_agent', 'Klose Rep%');
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      data?.forEach((s: any) => { map[s.contract_id] = s.signer_name; });
+      return map;
+    },
+  });
+
   const { toast } = useToast();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
