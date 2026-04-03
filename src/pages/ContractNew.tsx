@@ -46,6 +46,7 @@ export default function ContractNew() {
   const [createdContractId, setCreatedContractId] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [kloseSignatures, setKloseSignatures] = useState<Record<number, string>>({});
+  const [kloseSignerName, setKloseSignerName] = useState('');
 
   const createContract = useCreateContract();
   const updateContract = useUpdateContract();
