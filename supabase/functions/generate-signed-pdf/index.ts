@@ -53,15 +53,22 @@ Deno.serve(async (req) => {
       .eq('contract_id', contractId)
       .order('signed_at', { ascending: true })
 
-    // Parse page numbers from user_agent "... | Page X"
-    const sigByPage: Record<number, { image: string; name: string; date: string }> = {}
+    // Parse page numbers from user_agent "... | Page X" — separate Klose vs Seller
+    const sellerSigByPage: Record<number, { image: string; name: string; date: string }> = {}
+    const kloseSigByPage: Record<number, { image: string; name: string; date: string }> = {}
     for (const sig of signatures) {
       const match = sig.user_agent?.match(/Page\s+(\d+)/)
       if (match && sig.signature_image) {
-        sigByPage[parseInt(match[1])] = {
+        const pageNum = parseInt(match[1])
+        const entry = {
           image: sig.signature_image,
           name: sig.signer_name,
           date: new Date(sig.signed_at).toLocaleDateString('en-US'),
+        }
+        if (sig.user_agent?.includes('Klose Rep')) {
+          kloseSigByPage[pageNum] = entry
+        } else {
+          sellerSigByPage[pageNum] = entry
         }
       }
     }
@@ -75,7 +82,7 @@ Deno.serve(async (req) => {
     const fontBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
     const fontItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic)
 
-    const ctx: PdfCtx = { pdfDoc, font, fontBold, fontItalic, data: d, sigByPage }
+    const ctx: PdfCtx = { pdfDoc, font, fontBold, fontItalic, data: d, sigByPage: sellerSigByPage, kloseSigByPage }
 
     if (contractType === 'AB') {
       await buildABPdf(ctx)
