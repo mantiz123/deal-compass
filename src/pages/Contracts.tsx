@@ -170,13 +170,13 @@ export default function Contracts() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Cargando contratos...
                     </TableCell>
                   </TableRow>
                 ) : contracts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No hay contratos. Genera uno desde el detalle de un lead.
                     </TableCell>
                   </TableRow>
