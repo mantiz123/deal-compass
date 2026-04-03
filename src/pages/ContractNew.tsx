@@ -144,7 +144,7 @@ export default function ContractNew() {
     if (!createdContractId) return;
 
     try {
-      const repName = profile?.full_name || 'Klose LLC Representative';
+      const repName = kloseSignerName || profile?.full_name || 'Klose LLC Representative';
 
       // Store Klose rep signatures
       const sigInserts = Object.entries(signatures).map(([pageNum, sig]) => ({
