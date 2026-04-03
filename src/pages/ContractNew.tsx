@@ -76,6 +76,13 @@ export default function ContractNew() {
     }
   }, [contractType, lead, fields]);
 
+  // Set default Klose signer name from profile
+  useEffect(() => {
+    if (profile?.full_name && !kloseSignerName) {
+      setKloseSignerName(profile.full_name);
+    }
+  }, [profile]);
+
   const handleSelectType = (type: 'AB' | 'BC' | 'AMENDMENT') => {
     setContractType(type);
     setFormValues({});
