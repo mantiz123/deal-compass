@@ -160,9 +160,25 @@ export default function ContractSign() {
         <h2 className="text-xl font-bold text-foreground mb-2">✅ Thank You!</h2>
         <p className="text-muted-foreground mb-4">Your documents have been signed successfully. Klose LLC will be in touch shortly.</p>
         {(contract?.signed_pdf_url || contract?.pdf_url) && (
-          <a href={contract.signed_pdf_url || contract.pdf_url} target="_blank" rel="noopener noreferrer" download>
-            <Button variant="outline" className="mb-4"><FileText className="h-4 w-4 mr-2" /> Download Signed Contract</Button>
-          </a>
+          <Button variant="outline" className="mb-4" onClick={async () => {
+            const url = contract.signed_pdf_url || contract.pdf_url;
+            try {
+              const res = await fetch(url);
+              const blob = await res.blob();
+              const blobUrl = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = blobUrl;
+              a.download = 'Contrato_Firmado.pdf';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(blobUrl);
+            } catch {
+              window.open(url, '_blank');
+            }
+          }}>
+            <FileText className="h-4 w-4 mr-2" /> Download Signed Contract
+          </Button>
         )}
         <p className="text-xs text-muted-foreground">You may close this window.</p>
       </div>
