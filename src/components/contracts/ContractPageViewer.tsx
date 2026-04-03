@@ -225,7 +225,7 @@ function BCPageSingle({ pageNum, d, mode = 'view', kloseSignature }: { pageNum: 
         <p className="text-sm leading-relaxed">This contract contains the entire agreement of the parties.</p>
         <h4 className="font-bold mt-4 mb-2">16. SPECIAL PROVISIONS</h4>
         <p className="text-sm leading-relaxed">{d.special_provisions || '______________________________________________________________________'}</p>
-        <DualSignatureMarker leftLabel="Assignee Signature" rightLabel="Assignor Signature" leftPrint="Assignee Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} />
+        <DualSignatureMarker leftLabel="Assignee Signature" rightLabel="Assignor Signature" leftPrint="Assignee Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} kloseSignature={kloseSignature} />
       </PageWrapper>
     );
     case 4: return (
