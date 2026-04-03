@@ -42,8 +42,47 @@ export default function Contracts() {
     search,
   });
 
-  const handleDownload = (url: string | null) => {
-    if (url) window.open(url, '_blank');
+  const { toast } = useToast();
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (url: string | null, contractId: string) => {
+    if (!url) return;
+    setDownloadingId(contractId);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('fetch failed');
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'Contrato.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      try {
+        const path = url.split('/storage/v1/object/public/contracts/')[1];
+        if (path) {
+          const { data, error } = await supabase.storage.from('contracts').download(path);
+          if (error) throw error;
+          const blobUrl = URL.createObjectURL(data);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = 'Contrato.pdf';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(blobUrl);
+        } else {
+          throw new Error('bad path');
+        }
+      } catch {
+        toast({ title: 'Error', description: 'No se pudo descargar. Desactiva tu bloqueador de anuncios.', variant: 'destructive' });
+      }
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   return (
