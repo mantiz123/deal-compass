@@ -178,7 +178,7 @@ export function getAmendmentKloseSignablePages(): SignablePageInfo[] {
 }
 
 // ─── BC single page renderer ───
-function BCPageSingle({ pageNum, d, mode = 'view' }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing' }) {
+function BCPageSingle({ pageNum, d, mode = 'view', kloseSignature }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; kloseSignature?: KloseSignatureData }) {
   const totalPages = 6;
   const fullAddr = [d.property_address, d.property_city, d.property_state].filter(Boolean).join(', ');
   switch (pageNum) {
