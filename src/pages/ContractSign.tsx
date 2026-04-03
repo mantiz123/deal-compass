@@ -101,6 +101,22 @@ export default function ContractSign() {
         contract_data: contractData as any,
       }).eq('id', contract.id);
 
+      // Generate signed PDF in background (don't block success screen)
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        fetch(`${supabaseUrl}/functions/v1/generate-signed-pdf`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+          },
+          body: JSON.stringify({ contractId: contract.id }),
+        });
+      } catch (e) {
+        console.error('Signed PDF generation request failed:', e);
+      }
+
       setFlowStep('success');
     } catch (err: any) {
       setErrorMsg(err.message);
