@@ -337,11 +337,29 @@ async function embedDualSignature(ctx: PdfCtx, cursor: Cursor, pageNum: number, 
     cursor.page.drawText(leftName, { x: MARGIN_L, y: cursor.y - 24, size: 9, font: ctx.fontBold, color: BLACK })
   }
   
-  // Right side - Klose LLC (no signature needed)
-  cursor.page.drawLine({ start: { x: midX + 10, y: cursor.y }, end: { x: PAGE_W - MARGIN_R, y: cursor.y }, thickness: 0.5, color: GRAY })
-  cursor.page.drawText(rightLabel, { x: midX + 10, y: cursor.y - 12, size: 8, font: ctx.font, color: GRAY })
-  cursor.page.drawText(rightName, { x: midX + 10, y: cursor.y - 24, size: 9, font: ctx.fontBold, color: BLACK })
-  cursor.page.drawText('Date: ____________', { x: midX + 10, y: cursor.y - 36, size: 8, font: ctx.font, color: GRAY })
+  // Right side - Klose LLC signature
+  const kloseSig = ctx.kloseSigByPage[pageNum]
+  if (kloseSig?.image) {
+    try {
+      const base64k = kloseSig.image.split(',')[1]
+      const bytesK = Uint8Array.from(atob(base64k), c => c.charCodeAt(0))
+      const kloseImg = await ctx.pdfDoc.embedPng(bytesK)
+      const kW = 140
+      const kH = (kloseImg.height / kloseImg.width) * kW
+      cursor.page.drawImage(kloseImg, { x: midX + 10, y: cursor.y - kH, width: kW, height: kH })
+      cursor.page.drawLine({ start: { x: midX + 10, y: cursor.y - kH - 2 }, end: { x: PAGE_W - MARGIN_R, y: cursor.y - kH - 2 }, thickness: 0.5, color: GRAY })
+      cursor.page.drawText(rightLabel, { x: midX + 10, y: cursor.y - kH - 14, size: 8, font: ctx.font, color: GRAY })
+      cursor.page.drawText(kloseSig.name, { x: midX + 10, y: cursor.y - kH - 26, size: 9, font: ctx.fontBold, color: BLACK })
+      cursor.page.drawText(`Date: ${kloseSig.date}`, { x: midX + 10, y: cursor.y - kH - 38, size: 8, font: ctx.font, color: GRAY })
+    } catch (e) {
+      console.error('Failed to embed Klose dual sig', e)
+    }
+  } else {
+    cursor.page.drawLine({ start: { x: midX + 10, y: cursor.y }, end: { x: PAGE_W - MARGIN_R, y: cursor.y }, thickness: 0.5, color: GRAY })
+    cursor.page.drawText(rightLabel, { x: midX + 10, y: cursor.y - 12, size: 8, font: ctx.font, color: GRAY })
+    cursor.page.drawText(rightName, { x: midX + 10, y: cursor.y - 24, size: 9, font: ctx.fontBold, color: BLACK })
+    cursor.page.drawText('Date: ____________', { x: midX + 10, y: cursor.y - 36, size: 8, font: ctx.font, color: GRAY })
+  }
   
   return { ...cursor, y: cursor.y - 50 }
 }
