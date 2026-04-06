@@ -935,7 +935,7 @@ export function LeadDetailSheet({
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                deleteLead.mutate(lead.id, {
+                deleteLead.mutate({ leadId: lead.id, address: lead.property?.address, city: lead.property?.city }, {
                   onSuccess: () => onOpenChange(false),
                 });
               }}
