@@ -13,12 +13,12 @@ function getAuctionDaysRemaining(auctionDate?: string): number | null {
   return Math.ceil((auction.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-function calculateScore(p: any): any {
+// K-Score v6: Synced with calculate-piw-score
+function calculateScore(p: any, lead?: any): any {
   let sellerMotivation = 0;
   let financialViability = 0;
   let closingDifficulty = 15;
 
-  // Seller Motivation (max 40)
   if (p.absentee_type === 'out_of_state') sellerMotivation += 15;
   else if (p.absentee_type === 'local') sellerMotivation += 8;
   else if (p.is_absentee_owner) sellerMotivation += 8;
@@ -63,15 +63,13 @@ function calculateScore(p: any): any {
   if (p.eviction_count != null && p.eviction_count > 0) sellerMotivation += 8;
   if (p.owner_type === 'corporation' || p.owner_type === 'trust') sellerMotivation += 5;
   if (p.mailing_address_different) sellerMotivation += 3;
-  
-  // Bankruptcy (within 2 years = +12, within 5 years = +6)
+
   if (p.bk_date) {
     const yearsSinceBk = (Date.now() - new Date(p.bk_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
     if (yearsSinceBk <= 2) sellerMotivation += 12;
     else if (yearsSinceBk <= 5) sellerMotivation += 6;
   }
-  
-  // Divorce (within 2 years = +10, within 5 years = +5)
+
   if (p.divorce_date) {
     const yearsSinceDiv = (Date.now() - new Date(p.divorce_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
     if (yearsSinceDiv <= 2) sellerMotivation += 10;
@@ -80,7 +78,6 @@ function calculateScore(p: any): any {
 
   sellerMotivation = Math.min(sellerMotivation, 40);
 
-  // Financial Viability (max 35)
   if (p.equity_percent != null) {
     if (p.equity_percent >= 100) financialViability += 28;
     else if (p.equity_percent >= 80) financialViability += 22;
@@ -95,12 +92,31 @@ function calculateScore(p: any): any {
     else if (netEquity > 50000) financialViability += 5;
   }
 
+  // v6: Spread Factor
+  let spreadPercent: number | null = null;
+  const listingPrice = lead?.listing_price ? Number(lead.listing_price) : null;
+  const arv = p.arv ? Number(p.arv) : null;
+  
+  if (listingPrice && arv && arv > 0 && listingPrice > 0) {
+    spreadPercent = Math.round(((arv - listingPrice) / arv) * 100);
+    if (spreadPercent >= 40) financialViability += 10;
+    else if (spreadPercent >= 30) financialViability += 8;
+    else if (spreadPercent >= 20) financialViability += 5;
+    else if (spreadPercent >= 10) financialViability += 2;
+    else if (spreadPercent < 0) financialViability -= 3;
+  }
+
+  // v6: Market Stats
+  if (p.days_on_market_avg != null && p.days_on_market_avg > 0) {
+    if (p.days_on_market_avg > 90) financialViability += 4;
+    else if (p.days_on_market_avg > 60) financialViability += 2;
+  }
+
   if (p.price_growth_3yr != null && p.price_growth_3yr > 5) financialViability += 5;
   if (p.bedrooms != null && p.bathrooms != null && p.bedrooms >= 3 && p.bathrooms >= 2) financialViability += 3;
 
   financialViability = Math.min(financialViability, 35);
 
-  // Closing Difficulty (max 25)
   if (p.active_liens_count != null) {
     if (p.active_liens_count === 0) closingDifficulty += 8;
     else if (p.active_liens_count > 2) closingDifficulty -= (p.active_liens_count - 2) * 5;
@@ -119,6 +135,7 @@ function calculateScore(p: any): any {
   else if (p.property_status && p.property_status.toUpperCase().includes('VACANT')) indicators.push('Vacant (status)');
   if (p.owner_tenure_years != null && p.owner_tenure_years >= 10) indicators.push(`${p.owner_tenure_years}yr tenure`);
   if (p.equity_percent != null && p.equity_percent >= 60) indicators.push(`${p.equity_percent}% equity`);
+  if (spreadPercent != null && spreadPercent >= 20) indicators.push(`${spreadPercent}% spread`);
   if (p.is_foreclosure) {
     const rt = (p.prefc_record_type || '').toUpperCase();
     if (rt.includes('TRUSTEE')) indicators.push('Trustee Sale');
@@ -130,6 +147,14 @@ function calculateScore(p: any): any {
   if (p.bk_date) indicators.push('Bankruptcy');
   if (p.divorce_date) indicators.push('Divorce');
   if (auctionDays !== null && auctionDays > 0 && auctionDays <= 90) indicators.push(`Auction in ${auctionDays}d`);
+  if (p.days_on_market != null && p.days_on_market > 90) indicators.push(`${p.days_on_market} DOM`);
+  if (p.days_on_market_avg != null && p.days_on_market_avg > 60) indicators.push(`Avg DOM: ${p.days_on_market_avg}`);
+
+  const risks: string[] = [];
+  if (p.active_liens_count != null && p.active_liens_count > 2) risks.push(`${p.active_liens_count} active liens`);
+  if (p.equity_percent != null && p.equity_percent < 20) risks.push('Low equity');
+  if (p.owner_type === 'trust' || p.owner_type === 'estate') risks.push('Complex ownership');
+  if (spreadPercent != null && spreadPercent < 0) risks.push('Listed above ARV');
 
   return {
     score: Math.round(score),
@@ -137,12 +162,13 @@ function calculateScore(p: any): any {
       seller_motivation_score: sellerMotivation,
       financial_viability_score: financialViability,
       closing_difficulty_score: closingDifficulty,
+      spread_percent: spreadPercent,
     },
     priority,
     key_indicators: indicators,
-    risks: [],
+    risks,
     recommended_action: priority === 'hot' ? 'Contact immediately' : priority === 'warm' ? 'Follow up within 48h' : 'Low priority - nurture',
-    analysis: `Deterministic PIW v3 score: ${score}/100`,
+    analysis: `K-Score v6: ${score}/100. Motivation: ${sellerMotivation}/40, Financial: ${financialViability}/35, Closing: ${closingDifficulty}/25.${spreadPercent != null ? ` Spread: ${spreadPercent}%` : ''}`,
   };
 }
 
@@ -163,7 +189,7 @@ serve(async (req) => {
 
     let query = supabase
       .from('leads')
-      .select('id, property_id')
+      .select('id, property_id, listing_price, offer_amount')
       .is('archived_at', null)
       .order('created_at', { ascending: false })
       .range(offset, offset + batchSize - 1);
@@ -180,7 +206,6 @@ serve(async (req) => {
       });
     }
 
-    // Fetch all properties in one query
     const propertyIds = [...new Set(leads.map(l => l.property_id))];
     const { data: properties } = await supabase
       .from('properties')
@@ -198,7 +223,7 @@ serve(async (req) => {
       if (!property) { failed++; continue; }
 
       try {
-        const result = calculateScore(property);
+        const result = calculateScore(property, lead);
 
         const { error: updateError } = await supabase
           .from('leads')
