@@ -49,6 +49,8 @@ export function useArchiveLead() {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['dead-leads-analytics'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['stale-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['archived-leads'] });
       toast.success('Lead archivado correctamente');
     },
     onError: (error) => {
@@ -105,6 +107,8 @@ export function useUnarchiveLead() {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['dead-leads-analytics'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['stale-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['archived-leads'] });
       toast.success('Lead restaurado correctamente');
     },
     onError: (error) => {
