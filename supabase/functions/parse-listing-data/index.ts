@@ -231,8 +231,9 @@ PROPSTREAM CMA EXTRACTION RULES:
 7. OWNER TENURE: Calculate years from last sale date to today.
 8. OFFER ANALYSIS: For foreclosures with equity, suggest 60-70% of estimated value. Factor in mortgage payoff and closing costs.
 9. REPAIR ESTIMATE: Use age (year_built), exterior condition, and listing history to estimate.
-10. MARKET STATS: Extract from the Statistics pages (Price/Rent Changes, Avg DOM, etc.)
-11. Return valid JSON only, no markdown or extra text.`;
+10. MARKET STATS (CRITICAL - Pages 4-5): Extract ALL statistics from the "Statistics" pages including: Average Sale Price, Median Sale Price, Average $/SqFt, Average DOM, Price Change (30d/90d/1yr), Rent Changes, Active Inventory count, Absorption Rate/Months of Supply. These are typically found in tables/charts on pages 4-5 of the CMA report. Look for headers like "Price Statistics", "Market Trends", "Price Changes", "Rent Changes".
+11. SPREAD CALCULATION: If both Estimated Value and Listing Price or Last Sale Price are available, note the difference as a motivation signal.
+12. Return valid JSON only, no markdown or extra text.`;
 }
 
 function buildListingPrompt(): string {
