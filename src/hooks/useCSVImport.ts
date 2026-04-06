@@ -418,6 +418,13 @@ export const useCSVImport = () => {
               continue;
             }
             
+            // === COMPLIANCE TRACKING ===
+            const dncPhones = [property.phone_1_dnc, property.phone_2_dnc, property.phone_3_dnc, property.phone_4_dnc, property.phone_5_dnc].filter(Boolean).length;
+            if (dncPhones > 0) result.dncCount++;
+            if (property.is_litigator) result.litigatorCount++;
+            const emailCount = [property.owner_email, property.owner_email_2, property.owner_email_3].filter(Boolean).length;
+            if (emailCount > 0) result.emailsCaptured += emailCount;
+
             // === HOT LEAD WITHOUT PHONE ALERT ===
             const netEquity = (property.arv || 0) - (property.mortgage_balance || 0);
             const hasPhone = !!(property.owner_phone || property.phone_2 || property.phone_3 || property.phone_4 || property.phone_5);
