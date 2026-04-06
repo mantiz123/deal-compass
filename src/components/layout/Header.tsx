@@ -1,8 +1,8 @@
-import { Bell, Search, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "./NotificationBell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useProfile, useUserRole } from "@/hooks/useProfile";
 
@@ -36,12 +36,7 @@ export function Header() {
       <div className="flex items-center gap-2 sm:gap-4">
         <ThemeToggle />
 
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
-            3
-          </span>
-        </Button>
+        <NotificationBell />
 
         {!isMobile && (
           <div className="flex items-center gap-3">
