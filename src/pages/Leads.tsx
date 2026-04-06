@@ -1026,6 +1026,9 @@ const Leads = () => {
         </Card>
       )}
 
+      {/* Archived Leads Section */}
+      <ArchivedLeadsSection />
+
       {/* New Lead Dialog */}
       <NewLeadDialog 
         open={showNewLeadDialog} 
