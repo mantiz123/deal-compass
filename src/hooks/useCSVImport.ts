@@ -9,6 +9,9 @@ interface ImportResult {
   errors: string[];
   skippedSold: number;
   hotLeadsNoPhone: string[];
+  dncCount: number;
+  litigatorCount: number;
+  emailsCaptured: number;
 }
 
 interface ImportOptions {

@@ -61,8 +61,20 @@ export const propertyFields: PropertyField[] = [
   },
   {
     key: 'owner_email',
-    label: 'Email',
+    label: 'Email 1',
     aliases: ['email1', 'email', 'owneremail', 'emailaddress', 'correo', 'mail'],
+    required: false,
+  },
+  {
+    key: 'owner_email_2',
+    label: 'Email 2',
+    aliases: ['email2', 'owneremail2', 'emailaddress2', 'secondaryemail', 'altemail'],
+    required: false,
+  },
+  {
+    key: 'owner_email_3',
+    label: 'Email 3',
+    aliases: ['email3', 'owneremail3', 'emailaddress3'],
     required: false,
   },
   {
