@@ -31,13 +31,14 @@ export function useNotifications() {
 
       const { data: cleanupLogs } = await supabase
         .from('lead_cleanup_log')
-        .select('id, action, reason, notes, property_address, property_city, created_at')
+        .select('id, action, reason, notes, property_address, property_city, lead_data, created_at')
         .gte('created_at', since.toISOString())
         .order('created_at', { ascending: false })
         .limit(20);
 
       for (const log of cleanupLogs || []) {
         const isDelete = log.action.includes('deleted');
+        const leadData = (log.lead_data as Record<string, any>) || {};
         notifications.push({
           id: log.id,
           type: isDelete ? 'cleanup_deleted' : 'cleanup_archived',
@@ -45,6 +46,14 @@ export function useNotifications() {
           message: `${log.property_address || 'Propiedad'}${log.property_city ? `, ${log.property_city}` : ''} — ${log.notes || log.reason}`,
           timestamp: log.created_at,
           read: false,
+          meta: {
+            piw_score: leadData.piw_score,
+            source: leadData.source,
+            status: leadData.status,
+            days_stale: leadData.days_stale,
+            auction_date: leadData.auction_date,
+            reason: log.reason,
+          },
         });
       }
 
@@ -54,7 +63,7 @@ export function useNotifications() {
 
       const { data: staleLeads } = await supabase
         .from('leads')
-        .select('id, created_at, last_contact_at, property:properties!inner(address, city)')
+        .select('id, created_at, last_contact_at, piw_score, source, status, days_without_activity, property:properties!inner(address, city)')
         .is('archived_at', null)
         .not('status', 'eq', 'cerrado')
         .lt('last_contact_at', staleThreshold.toISOString())
@@ -73,6 +82,12 @@ export function useNotifications() {
           message: `${prop?.address || 'Propiedad'}, ${prop?.city || ''} — ${days} días sin actividad (se archiva a los 14)`,
           timestamp: lead.last_contact_at || lead.created_at,
           read: false,
+          meta: {
+            piw_score: lead.piw_score,
+            source: lead.source,
+            status: lead.status,
+            days_stale: days,
+          },
         });
       }
 
