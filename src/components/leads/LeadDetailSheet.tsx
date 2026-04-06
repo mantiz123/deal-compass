@@ -86,6 +86,8 @@ export function LeadDetailSheet({
   const [showNewInteraction, setShowNewInteraction] = useState(false);
   const [showDealPackage, setShowDealPackage] = useState(false);
   const [showLogConversation, setShowLogConversation] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const deleteLead = usePermanentlyDeleteLead();
   const { data: interactions, isLoading: loadingInteractions } = useInteractions(lead?.id || '');
   const { data: latestConversation } = useLatestConversation(lead?.id);
   const updateProperty = useUpdateProperty();
