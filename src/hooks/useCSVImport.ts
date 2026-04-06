@@ -127,6 +127,8 @@ export const useCSVImport = () => {
               setIfNew('owner_name', ownerNameUpdate);
               setIfNew('owner_phone', propertyData.owner_phone);
               setIfNew('owner_email', propertyData.owner_email);
+              setIfNew('owner_email_2', propertyData.owner_email_2);
+              setIfNew('owner_email_3', propertyData.owner_email_3);
               setIfNew('owner_type', propertyData.owner_type);
               setIfNew('bedrooms', propertyData.bedrooms);
               setIfNew('bathrooms', propertyData.bathrooms);
@@ -338,6 +340,8 @@ export const useCSVImport = () => {
                 owner_name: ownerName,
                 owner_phone: propertyData.owner_phone || null,
                 owner_email: propertyData.owner_email || null,
+                owner_email_2: propertyData.owner_email_2 || null,
+                owner_email_3: propertyData.owner_email_3 || null,
                 owner_type: propertyData.owner_type || null,
                 property_type: propertyData.property_type || 'single_family',
                 bedrooms: propertyData.bedrooms || null,
