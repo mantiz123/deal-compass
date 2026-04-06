@@ -65,6 +65,7 @@ import {
   MessageSquare,
   Gavel,
   Trash2,
+  UserSearch,
 } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
