@@ -78,18 +78,21 @@ serve(async (req) => {
     let userPrompt = "";
 
     if (templateType === "initial_outreach") {
-      systemPrompt = `You are a professional real estate investment copywriter for Klose LLC. Generate a professional, warm, and transparent initial outreach email to a property owner. The email must:
+      systemPrompt = `You are a professional real estate investment copywriter for Klose LLC. Generate a SHORT, direct, and professional initial outreach email to a property owner. Keep it concise — no filler, no fluff. The email must:
 1. Address the owner by first name
-2. Introduce Sergio Mantilla as Managing Director of Klose
-3. Mention they are active in the property's area
-4. Include the full Wholesale & Assignment Disclosure (Who We Are, Our Process, Fees sections)
-5. Mention awareness of property situation tactfully without being pushy
-6. Ask if they're open to receiving a formal purchase proposal
-7. Include a respectful opt-out option
-8. End with signature block: Sergio Mantilla, Managing Director | Klose LLC
-9. Include legal disclaimer at bottom
-10. Be professional but approachable, NOT aggressive or pushy
-Output ONLY the email text, no subject line labels or extra formatting.`;
+2. Briefly introduce Sergio Mantilla, Managing Director of Klose
+3. Include the required Alabama Wholesale & Assignment Disclosure (Who We Are, Our Process, Fees) but keep each section to 1-2 sentences max
+4. Mention awareness of property situation tactfully in one sentence
+5. Ask if they're open to a formal purchase proposal
+6. One-line opt-out option
+7. Signature: Sergio Mantilla, Managing Director | Klose LLC
+8. One-line legal disclaimer
+
+CRITICAL FORMATTING RULES:
+- Output ONLY plain text. Do NOT use markdown formatting.
+- Do NOT use asterisks (**) for bold or any other markdown syntax.
+- Use ALL CAPS for section headers instead of bold formatting.
+- Keep the entire email under 250 words.`;
 
       userPrompt = `Generate an initial outreach email for:
 - Owner Name: ${ownerName}
@@ -113,19 +116,23 @@ ${p.tax_delinquent ? "- Tax delinquent status" : ""}`;
         ? `$${(Number(offerAmount) - Number(p.mortgage_balance)).toLocaleString()}`
         : "TBD";
 
-      systemPrompt = `You are a professional real estate investment copywriter for Klose LLC. Generate a detailed foreclosure/distress offer email. The email must:
+      systemPrompt = `You are a professional real estate investment copywriter for Klose LLC. Generate a CONCISE foreclosure/distress offer email. Be direct — get to the numbers fast. The email must:
 1. Address the owner by first name
-2. Be transparent about knowledge of foreclosure/distress situation
-3. Position the offer as a SOLUTION (save credit, pay off mortgage, get cash)
-4. Include WHO WE ARE & LEGAL DISCLOSURE section (Wholesalers, Assignment Disclosure, Fee info)
-5. Include OUR OFFER & THE NUMBERS section with specific dollar amounts
-6. List what happens if they accept (Mortgage Payoff, Cash to Seller, No Costs, Speed)
-7. Include BEFORE WE PROCEED questions (open to price?, occupied?, major systems?, HOA/liens?)
-8. Include HOW IT WORKS steps (Agreement, Title Search, Closing)
-9. Be empathetic and professional, emphasize dignity and speed
-10. End with signature: Sergio Mantilla, Managing Director | Klose LLC
-11. Include legal disclaimer
-Output ONLY the email text.`;
+2. One sentence acknowledging the foreclosure situation
+3. Position the offer as a solution in 2-3 sentences (save credit, pay mortgage, get cash)
+4. Brief WHO WE ARE disclosure (wholesalers, assignment, fees — 3 short bullet points max)
+5. OUR OFFER section with specific dollar amounts (Offer, Mortgage Payoff, Net to Seller)
+6. 4 quick bullet points: what they get (payoff, cash, no costs, speed)
+7. 4 short CONFIRM questions (price, occupied, systems, HOA/liens)
+8. 3-step HOW IT WORKS (Agreement, Title, Closing)
+9. Signature: Sergio Mantilla, Managing Director | Klose LLC
+10. One-line disclaimer
+
+CRITICAL FORMATTING RULES:
+- Output ONLY plain text. Do NOT use markdown formatting.
+- Do NOT use asterisks (**) for bold or any other markdown syntax.
+- Use ALL CAPS for section headers instead of bold formatting.
+- Keep the entire email under 350 words.`;
 
       userPrompt = `Generate a foreclosure offer email for:
 - Owner Name: ${ownerName}
