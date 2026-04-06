@@ -128,7 +128,6 @@ const Index = () => {
           <BuyerLiquidityWidget />
           <DeadLeadsAnalytics />
         </div>
-        </div>
       </div>
     </Layout>
   );
