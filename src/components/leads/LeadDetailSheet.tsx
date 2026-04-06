@@ -172,9 +172,22 @@ export function LeadDetailSheet({
                   {property?.city}, {property?.state} {property?.zip_code}
                 </div>
               </div>
-              <Badge variant={statusConfig[lead.status]?.variant || 'secondary'}>
-                {statusConfig[lead.status]?.label || lead.status}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant={statusConfig[lead.status]?.variant || 'secondary'}>
+                  {statusConfig[lead.status]?.label || lead.status}
+                </Badge>
+                {lead.archived_at && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Eliminar
+                  </Button>
+                )}
+              </div>
             </div>
           </SheetHeader>
 
