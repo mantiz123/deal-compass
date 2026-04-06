@@ -30,6 +30,11 @@ const reasonColors: Record<ArchiveReason, string> = {
 
 export function DeadLeadsAnalytics() {
   const { data: analytics, isLoading, error } = useDeadLeadsAnalytics();
+  const { data: archivedLeads } = useArchivedLeads();
+  const deleteLead = usePermanentlyDeleteLead();
+  const [deleteLeadId, setDeleteLeadId] = useState<string | null>(null);
+  const [deleteLeadAddr, setDeleteLeadAddr] = useState<string>('');
+  const [showArchived, setShowArchived] = useState(false);
 
   const totalDeadLeads = analytics?.reduce((sum, a) => sum + Number(a.count), 0) || 0;
 
