@@ -27,7 +27,7 @@ export const useCSVImport = () => {
 
   return useMutation({
     mutationFn: async ({ rows, mappings, source, calculatePIW }: ImportOptions): Promise<ImportResult> => {
-      const result: ImportResult = { success: 0, failed: 0, errors: [], skippedSold: 0, hotLeadsNoPhone: [] };
+      const result: ImportResult = { success: 0, failed: 0, errors: [], skippedSold: 0, hotLeadsNoPhone: [], dncCount: 0, litigatorCount: 0, emailsCaptured: 0 };
       let skippedDuplicates = 0;
       let piwCalculated = 0;
       const batchSize = 50;
