@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useContracts, type Contract } from '@/hooks/useContracts';
 import { ContractDetailSheet } from '@/components/contracts/ContractDetailSheet';
 import { Search, Download, Eye, Loader2, CheckCircle2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,11 +49,11 @@ export default function Contracts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contract_signatures')
-        .select('contract_id, signer_name')
+        .select('contract_id, signer_name, signed_at')
         .like('user_agent', 'Klose Rep%');
       if (error) throw error;
-      const map: Record<string, string> = {};
-      data?.forEach((s: any) => { map[s.contract_id] = s.signer_name; });
+      const map: Record<string, { name: string; signedAt: string }> = {};
+      data?.forEach((s: any) => { map[s.contract_id] = { name: s.signer_name, signedAt: s.signed_at }; });
       return map;
     },
   });
@@ -204,10 +205,19 @@ export default function Contracts() {
                         </TableCell>
                         <TableCell>
                           {kloseSignatures[contract.id] ? (
-                            <Badge variant="success" className="gap-1">
-                              <CheckCircle2 className="h-3 w-3" />
-                              {kloseSignatures[contract.id]}
-                            </Badge>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="success" className="gap-1 cursor-help">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    {kloseSignatures[contract.id].name}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Firmado el {format(new Date(kloseSignatures[contract.id].signedAt), "dd MMM yyyy 'a las' HH:mm", { locale: es })}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           ) : (
                             <span className="text-xs text-muted-foreground">Pendiente</span>
                           )}
@@ -219,9 +229,20 @@ export default function Contracts() {
                           {format(new Date(contract.created_at), 'dd MMM yyyy', { locale: es })}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {contract.signed_at
-                            ? format(new Date(contract.signed_at), 'dd MMM yyyy', { locale: es })
-                            : '—'}
+                          {contract.signed_at ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-help border-b border-dotted border-muted-foreground">
+                                    {format(new Date(contract.signed_at), 'dd MMM yyyy', { locale: es })}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Seller firmó el {format(new Date(contract.signed_at), "dd MMM yyyy 'a las' HH:mm", { locale: es })}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : '—'}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
