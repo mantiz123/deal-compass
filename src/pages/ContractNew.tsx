@@ -18,7 +18,7 @@ import {
   getFieldsForType,
   autoFillFields,
 } from '@/lib/contractTemplates';
-import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye, PenTool } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye, PenTool, Copy, Link, EyeOff } from 'lucide-react';
 import SigningWizard, { type SignablePage } from '@/components/contracts/SigningWizard';
 import {
   ABPage,
