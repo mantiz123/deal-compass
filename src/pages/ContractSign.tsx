@@ -304,7 +304,7 @@ export default function ContractSign() {
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => { setFlowStep('signing'); setPageSignatures({}); }}>Go Back</Button>
                 <Button className="flex-1" disabled={!agreeBinding || !agreeRead || submitting} onClick={handleSubmit}>
-                  {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</> : `✅ Submit All ${totalSigs} Signatures`}
+                  {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating signed PDF...</> : `✅ Submit All ${totalSigs} Signatures`}
                 </Button>
               </div>
             </CardContent>
