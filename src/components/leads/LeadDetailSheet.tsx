@@ -34,6 +34,7 @@ import { DealPackageGenerator } from './DealPackageGenerator';
 import { ListingDataParser } from './ListingDataParser';
 import { LogConversationDialog } from './LogConversationDialog';
 import { SkipTraceInput } from './SkipTraceInput';
+import { OutreachEmailGenerator } from './OutreachEmailGenerator';
 import { ConversationHistory } from './ConversationHistory';
 import { useInteractions } from '@/hooks/useInteractions';
 import { usePermanentlyDeleteLead } from '@/hooks/useArchiveLead';
@@ -369,8 +370,10 @@ export function LeadDetailSheet({
             </TabsContent>
 
             {/* AI Insights Tab */}
-            <TabsContent value="ai-insights" className="mt-4">
+            <TabsContent value="ai-insights" className="mt-4 space-y-6">
               <AIPropertyInsights lead={lead} />
+              <Separator />
+              <OutreachEmailGenerator lead={lead} />
             </TabsContent>
 
             {/* Details Tab */}
