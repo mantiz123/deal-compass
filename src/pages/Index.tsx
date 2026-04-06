@@ -122,10 +122,12 @@ const Index = () => {
           <ActivityFeed />
         </div>
 
-        {/* Right Column - Buyers & Dead Leads */}
+        {/* Right Column - Hygiene, Buyers & Dead Leads */}
         <div className="space-y-6">
+          <PipelineHygieneWidget />
           <BuyerLiquidityWidget />
           <DeadLeadsAnalytics />
+        </div>
         </div>
       </div>
     </Layout>
