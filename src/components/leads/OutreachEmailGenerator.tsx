@@ -246,7 +246,7 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
                 onClick={() => handleCopy(subjectLine, 'subject')}
                 className="shrink-0"
               >
-                {copiedSubject ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                {copiedSubject ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -262,7 +262,7 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
                 className="h-7 text-xs"
               >
                 {copied ? (
-                  <><Check className="h-3 w-3 mr-1 text-green-500" /> Copiado</>
+                  <><Check className="h-3 w-3 mr-1 text-success" /> Copiado</>
                 ) : (
                   <><Copy className="h-3 w-3 mr-1" /> Copiar Email</>
                 )}

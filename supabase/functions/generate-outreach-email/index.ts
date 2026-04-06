@@ -40,13 +40,11 @@ serve(async (req) => {
 
     // Build context for AI
     const ownerName = p.owner_name || "Property Owner";
-    const ownerFirstName = ownerName.split(" ")[0];
     const address = `${p.address}, ${p.city}, ${p.state} ${p.zip_code}`;
     const sqft = p.sqft ? `${p.sqft.toLocaleString()} sqft` : "N/A";
     const bedsBaths = `${p.bedrooms || "N/A"} bed / ${p.bathrooms || "N/A"} bath`;
     const arv = p.arv ? `$${p.arv.toLocaleString()}` : "N/A";
     const mortgageBalance = p.mortgage_balance ? `$${p.mortgage_balance.toLocaleString()}` : null;
-    const listingPrice = lead.listing_price ? `$${lead.listing_price.toLocaleString()}` : null;
     const repairCost = p.repair_cost ? `$${p.repair_cost.toLocaleString()}` : null;
     const isForeclosure = p.is_foreclosure;
     const prefcRecordType = p.prefc_record_type || null;
