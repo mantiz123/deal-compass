@@ -404,10 +404,56 @@ export default function ContractNew() {
                   </p>
                 </div>
 
-                {pdfUrl && (
-                  <Button variant="outline" onClick={() => window.open(pdfUrl, '_blank')}>
-                    <Eye className="h-4 w-4 mr-2" /> Vista Previa del PDF
-                  </Button>
+                {/* PDF Preview & Signing Link */}
+                <div className="flex flex-wrap gap-2">
+                  {pdfUrl && (
+                    <>
+                      <Button variant="outline" onClick={() => setShowPdfPreview(prev => !prev)}>
+                        {showPdfPreview ? <><EyeOff className="h-4 w-4 mr-2" /> Ocultar PDF</> : <><Eye className="h-4 w-4 mr-2" /> Vista Previa del PDF</>}
+                      </Button>
+                      <Button variant="outline" onClick={() => {
+                        const a = document.createElement('a');
+                        a.href = pdfUrl;
+                        a.target = '_blank';
+                        a.rel = 'noopener noreferrer';
+                        a.click();
+                      }}>
+                        <FileText className="h-4 w-4 mr-2" /> Abrir PDF en nueva pestaña
+                      </Button>
+                    </>
+                  )}
+                  {signingToken && (
+                    <Button variant="outline" onClick={() => {
+                      const signingUrl = `${window.location.origin}/sign/${signingToken}`;
+                      navigator.clipboard.writeText(signingUrl);
+                      toast({ title: '📋 Link copiado', description: 'El enlace de firma ha sido copiado al portapapeles.' });
+                    }}>
+                      <Copy className="h-4 w-4 mr-2" /> Copiar Link de Firma
+                    </Button>
+                  )}
+                </div>
+
+                {/* Inline PDF Preview */}
+                {showPdfPreview && pdfUrl && (
+                  <div className="border border-border rounded-lg overflow-hidden bg-white">
+                    <iframe
+                      src={pdfUrl}
+                      className="w-full h-[600px]"
+                      title="Vista previa del contrato"
+                    />
+                  </div>
+                )}
+
+                {/* Signing Link Display */}
+                {signingToken && (
+                  <div className="bg-muted/50 border border-border rounded-lg p-3 space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <Link className="h-3 w-3" /> Enlace de firma para el seller
+                    </p>
+                    <p className="text-xs text-foreground font-mono break-all select-all">
+                      {window.location.origin}/sign/{signingToken}
+                    </p>
+                  </div>
                 )}
 
                 <Separator />
