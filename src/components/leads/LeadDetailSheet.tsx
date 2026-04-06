@@ -681,6 +681,9 @@ export function LeadDetailSheet({
                   <SkipTraceInput
                     propertyId={property.id}
                     currentData={property as any}
+                    onSaved={() => {
+                      queryClient.invalidateQueries({ queryKey: ['leads'] });
+                    }}
                   />
                 )}
               </div>
