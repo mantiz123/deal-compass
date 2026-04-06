@@ -40,7 +40,7 @@ export const useCSVImport = () => {
             const propertyData = transformRow(row, mappings);
             
             // === FILTER: Skip SOLD properties ===
-            const mlsStatus = propertyData.mls_status?.toUpperCase?.() || null;
+            const mlsStatus = (propertyData.mls_status || propertyData.property_status || '').toUpperCase();
             if (mlsStatus === 'SOLD') {
               result.skippedSold++;
               continue;
