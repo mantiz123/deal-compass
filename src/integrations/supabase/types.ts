@@ -500,6 +500,45 @@ export type Database = {
           },
         ]
       }
+      lead_cleanup_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          lead_data: Json | null
+          lead_id: string | null
+          notes: string | null
+          property_address: string | null
+          property_city: string | null
+          reason: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          lead_data?: Json | null
+          lead_id?: string | null
+          notes?: string | null
+          property_address?: string | null
+          property_city?: string | null
+          reason: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          lead_data?: Json | null
+          lead_id?: string | null
+          notes?: string | null
+          property_address?: string | null
+          property_city?: string | null
+          reason?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       lead_documents: {
         Row: {
           created_at: string

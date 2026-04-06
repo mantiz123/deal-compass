@@ -152,7 +152,7 @@ export function StaleLeadsAlert() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 if (deleteLeadId) {
-                  deleteLead.mutate(deleteLeadId);
+                  deleteLead.mutate({ leadId: deleteLeadId, address: deleteAddress });
                   setDeleteLeadId(null);
                 }
               }}

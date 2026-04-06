@@ -64,8 +64,18 @@ export function usePermanentlyDeleteLead() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (leadId: string) => {
-      // First ensure the lead is archived (required by RLS)
+    mutationFn: async ({ leadId, address, city }: { leadId: string; address?: string; city?: string }) => {
+      // Log to cleanup history before deleting
+      await supabase.from('lead_cleanup_log').insert({
+        lead_id: leadId,
+        property_address: address || null,
+        property_city: city || null,
+        action: 'manual_deleted',
+        reason: 'manual_deleted',
+        notes: `Eliminado manualmente por el usuario`,
+      });
+
+      // Ensure archived for RLS
       await supabase
         .from('leads')
         .update({
@@ -75,7 +85,6 @@ export function usePermanentlyDeleteLead() {
         })
         .eq('id', leadId);
 
-      // Then delete
       const { error } = await supabase
         .from('leads')
         .delete()
@@ -89,6 +98,8 @@ export function usePermanentlyDeleteLead() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['stale-leads'] });
       queryClient.invalidateQueries({ queryKey: ['archived-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['cleanup-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['cleanup-log-recent'] });
       toast.success('Lead eliminado permanentemente');
     },
     onError: (error) => {
