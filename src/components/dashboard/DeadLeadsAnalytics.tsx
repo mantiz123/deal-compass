@@ -92,6 +92,7 @@ export function DeadLeadsAnalytics() {
   const sortedAnalytics = [...analytics].sort((a, b) => Number(b.count) - Number(a.count));
 
   return (
+    <>
     <Card variant="glass">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
