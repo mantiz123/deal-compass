@@ -188,6 +188,10 @@ export const useCSVImport = () => {
               setIfNew('mls_agent_phone', propertyData.mls_agent_phone);
               setIfNew('mls_agent_email', propertyData.mls_agent_email);
               setIfNew('estimated_monthly_rent', propertyData.monthly_rent);
+              setIfNew('owner_2_name', propertyData.owner_2_name);
+              setIfNew('owner_mailing_address', propertyData.owner_mailing_address);
+              setIfNew('owner_email_4', propertyData.owner_email_4);
+              setIfNew('prefc_lender', propertyData.prefc_lender);
 
               if (Object.keys(updateFields).length > 0) {
                 updateFields.data_source = source;
@@ -400,6 +404,10 @@ export const useCSVImport = () => {
                 prefc_opening_bid: propertyData.prefc_opening_bid || null,
                 prefc_record_type: propertyData.prefc_record_type || null,
                 property_status: propertyData.property_status || null,
+                prefc_lender: propertyData.prefc_lender || null,
+                owner_2_name: propertyData.owner_2_name || null,
+                owner_mailing_address: propertyData.owner_mailing_address || null,
+                owner_email_4: propertyData.owner_email_4 || null,
                 // Liens
                 lien_type: propertyData.lien_type || null,
                 lien_amount: propertyData.lien_amount || null,
@@ -426,7 +434,7 @@ export const useCSVImport = () => {
             const dncPhones = [property.phone_1_dnc, property.phone_2_dnc, property.phone_3_dnc, property.phone_4_dnc, property.phone_5_dnc].filter(Boolean).length;
             if (dncPhones > 0) result.dncCount++;
             if (property.is_litigator) result.litigatorCount++;
-            const emailCount = [property.owner_email, property.owner_email_2, property.owner_email_3].filter(Boolean).length;
+            const emailCount = [property.owner_email, property.owner_email_2, property.owner_email_3, property.owner_email_4].filter(Boolean).length;
             if (emailCount > 0) result.emailsCaptured += emailCount;
 
             // === HOT LEAD WITHOUT PHONE ALERT ===

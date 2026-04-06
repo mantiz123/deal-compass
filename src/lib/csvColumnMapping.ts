@@ -78,6 +78,18 @@ export const propertyFields: PropertyField[] = [
     required: false,
   },
   {
+    key: 'owner_email_4',
+    label: 'Email 4',
+    aliases: ['email4', 'owneremail4', 'emailaddress4'],
+    required: false,
+  },
+  {
+    key: 'owner_2_name',
+    label: 'Propietario 2',
+    aliases: ['owner2firstname', 'owner2name', 'owner2', 'coowner', 'secondowner', 'owner2fullname'],
+    required: false,
+  },
+  {
     key: 'property_type',
     label: 'Tipo de Propiedad',
     aliases: ['propertytype', 'type', 'proptype', 'landuse', 'usetype', 'tipo', 'tipopropiedad'],
@@ -309,9 +321,15 @@ export const propertyFields: PropertyField[] = [
     required: false,
   },
   {
+    key: 'owner_mailing_address',
+    label: 'Dirección Correo del Propietario',
+    aliases: ['mailingaddress', 'ownermailingaddress', 'mailaddress', 'mailingstreetaddress', 'ownermailingstreetaddress'],
+    required: false,
+  },
+  {
     key: 'is_vacant',
     label: 'Vacante',
-    aliases: ['vacant', 'isvacant', 'vacante', 'vacancy', 'propertystatus'],
+    aliases: ['vacant', 'isvacant', 'vacante', 'vacancy'],
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
@@ -577,6 +595,12 @@ export const propertyFields: PropertyField[] = [
     key: 'property_status',
     label: 'Estado de la Propiedad',
     aliases: ['propertystatus', 'status', 'mlsstatus', 'listingstatus', 'currentstatus'],
+    required: false,
+  },
+  {
+    key: 'prefc_lender',
+    label: 'Pre-FC Lender',
+    aliases: ['prefclender', 'preforeclosurelender', 'lender', 'prefcbeneficiary', 'beneficiary', 'foreclosurelender'],
     required: false,
   },
   // === Lien data ===
