@@ -25,6 +25,7 @@ import { ListingDataParser } from './ListingDataParser';
 import { LogConversationDialog } from './LogConversationDialog';
 import { ConversationHistory } from './ConversationHistory';
 import { useInteractions } from '@/hooks/useInteractions';
+import { usePermanentlyDeleteLead } from '@/hooks/useArchiveLead';
 import { useUpdateProperty } from '@/hooks/useProperties';
 import { useLatestConversation } from '@/hooks/useSellerConversations';
 import { useQueryClient } from '@tanstack/react-query';
