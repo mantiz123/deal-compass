@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDealPackageNotifications } from "@/hooks/useDealPackageNotifications";
+import { CleanupLoginToast } from "./CleanupLoginToast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2 } from "lucide-react";
 
@@ -18,6 +19,8 @@ export function Layout({ children }: LayoutProps) {
 
   // Enable realtime notifications for deal packages
   useDealPackageNotifications();
+
+  // Show login toast not rendered here — rendered in JSX below
 
   useEffect(() => {
     if (!loading && !user) {
@@ -41,6 +44,7 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      <CleanupLoginToast />
       <Sidebar />
       <div className={isMobile ? "pl-0" : "pl-64 transition-all duration-300"}>
         <Header />
