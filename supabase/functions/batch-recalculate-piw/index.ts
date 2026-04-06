@@ -116,9 +116,16 @@ function calculateScore(p: any): any {
   const indicators: string[] = [];
   if (p.absentee_type === 'out_of_state') indicators.push('Out-of-state absentee');
   if (p.is_vacant) indicators.push('Vacant property');
+  else if (p.property_status && p.property_status.toUpperCase().includes('VACANT')) indicators.push('Vacant (status)');
   if (p.owner_tenure_years != null && p.owner_tenure_years >= 10) indicators.push(`${p.owner_tenure_years}yr tenure`);
   if (p.equity_percent != null && p.equity_percent >= 60) indicators.push(`${p.equity_percent}% equity`);
-  if (p.is_foreclosure) indicators.push('Foreclosure');
+  if (p.is_foreclosure) {
+    const rt = (p.prefc_record_type || '').toUpperCase();
+    if (rt.includes('TRUSTEE')) indicators.push('Trustee Sale');
+    else if (rt.includes('LIS')) indicators.push('Lis Pendens');
+    else if (rt.includes('DEFAULT') || rt.includes('NOD')) indicators.push('Notice of Default');
+    else indicators.push('Foreclosure');
+  }
   if (p.tax_delinquent) indicators.push('Tax delinquent');
   if (p.bk_date) indicators.push('Bankruptcy');
   if (p.divorce_date) indicators.push('Divorce');
