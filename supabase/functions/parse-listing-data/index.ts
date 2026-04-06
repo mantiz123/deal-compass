@@ -162,10 +162,16 @@ Extract ALL available data from the PropStream CMA report. Return a JSON object 
     "days_on_market": "number or null",
     "zestimate": "number or null",
     "crime_index": "number or null",
-    "median_price_sqft": "number or null (Average Sale $ / SqFt from market stats)",
-    "avg_dom": "number or null (Average DOM from market statistics)",
-    "price_change_30d": "number or null (Last 30 Days Price Change percentage)",
-    "rent_change_30d": "number or null (Last 30 Days Rent Change percentage)"
+    "median_price_sqft": "number or null (Average Sale $ / SqFt from Statistics pages)",
+    "avg_dom": "number or null (Average DOM from Statistics pages)",
+    "price_change_30d": "number or null (Last 30 Days Price Change percentage from Statistics)",
+    "rent_change_30d": "number or null (Last 30 Days Rent Change percentage from Statistics)",
+    "median_sale_price": "number or null (Median Sale Price from Statistics pages)",
+    "avg_sale_price": "number or null (Average Sale Price from Statistics pages)",
+    "price_change_90d": "number or null (Last 90 Days Price Change percentage from Statistics)",
+    "price_change_1yr": "number or null (Last 1 Year Price Change percentage from Statistics)",
+    "inventory_count": "number or null (Active Listings / Inventory count from Statistics)",
+    "absorption_rate": "number or null (Months of Supply / Absorption Rate from Statistics)"
   },
   "repair_estimate": {
     "estimated_repair_cost": "number - calculate based on age, condition, price signals",
