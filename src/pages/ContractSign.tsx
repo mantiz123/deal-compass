@@ -99,7 +99,6 @@ export default function ContractSign() {
       try { const r = await fetch('https://api.ipify.org?format=json'); ip = (await r.json()).ip; } catch {}
 
       const signerName = contractData.seller_name || '';
-      // Primary signature is the first one collected
 
       // Insert all page signatures
       const sigInserts = Object.entries(pageSignatures).map(([pageNum, sig]) => ({
@@ -122,11 +121,11 @@ export default function ContractSign() {
         contract_data: contractData as any,
       }).eq('id', contract.id);
 
-      // Generate signed PDF in background (don't block success screen)
+      // Generate signed PDF synchronously so the download link works
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        fetch(`${supabaseUrl}/functions/v1/generate-signed-pdf`, {
+        const pdfRes = await fetch(`${supabaseUrl}/functions/v1/generate-signed-pdf`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -134,6 +133,12 @@ export default function ContractSign() {
           },
           body: JSON.stringify({ contractId: contract.id }),
         });
+        if (pdfRes.ok) {
+          const pdfData = await pdfRes.json();
+          if (pdfData.signedPdfUrl) {
+            setContract((prev: any) => ({ ...prev, signed_pdf_url: pdfData.signedPdfUrl }));
+          }
+        }
       } catch (e) {
         console.error('Signed PDF generation request failed:', e);
       }
