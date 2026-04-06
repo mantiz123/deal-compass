@@ -194,7 +194,8 @@ export default function ContractSign() {
               const blobUrl = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = blobUrl;
-              a.download = 'Contrato_Firmado.pdf';
+              const addr = (contractData.property_address || 'Property').replace(/[^a-zA-Z0-9]/g, '_');
+              a.download = `Signed_Contract_${addr}.pdf`;
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
