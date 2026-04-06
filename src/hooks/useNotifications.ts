@@ -1,0 +1,112 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+export interface AppNotification {
+  id: string;
+  type: 'cleanup_archived' | 'cleanup_deleted' | 'stale_warning' | 'info';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  meta?: Record<string, any>;
+}
+
+/**
+ * Builds notifications from cleanup log + stale leads.
+ * No extra DB table needed — derived from existing data.
+ */
+export function useNotifications() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['app-notifications', user?.id],
+    enabled: !!user,
+    queryFn: async (): Promise<AppNotification[]> => {
+      const notifications: AppNotification[] = [];
+
+      // 1. Recent cleanup actions (last 48h)
+      const since = new Date();
+      since.setHours(since.getHours() - 48);
+
+      const { data: cleanupLogs } = await supabase
+        .from('lead_cleanup_log')
+        .select('id, action, reason, notes, property_address, property_city, created_at')
+        .gte('created_at', since.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      for (const log of cleanupLogs || []) {
+        const isDelete = log.action.includes('deleted');
+        notifications.push({
+          id: log.id,
+          type: isDelete ? 'cleanup_deleted' : 'cleanup_archived',
+          title: isDelete ? 'Lead eliminado permanentemente' : 'Lead archivado automáticamente',
+          message: `${log.property_address || 'Propiedad'}${log.property_city ? `, ${log.property_city}` : ''} — ${log.notes || log.reason}`,
+          timestamp: log.created_at,
+          read: false,
+        });
+      }
+
+      // 2. Stale leads warnings
+      const staleThreshold = new Date();
+      staleThreshold.setDate(staleThreshold.getDate() - 10);
+
+      const { data: staleLeads } = await supabase
+        .from('leads')
+        .select('id, created_at, last_contact_at, property:properties!inner(address, city)')
+        .is('archived_at', null)
+        .not('status', 'eq', 'cerrado')
+        .lt('last_contact_at', staleThreshold.toISOString())
+        .order('last_contact_at', { ascending: true })
+        .limit(5);
+
+      for (const lead of staleLeads || []) {
+        const prop = (lead as any).property;
+        const days = Math.floor(
+          (Date.now() - new Date(lead.last_contact_at || lead.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        notifications.push({
+          id: `stale-${lead.id}`,
+          type: 'stale_warning',
+          title: '⚠️ Lead en riesgo de archivado',
+          message: `${prop?.address || 'Propiedad'}, ${prop?.city || ''} — ${days} días sin actividad (se archiva a los 14)`,
+          timestamp: lead.last_contact_at || lead.created_at,
+          read: false,
+        });
+      }
+
+      return notifications;
+    },
+    refetchInterval: 5 * 60 * 1000, // every 5 min
+  });
+}
+
+/**
+ * Gets the overnight cleanup summary for the login toast.
+ */
+export function useOvernightCleanupSummary() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['overnight-cleanup-summary', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const { data: logs } = await supabase
+        .from('lead_cleanup_log')
+        .select('action, reason')
+        .gte('created_at', todayStart.toISOString());
+
+      if (!logs || logs.length === 0) return null;
+
+      const archived = logs.filter(l => l.action === 'auto_archived').length;
+      const deleted = logs.filter(l => l.action === 'auto_deleted').length;
+
+      return { archived, deleted, total: logs.length };
+    },
+    staleTime: Infinity, // only fetch once per session
+  });
+}
