@@ -13,7 +13,8 @@ function getAuctionDaysRemaining(auctionDate?: string): number | null {
   return Math.ceil((auction.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-function calculateScore(p: any): any {
+// K-Score v6: Added Spread (Listing vs ARV) and Market Stats factors
+function calculateScore(p: any, lead?: any): any {
   let sellerMotivation = 0;
   let financialViability = 0;
   let closingDifficulty = 15;
@@ -50,12 +51,11 @@ function calculateScore(p: any): any {
   }
 
   if (p.is_foreclosure) {
-    // Differentiate by Pre-FC Record Type for granular urgency
     const rt = (p.prefc_record_type || '').toUpperCase();
     if (rt.includes('TRUSTEE') || rt.includes('AUCTION')) sellerMotivation += 20;
     else if (rt.includes('DEFAULT') || rt.includes('NOD')) sellerMotivation += 17;
     else if (rt.includes('LIS PENDENS') || rt.includes('LIS')) sellerMotivation += 12;
-    else sellerMotivation += 15; // generic foreclosure
+    else sellerMotivation += 15;
   }
   if (p.tax_delinquent) sellerMotivation += 8;
   if (p.tax_debt != null && p.tax_debt > 2000) sellerMotivation += 4;
@@ -64,14 +64,12 @@ function calculateScore(p: any): any {
   if (p.owner_type === 'corporation' || p.owner_type === 'trust') sellerMotivation += 5;
   if (p.mailing_address_different) sellerMotivation += 3;
 
-  // Bankruptcy (within 2 years = +12, within 5 years = +6)
   if (p.bk_date) {
     const yearsSinceBk = (Date.now() - new Date(p.bk_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
     if (yearsSinceBk <= 2) sellerMotivation += 12;
     else if (yearsSinceBk <= 5) sellerMotivation += 6;
   }
 
-  // Divorce (within 2 years = +10, within 5 years = +5)
   if (p.divorce_date) {
     const yearsSinceDiv = (Date.now() - new Date(p.divorce_date).getTime()) / (1000 * 60 * 60 * 24 * 365);
     if (yearsSinceDiv <= 2) sellerMotivation += 10;
@@ -93,6 +91,30 @@ function calculateScore(p: any): any {
     const netEquity = p.arv - p.mortgage_balance;
     if (netEquity > 100000) financialViability += 8;
     else if (netEquity > 50000) financialViability += 5;
+  }
+
+  // === NEW v6: Spread Factor (Listing Price vs ARV) ===
+  // If listing_price is significantly below ARV, it signals motivation/opportunity
+  let spreadPercent: number | null = null;
+  const listingPrice = lead?.listing_price ? Number(lead.listing_price) : null;
+  const arv = p.arv ? Number(p.arv) : null;
+  
+  if (listingPrice && arv && arv > 0 && listingPrice > 0) {
+    spreadPercent = Math.round(((arv - listingPrice) / arv) * 100);
+    // Listing below ARV = positive spread = good deal signal
+    if (spreadPercent >= 40) financialViability += 10;       // 40%+ discount = excellent
+    else if (spreadPercent >= 30) financialViability += 8;   // 30%+ discount = very good
+    else if (spreadPercent >= 20) financialViability += 5;   // 20%+ discount = good
+    else if (spreadPercent >= 10) financialViability += 2;   // 10%+ discount = moderate
+    // Listing above ARV = negative spread = risk
+    else if (spreadPercent < 0) financialViability -= 3;
+  }
+
+  // === NEW v6: Market Stats Boost ===
+  // High DOM avg in area = buyer's market = more negotiation power
+  if (p.days_on_market_avg != null && p.days_on_market_avg > 0) {
+    if (p.days_on_market_avg > 90) financialViability += 4;
+    else if (p.days_on_market_avg > 60) financialViability += 2;
   }
 
   if (p.price_growth_3yr != null && p.price_growth_3yr > 5) financialViability += 5;
@@ -119,6 +141,7 @@ function calculateScore(p: any): any {
   else if (p.property_status && p.property_status.toUpperCase().includes('VACANT')) indicators.push('Vacant (status)');
   if (p.owner_tenure_years != null && p.owner_tenure_years >= 10) indicators.push(`${p.owner_tenure_years}yr tenure`);
   if (p.equity_percent != null && p.equity_percent >= 60) indicators.push(`${p.equity_percent}% equity`);
+  if (spreadPercent != null && spreadPercent >= 20) indicators.push(`${spreadPercent}% spread`);
   if (p.is_foreclosure) {
     const rt = (p.prefc_record_type || '').toUpperCase();
     if (rt.includes('TRUSTEE')) indicators.push('Trustee Sale');
@@ -131,11 +154,13 @@ function calculateScore(p: any): any {
   if (p.divorce_date) indicators.push('Divorce');
   if (auctionDays !== null && auctionDays > 0 && auctionDays <= 90) indicators.push(`Auction in ${auctionDays}d`);
   if (p.days_on_market != null && p.days_on_market > 90) indicators.push(`${p.days_on_market} DOM`);
+  if (p.days_on_market_avg != null && p.days_on_market_avg > 60) indicators.push(`Avg DOM: ${p.days_on_market_avg}`);
 
   const risks: string[] = [];
   if (p.active_liens_count != null && p.active_liens_count > 2) risks.push(`${p.active_liens_count} active liens`);
   if (p.equity_percent != null && p.equity_percent < 20) risks.push('Low equity');
   if (p.owner_type === 'trust' || p.owner_type === 'estate') risks.push('Complex ownership');
+  if (spreadPercent != null && spreadPercent < 0) risks.push('Listed above ARV');
 
   return {
     score: Math.round(score),
@@ -143,12 +168,13 @@ function calculateScore(p: any): any {
       seller_motivation_score: sellerMotivation,
       financial_viability_score: financialViability,
       closing_difficulty_score: closingDifficulty,
+      spread_percent: spreadPercent,
     },
     priority,
     key_indicators: indicators,
     risks,
     recommended_action: priority === 'hot' ? 'Contact immediately' : priority === 'warm' ? 'Follow up within 48h' : 'Low priority - nurture',
-    analysis: `Deterministic PIW v4 score: ${score}/100. Motivation: ${sellerMotivation}/40, Financial: ${financialViability}/35, Closing: ${closingDifficulty}/25.`,
+    analysis: `K-Score v6: ${score}/100. Motivation: ${sellerMotivation}/40, Financial: ${financialViability}/35, Closing: ${closingDifficulty}/25.${spreadPercent != null ? ` Spread: ${spreadPercent}%` : ''}`,
   };
 }
 
@@ -159,15 +185,32 @@ serve(async (req) => {
 
   try {
     const { leadId, propertyData } = await req.json();
-    console.log('Calculating K-Score for lead:', leadId);
+    console.log('Calculating K-Score v6 for lead:', leadId);
 
-    const result = calculateScore(propertyData);
-
-    // Update lead in database
+    // If leadId is provided, fetch both property and lead data
     if (leadId) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Fetch lead + property in one go
+      const { data: lead, error: leadErr } = await supabase
+        .from('leads')
+        .select('id, listing_price, offer_amount, property_id')
+        .eq('id', leadId)
+        .single();
+
+      if (leadErr) throw leadErr;
+
+      const { data: property, error: propErr } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', lead.property_id)
+        .single();
+
+      if (propErr) throw propErr;
+
+      const result = calculateScore(property, lead);
 
       const { error: updateError } = await supabase
         .from('leads')
@@ -186,7 +229,14 @@ serve(async (req) => {
         .eq('id', leadId);
 
       if (updateError) console.error('Error updating lead:', updateError);
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    // Fallback: propertyData passed directly (no lead context)
+    const result = calculateScore(propertyData || {});
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

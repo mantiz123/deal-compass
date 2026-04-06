@@ -127,6 +127,8 @@ export function PropStreamCMAUploader({ property, onComplete }: PropStreamCMAUpl
       if (market?.days_on_market) propertyUpdate.days_on_market = Math.round(Number(market.days_on_market));
       if (market?.crime_index) propertyUpdate.crime_index = Number(market.crime_index);
       if (market?.avg_dom) propertyUpdate.days_on_market_avg = Math.round(Number(market.avg_dom));
+      if (market?.median_price_sqft) propertyUpdate.price_growth_3yr = Number(market.median_price_sqft); // Store for reference
+      if (market?.price_change_1yr) propertyUpdate.price_growth_3yr = Number(market.price_change_1yr);
 
       // Repair estimate
       if (repair?.estimated_repair_cost) propertyUpdate.repair_cost = Number(repair.estimated_repair_cost);
