@@ -109,7 +109,7 @@ export default function ContractNew() {
       });
 
       setCreatedContractId(result.id);
-
+      setSigningToken(result.signing_token);
       // Generate PDF via edge function
       const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-contract-pdf', {
         body: {
