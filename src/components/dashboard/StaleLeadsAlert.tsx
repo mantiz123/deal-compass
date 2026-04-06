@@ -3,15 +3,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useStaleLeads } from '@/hooks/useArchiveLead';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useStaleLeads, usePermanentlyDeleteLead } from '@/hooks/useArchiveLead';
 import { ArchiveLeadDialog } from '@/components/leads/ArchiveLeadDialog';
-import { Clock, Archive, AlertTriangle, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Clock, Archive, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 
 export function StaleLeadsAlert() {
   const { data: staleLeads, isLoading } = useStaleLeads(14);
+  const deleteLead = usePermanentlyDeleteLead();
   const [archiveLeadId, setArchiveLeadId] = useState<string | null>(null);
   const [archiveAddress, setArchiveAddress] = useState<string>('');
+  const [deleteLeadId, setDeleteLeadId] = useState<string | null>(null);
+  const [deleteAddress, setDeleteAddress] = useState<string>('');
 
   if (isLoading) {
     return (
@@ -26,12 +38,11 @@ export function StaleLeadsAlert() {
     );
   }
 
-  // Only show top 5 stale leads
   const displayLeads = staleLeads?.slice(0, 5) || [];
   const totalStale = staleLeads?.length || 0;
 
   if (totalStale === 0) {
-    return null; // Don't render if no stale leads
+    return null;
   }
 
   return (
@@ -48,7 +59,7 @@ export function StaleLeadsAlert() {
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            Estos leads no han tenido contacto en más de 14 días. Considera archivarlos o dar seguimiento.
+            Sin contacto en más de 14 días. Archívalos (Kill) o elimínalos permanentemente.
           </p>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -73,18 +84,33 @@ export function StaleLeadsAlert() {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-warning hover:text-warning hover:bg-warning/10"
-                onClick={() => {
-                  setArchiveLeadId(lead.id);
-                  setArchiveAddress(lead.property?.address || '');
-                }}
-              >
-                <Archive className="h-4 w-4 mr-1" />
-                Kill
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-warning hover:text-warning hover:bg-warning/10"
+                  onClick={() => {
+                    setArchiveLeadId(lead.id);
+                    setArchiveAddress(lead.property?.address || '');
+                  }}
+                  title="Archivar con razón (Kill)"
+                >
+                  <Archive className="h-4 w-4 mr-1" />
+                  Kill
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => {
+                    setDeleteLeadId(lead.id);
+                    setDeleteAddress(lead.property?.address || '');
+                  }}
+                  title="Eliminar permanentemente"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ))}
 
@@ -107,6 +133,40 @@ export function StaleLeadsAlert() {
           }
         }}
       />
+
+      <AlertDialog open={!!deleteLeadId} onOpenChange={(open) => { if (!open) setDeleteLeadId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              Eliminar Lead Permanentemente
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Estás a punto de eliminar <strong>{deleteAddress}</strong> de forma permanente.
+              Esta acción no se puede deshacer. ¿Estás seguro?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteLeadId) {
+                  deleteLead.mutate(deleteLeadId);
+                  setDeleteLeadId(null);
+                }
+              }}
+            >
+              {deleteLead.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

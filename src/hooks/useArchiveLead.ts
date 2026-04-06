@@ -49,6 +49,8 @@ export function useArchiveLead() {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['dead-leads-analytics'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['stale-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['archived-leads'] });
       toast.success('Lead archivado correctamente');
     },
     onError: (error) => {
@@ -63,6 +65,17 @@ export function usePermanentlyDeleteLead() {
 
   return useMutation({
     mutationFn: async (leadId: string) => {
+      // First ensure the lead is archived (required by RLS)
+      await supabase
+        .from('leads')
+        .update({
+          archived_at: new Date().toISOString(),
+          archive_reason: 'other' as const,
+          archive_notes: 'Eliminado permanentemente',
+        })
+        .eq('id', leadId);
+
+      // Then delete
       const { error } = await supabase
         .from('leads')
         .delete()
@@ -80,7 +93,7 @@ export function usePermanentlyDeleteLead() {
     },
     onError: (error) => {
       console.error('Error deleting lead:', error);
-      toast.error('Error al eliminar el lead. Verifica que sea tuyo y esté archivado.');
+      toast.error('Error al eliminar el lead. Verifica que sea tuyo.');
     },
   });
 }
@@ -105,6 +118,8 @@ export function useUnarchiveLead() {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['dead-leads-analytics'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['stale-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['archived-leads'] });
       toast.success('Lead restaurado correctamente');
     },
     onError: (error) => {
