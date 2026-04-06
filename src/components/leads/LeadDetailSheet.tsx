@@ -33,6 +33,7 @@ import { MarketDataInput } from './MarketDataInput';
 import { DealPackageGenerator } from './DealPackageGenerator';
 import { ListingDataParser } from './ListingDataParser';
 import { LogConversationDialog } from './LogConversationDialog';
+import { SkipTraceInput } from './SkipTraceInput';
 import { ConversationHistory } from './ConversationHistory';
 import { useInteractions } from '@/hooks/useInteractions';
 import { usePermanentlyDeleteLead } from '@/hooks/useArchiveLead';
@@ -64,6 +65,7 @@ import {
   MessageSquare,
   Gavel,
   Trash2,
+  UserSearch,
 } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -97,6 +99,7 @@ export function LeadDetailSheet({
   const [showDealPackage, setShowDealPackage] = useState(false);
   const [showLogConversation, setShowLogConversation] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSkipTrace, setShowSkipTrace] = useState(false);
   const deleteLead = usePermanentlyDeleteLead();
   const { data: interactions, isLoading: loadingInteractions } = useInteractions(lead?.id || '');
   const { data: latestConversation } = useLatestConversation(lead?.id);
@@ -626,6 +629,7 @@ export function LeadDetailSheet({
                         property?.owner_email,
                         (property as any)?.owner_email_2,
                         (property as any)?.owner_email_3,
+                        (property as any)?.owner_email_4,
                       ].filter(Boolean);
                       return emails.length > 0 ? emails.map((email, idx) => (
                         <div key={idx} className="flex items-center gap-2">
@@ -659,7 +663,26 @@ export function LeadDetailSheet({
                       </div>
                     )}
                   </div>
+
+                  <Separator />
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-xs"
+                    onClick={() => setShowSkipTrace(!showSkipTrace)}
+                  >
+                    <UserSearch className="mr-2 h-3 w-3" />
+                    {showSkipTrace ? 'Ocultar Skip Trace' : '+ Agregar/Editar Skip Trace'}
+                  </Button>
                 </Card>
+
+                {showSkipTrace && property?.id && (
+                  <SkipTraceInput
+                    propertyId={property.id}
+                    currentData={property as any}
+                  />
+                )}
               </div>
 
               {/* Distress Signals Detail */}
