@@ -24,6 +24,10 @@ function calculateScore(p: any): any {
   else if (p.is_absentee_owner) sellerMotivation += 8;
 
   if (p.is_vacant) sellerMotivation += 12;
+  else if (p.property_status) {
+    const ps = p.property_status.toUpperCase();
+    if (ps === 'VACANT' || ps.includes('VACANT')) sellerMotivation += 12;
+  }
 
   if (p.owner_tenure_years != null) {
     if (p.owner_tenure_years >= 20) sellerMotivation += 18;
@@ -46,7 +50,13 @@ function calculateScore(p: any): any {
     else if (auctionDays <= 90) sellerMotivation += 10;
   }
 
-  if (p.is_foreclosure) sellerMotivation += 15;
+  if (p.is_foreclosure) {
+    const rt = (p.prefc_record_type || '').toUpperCase();
+    if (rt.includes('TRUSTEE') || rt.includes('AUCTION')) sellerMotivation += 20;
+    else if (rt.includes('DEFAULT') || rt.includes('NOD')) sellerMotivation += 17;
+    else if (rt.includes('LIS PENDENS') || rt.includes('LIS')) sellerMotivation += 12;
+    else sellerMotivation += 15;
+  }
   if (p.tax_delinquent) sellerMotivation += 8;
   if (p.tax_debt != null && p.tax_debt > 2000) sellerMotivation += 4;
   if (p.is_probate) sellerMotivation += 10;
