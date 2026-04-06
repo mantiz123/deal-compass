@@ -44,7 +44,9 @@ export default function ContractNew() {
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [createdContractId, setCreatedContractId] = useState<string | null>(null);
+  const [signingToken, setSigningToken] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [kloseSignatures, setKloseSignatures] = useState<Record<number, string>>({});
   const [kloseSignerName, setKloseSignerName] = useState('');
 
