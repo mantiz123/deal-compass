@@ -9,6 +9,9 @@ interface ImportResult {
   errors: string[];
   skippedSold: number;
   hotLeadsNoPhone: string[];
+  dncCount: number;
+  litigatorCount: number;
+  emailsCaptured: number;
 }
 
 interface ImportOptions {
@@ -24,7 +27,7 @@ export const useCSVImport = () => {
 
   return useMutation({
     mutationFn: async ({ rows, mappings, source, calculatePIW }: ImportOptions): Promise<ImportResult> => {
-      const result: ImportResult = { success: 0, failed: 0, errors: [], skippedSold: 0, hotLeadsNoPhone: [] };
+      const result: ImportResult = { success: 0, failed: 0, errors: [], skippedSold: 0, hotLeadsNoPhone: [], dncCount: 0, litigatorCount: 0, emailsCaptured: 0 };
       let skippedDuplicates = 0;
       let piwCalculated = 0;
       const batchSize = 50;
@@ -124,6 +127,8 @@ export const useCSVImport = () => {
               setIfNew('owner_name', ownerNameUpdate);
               setIfNew('owner_phone', propertyData.owner_phone);
               setIfNew('owner_email', propertyData.owner_email);
+              setIfNew('owner_email_2', propertyData.owner_email_2);
+              setIfNew('owner_email_3', propertyData.owner_email_3);
               setIfNew('owner_type', propertyData.owner_type);
               setIfNew('bedrooms', propertyData.bedrooms);
               setIfNew('bathrooms', propertyData.bathrooms);
@@ -335,6 +340,8 @@ export const useCSVImport = () => {
                 owner_name: ownerName,
                 owner_phone: propertyData.owner_phone || null,
                 owner_email: propertyData.owner_email || null,
+                owner_email_2: propertyData.owner_email_2 || null,
+                owner_email_3: propertyData.owner_email_3 || null,
                 owner_type: propertyData.owner_type || null,
                 property_type: propertyData.property_type || 'single_family',
                 bedrooms: propertyData.bedrooms || null,
@@ -411,6 +418,13 @@ export const useCSVImport = () => {
               continue;
             }
             
+            // === COMPLIANCE TRACKING ===
+            const dncPhones = [property.phone_1_dnc, property.phone_2_dnc, property.phone_3_dnc, property.phone_4_dnc, property.phone_5_dnc].filter(Boolean).length;
+            if (dncPhones > 0) result.dncCount++;
+            if (property.is_litigator) result.litigatorCount++;
+            const emailCount = [property.owner_email, property.owner_email_2, property.owner_email_3].filter(Boolean).length;
+            if (emailCount > 0) result.emailsCaptured += emailCount;
+
             // === HOT LEAD WITHOUT PHONE ALERT ===
             const netEquity = (property.arv || 0) - (property.mortgage_balance || 0);
             const hasPhone = !!(property.owner_phone || property.phone_2 || property.phone_3 || property.phone_4 || property.phone_5);

@@ -21,7 +21,7 @@ export const CSVImporter = () => {
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [source, setSource] = useState<string>('PropWire');
   const [calculatePIW, setCalculatePIW] = useState<boolean>(true);
-  const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: string[]; skippedSold?: number; hotLeadsNoPhone?: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: string[]; skippedSold?: number; hotLeadsNoPhone?: string[]; dncCount?: number; litigatorCount?: number; emailsCaptured?: number } | null>(null);
 
   const importMutation = useCSVImport();
 
@@ -259,16 +259,31 @@ export const CSVImporter = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
                 <div className="text-3xl font-bold text-green-500">{importResult.success}</div>
-                <div className="text-sm text-green-400">Leads importados exitosamente</div>
+                <div className="text-sm text-green-400">Leads importados</div>
               </div>
               <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/30">
                 <div className="text-3xl font-bold text-destructive">{importResult.failed}</div>
-                <div className="text-sm text-destructive/80">Registros con errores</div>
+                <div className="text-sm text-destructive/80">Con errores</div>
+              </div>
+              <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <div className="text-3xl font-bold text-amber-500">{importResult.dncCount ?? 0}</div>
+                <div className="text-sm text-amber-400">🚫 Con DNC</div>
+              </div>
+              <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                <div className="text-3xl font-bold text-blue-500">{importResult.emailsCaptured ?? 0}</div>
+                <div className="text-sm text-blue-400">📧 Emails capturados</div>
               </div>
             </div>
+
+            {(importResult.litigatorCount ?? 0) > 0 && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <span className="text-red-400 font-medium">⚠️ {importResult.litigatorCount} propiedades con dueño LITIGANTE — no contactar por teléfono</span>
+              </div>
+            )}
 
             {(importResult.skippedSold ?? 0) > 0 && (
               <div className="p-3 rounded-lg bg-muted border border-border text-sm">
