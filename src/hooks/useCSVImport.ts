@@ -179,6 +179,8 @@ export const useCSVImport = () => {
               setIfNew('prefc_unpaid_balance', propertyData.prefc_unpaid_balance);
               setIfNew('prefc_default_amount', propertyData.prefc_default_amount);
               setIfNew('prefc_opening_bid', propertyData.prefc_opening_bid);
+              setIfNew('prefc_record_type', propertyData.prefc_record_type);
+              setIfNew('property_status', propertyData.property_status);
               setIfNew('lien_type', propertyData.lien_type);
               setIfNew('lien_amount', propertyData.lien_amount);
               setIfNew('lien_date', propertyData.lien_date);
@@ -396,6 +398,8 @@ export const useCSVImport = () => {
                 prefc_unpaid_balance: propertyData.prefc_unpaid_balance || null,
                 prefc_default_amount: propertyData.prefc_default_amount || null,
                 prefc_opening_bid: propertyData.prefc_opening_bid || null,
+                prefc_record_type: propertyData.prefc_record_type || null,
+                property_status: propertyData.property_status || null,
                 // Liens
                 lien_type: propertyData.lien_type || null,
                 lien_amount: propertyData.lien_amount || null,
