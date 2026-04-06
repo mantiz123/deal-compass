@@ -841,10 +841,12 @@ export type Database = {
           population_growth_5yr: number | null
           prefc_default_amount: number | null
           prefc_opening_bid: number | null
+          prefc_record_type: string | null
           prefc_recording_date: string | null
           prefc_unpaid_balance: number | null
           price_growth_3yr: number | null
           property_condition: string | null
+          property_status: string | null
           property_type: Database["public"]["Enums"]["property_type"]
           proximity_to_development: string | null
           repair_cost: number | null
@@ -931,10 +933,12 @@ export type Database = {
           population_growth_5yr?: number | null
           prefc_default_amount?: number | null
           prefc_opening_bid?: number | null
+          prefc_record_type?: string | null
           prefc_recording_date?: string | null
           prefc_unpaid_balance?: number | null
           price_growth_3yr?: number | null
           property_condition?: string | null
+          property_status?: string | null
           property_type?: Database["public"]["Enums"]["property_type"]
           proximity_to_development?: string | null
           repair_cost?: number | null
@@ -1021,10 +1025,12 @@ export type Database = {
           population_growth_5yr?: number | null
           prefc_default_amount?: number | null
           prefc_opening_bid?: number | null
+          prefc_record_type?: string | null
           prefc_recording_date?: string | null
           prefc_unpaid_balance?: number | null
           price_growth_3yr?: number | null
           property_condition?: string | null
+          property_status?: string | null
           property_type?: Database["public"]["Enums"]["property_type"]
           proximity_to_development?: string | null
           repair_cost?: number | null

@@ -567,6 +567,18 @@ export const propertyFields: PropertyField[] = [
     required: false,
     transform: (value: string) => parseFloat(value.replace(/[$,]/g, '')) || null,
   },
+  {
+    key: 'prefc_record_type',
+    label: 'Tipo de Registro Pre-FC',
+    aliases: ['prefcrecordtype', 'preforeclosurerecordtype', 'recordtype', 'prefctype', 'foreclosuretype'],
+    required: false,
+  },
+  {
+    key: 'property_status',
+    label: 'Estado de la Propiedad',
+    aliases: ['propertystatus', 'status', 'mlsstatus', 'listingstatus', 'currentstatus'],
+    required: false,
+  },
   // === Lien data ===
   {
     key: 'lien_type',

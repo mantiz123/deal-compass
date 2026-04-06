@@ -24,7 +24,10 @@ function calculateScore(p: any): any {
   else if (p.is_absentee_owner) sellerMotivation += 8;
 
   if (p.is_vacant) sellerMotivation += 12;
-
+  else if (p.property_status) {
+    const ps = p.property_status.toUpperCase();
+    if (ps === 'VACANT' || ps.includes('VACANT')) sellerMotivation += 12;
+  }
   if (p.owner_tenure_years != null) {
     if (p.owner_tenure_years >= 20) sellerMotivation += 18;
     else if (p.owner_tenure_years >= 10) sellerMotivation += 15;
@@ -46,7 +49,14 @@ function calculateScore(p: any): any {
     else if (auctionDays <= 90) sellerMotivation += 10;
   }
 
-  if (p.is_foreclosure) sellerMotivation += 15;
+  if (p.is_foreclosure) {
+    // Differentiate by Pre-FC Record Type for granular urgency
+    const rt = (p.prefc_record_type || '').toUpperCase();
+    if (rt.includes('TRUSTEE') || rt.includes('AUCTION')) sellerMotivation += 20;
+    else if (rt.includes('DEFAULT') || rt.includes('NOD')) sellerMotivation += 17;
+    else if (rt.includes('LIS PENDENS') || rt.includes('LIS')) sellerMotivation += 12;
+    else sellerMotivation += 15; // generic foreclosure
+  }
   if (p.tax_delinquent) sellerMotivation += 8;
   if (p.tax_debt != null && p.tax_debt > 2000) sellerMotivation += 4;
   if (p.is_probate) sellerMotivation += 10;
@@ -106,9 +116,16 @@ function calculateScore(p: any): any {
   const indicators: string[] = [];
   if (p.absentee_type === 'out_of_state') indicators.push('Out-of-state absentee');
   if (p.is_vacant) indicators.push('Vacant property');
+  else if (p.property_status && p.property_status.toUpperCase().includes('VACANT')) indicators.push('Vacant (status)');
   if (p.owner_tenure_years != null && p.owner_tenure_years >= 10) indicators.push(`${p.owner_tenure_years}yr tenure`);
   if (p.equity_percent != null && p.equity_percent >= 60) indicators.push(`${p.equity_percent}% equity`);
-  if (p.is_foreclosure) indicators.push('Foreclosure');
+  if (p.is_foreclosure) {
+    const rt = (p.prefc_record_type || '').toUpperCase();
+    if (rt.includes('TRUSTEE')) indicators.push('Trustee Sale');
+    else if (rt.includes('LIS')) indicators.push('Lis Pendens');
+    else if (rt.includes('DEFAULT') || rt.includes('NOD')) indicators.push('Notice of Default');
+    else indicators.push('Foreclosure');
+  }
   if (p.tax_delinquent) indicators.push('Tax delinquent');
   if (p.bk_date) indicators.push('Bankruptcy');
   if (p.divorce_date) indicators.push('Divorce');
