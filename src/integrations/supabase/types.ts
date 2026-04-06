@@ -815,9 +815,12 @@ export type Database = {
           mortgage_balance: number | null
           neighborhood_vacancy_rate: number | null
           notes: string | null
+          owner_2_name: string | null
           owner_email: string | null
           owner_email_2: string | null
           owner_email_3: string | null
+          owner_email_4: string | null
+          owner_mailing_address: string | null
           owner_mailing_city: string | null
           owner_mailing_state: string | null
           owner_name: string | null
@@ -840,6 +843,7 @@ export type Database = {
           phone_5_type: string | null
           population_growth_5yr: number | null
           prefc_default_amount: number | null
+          prefc_lender: string | null
           prefc_opening_bid: number | null
           prefc_record_type: string | null
           prefc_recording_date: string | null
@@ -907,9 +911,12 @@ export type Database = {
           mortgage_balance?: number | null
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
+          owner_2_name?: string | null
           owner_email?: string | null
           owner_email_2?: string | null
           owner_email_3?: string | null
+          owner_email_4?: string | null
+          owner_mailing_address?: string | null
           owner_mailing_city?: string | null
           owner_mailing_state?: string | null
           owner_name?: string | null
@@ -932,6 +939,7 @@ export type Database = {
           phone_5_type?: string | null
           population_growth_5yr?: number | null
           prefc_default_amount?: number | null
+          prefc_lender?: string | null
           prefc_opening_bid?: number | null
           prefc_record_type?: string | null
           prefc_recording_date?: string | null
@@ -999,9 +1007,12 @@ export type Database = {
           mortgage_balance?: number | null
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
+          owner_2_name?: string | null
           owner_email?: string | null
           owner_email_2?: string | null
           owner_email_3?: string | null
+          owner_email_4?: string | null
+          owner_mailing_address?: string | null
           owner_mailing_city?: string | null
           owner_mailing_state?: string | null
           owner_name?: string | null
@@ -1024,6 +1035,7 @@ export type Database = {
           phone_5_type?: string | null
           population_growth_5yr?: number | null
           prefc_default_amount?: number | null
+          prefc_lender?: string | null
           prefc_opening_bid?: number | null
           prefc_record_type?: string | null
           prefc_recording_date?: string | null
