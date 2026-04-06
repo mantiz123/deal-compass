@@ -58,6 +58,33 @@ export function useArchiveLead() {
   });
 }
 
+export function usePermanentlyDeleteLead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (leadId: string) => {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', leadId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['dead-leads-analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['stale-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['archived-leads'] });
+      toast.success('Lead eliminado permanentemente');
+    },
+    onError: (error) => {
+      console.error('Error deleting lead:', error);
+      toast.error('Error al eliminar el lead. Verifica que sea tuyo y esté archivado.');
+    },
+  });
+}
+
 export function useUnarchiveLead() {
   const queryClient = useQueryClient();
 

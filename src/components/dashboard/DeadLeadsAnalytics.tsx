@@ -1,8 +1,20 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDeadLeadsAnalytics, archiveReasonLabels, ArchiveReason } from '@/hooks/useArchiveLead';
-import { Skull, TrendingDown, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useDeadLeadsAnalytics, useArchivedLeads, usePermanentlyDeleteLead, archiveReasonLabels, ArchiveReason } from '@/hooks/useArchiveLead';
+import { Skull, TrendingDown, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const reasonColors: Record<ArchiveReason, string> = {
