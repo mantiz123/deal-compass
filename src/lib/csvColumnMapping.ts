@@ -417,7 +417,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'phone_1_dnc',
     label: 'Phone 1 DNC',
-    aliases: ['phone1dnc'],
+    aliases: ['phone1dnc', 'phone1donotcall', 'dnc1', 'isdnc1'],
     required: false,
     transform: (value: string) => {
       const n = normalize(value);
@@ -427,7 +427,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'phone_2_dnc',
     label: 'Phone 2 DNC',
-    aliases: ['phone2dnc'],
+    aliases: ['phone2dnc', 'phone2donotcall', 'dnc2', 'isdnc2'],
     required: false,
     transform: (value: string) => {
       const n = normalize(value);
@@ -437,7 +437,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'phone_3_dnc',
     label: 'Phone 3 DNC',
-    aliases: ['phone3dnc'],
+    aliases: ['phone3dnc', 'phone3donotcall', 'dnc3', 'isdnc3'],
     required: false,
     transform: (value: string) => {
       const n = normalize(value);
@@ -447,7 +447,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'phone_4_dnc',
     label: 'Phone 4 DNC',
-    aliases: ['phone4dnc'],
+    aliases: ['phone4dnc', 'phone4donotcall', 'dnc4', 'isdnc4'],
     required: false,
     transform: (value: string) => {
       const n = normalize(value);
@@ -457,7 +457,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'phone_5_dnc',
     label: 'Phone 5 DNC',
-    aliases: ['phone5dnc'],
+    aliases: ['phone5dnc', 'phone5donotcall', 'dnc5', 'isdnc5'],
     required: false,
     transform: (value: string) => {
       const n = normalize(value);
