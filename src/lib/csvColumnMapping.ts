@@ -329,7 +329,7 @@ export const propertyFields: PropertyField[] = [
   {
     key: 'is_vacant',
     label: 'Vacante',
-    aliases: ['vacant', 'isvacant', 'vacante', 'vacancy', 'propertystatus'],
+    aliases: ['vacant', 'isvacant', 'vacante', 'vacancy'],
     required: false,
     transform: (value: string) => {
       const normalized = normalize(value);
