@@ -246,8 +246,8 @@ export default function Contracts() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                            {contract.pdf_url && (
-                              <Button variant="ghost" size="icon" onClick={() => handleDownload(contract.pdf_url, contract.id)}>
+                            {(contract.signed_pdf_url || contract.pdf_url) && (
+                              <Button variant="ghost" size="icon" onClick={() => handleDownload(contract.signed_pdf_url || contract.pdf_url, contract.id)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
                             )}
