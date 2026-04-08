@@ -313,58 +313,56 @@ async function embedKloseSignature(ctx: PdfCtx, cursor: Cursor, pageNum: number,
 async function embedDualSignature(ctx: PdfCtx, cursor: Cursor, pageNum: number, leftLabel: string, leftName: string, rightLabel: string, rightName: string): Promise<Cursor> {
   cursor = ensureSpace(ctx, cursor, 80)
   const midX = PAGE_W / 2
-  const sig = ctx.sigByPage[pageNum]
-  
-  // Left side - embed signature if available
-  if (sig?.image) {
+  const leftSig = ctx.kloseSigByPage[pageNum]
+  const rightSig = ctx.sigByPage[pageNum]
+  let leftSigHeight = 0
+  let rightSigHeight = 0
+
+  if (leftSig?.image) {
     try {
-      const base64 = sig.image.split(',')[1]
+      const base64 = leftSig.image.split(',')[1]
       const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
       const sigImage = await ctx.pdfDoc.embedPng(bytes)
       const sigW = 140
       const sigH = (sigImage.height / sigImage.width) * sigW
       cursor.page.drawImage(sigImage, { x: MARGIN_L, y: cursor.y - sigH, width: sigW, height: sigH })
-      cursor.page.drawLine({ start: { x: MARGIN_L, y: cursor.y - sigH - 2 }, end: { x: midX - 30, y: cursor.y - sigH - 2 }, thickness: 0.5, color: GRAY })
-      cursor.page.drawText(leftLabel, { x: MARGIN_L, y: cursor.y - sigH - 14, size: 8, font: ctx.font, color: GRAY })
-      cursor.page.drawText(leftName, { x: MARGIN_L, y: cursor.y - sigH - 26, size: 9, font: ctx.fontBold, color: BLACK })
-      cursor.page.drawText(`Date: ${sig.date}`, { x: MARGIN_L, y: cursor.y - sigH - 38, size: 8, font: ctx.font, color: GRAY })
+      leftSigHeight = sigH
     } catch (e) {
-      console.error('Failed to embed dual sig', e)
+      console.error('Failed to embed left dual sig', e)
     }
-  } else {
-    cursor.page.drawLine({ start: { x: MARGIN_L, y: cursor.y }, end: { x: midX - 30, y: cursor.y }, thickness: 0.5, color: GRAY })
-    cursor.page.drawText(leftLabel, { x: MARGIN_L, y: cursor.y - 12, size: 8, font: ctx.font, color: GRAY })
-    cursor.page.drawText(leftName, { x: MARGIN_L, y: cursor.y - 24, size: 9, font: ctx.fontBold, color: BLACK })
   }
-  
-  // Right side - Klose LLC signature
-  const kloseSig = ctx.kloseSigByPage[pageNum]
-  if (kloseSig?.image) {
+
+  if (rightSig?.image) {
     try {
-      const base64k = kloseSig.image.split(',')[1]
-      const bytesK = Uint8Array.from(atob(base64k), c => c.charCodeAt(0))
-      const kloseImg = await ctx.pdfDoc.embedPng(bytesK)
-      const kW = 140
-      const kH = (kloseImg.height / kloseImg.width) * kW
-      cursor.page.drawImage(kloseImg, { x: midX + 10, y: cursor.y - kH, width: kW, height: kH })
-      cursor.page.drawLine({ start: { x: midX + 10, y: cursor.y - kH - 2 }, end: { x: PAGE_W - MARGIN_R, y: cursor.y - kH - 2 }, thickness: 0.5, color: GRAY })
-      cursor.page.drawText(rightLabel, { x: midX + 10, y: cursor.y - kH - 14, size: 8, font: ctx.font, color: GRAY })
-      cursor.page.drawText(kloseSig.name, { x: midX + 10, y: cursor.y - kH - 26, size: 9, font: ctx.fontBold, color: BLACK })
-      cursor.page.drawText(`Date: ${kloseSig.date}`, { x: midX + 10, y: cursor.y - kH - 38, size: 8, font: ctx.font, color: GRAY })
+      const base64 = rightSig.image.split(',')[1]
+      const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+      const sigImage = await ctx.pdfDoc.embedPng(bytes)
+      const sigW = 140
+      const sigH = (sigImage.height / sigImage.width) * sigW
+      cursor.page.drawImage(sigImage, { x: midX + 10, y: cursor.y - sigH, width: sigW, height: sigH })
+      rightSigHeight = sigH
     } catch (e) {
-      console.error('Failed to embed Klose dual sig', e)
+      console.error('Failed to embed right dual sig', e)
     }
-  } else {
-    cursor.page.drawLine({ start: { x: midX + 10, y: cursor.y }, end: { x: PAGE_W - MARGIN_R, y: cursor.y }, thickness: 0.5, color: GRAY })
-    cursor.page.drawText(rightLabel, { x: midX + 10, y: cursor.y - 12, size: 8, font: ctx.font, color: GRAY })
-    cursor.page.drawText(rightName, { x: midX + 10, y: cursor.y - 24, size: 9, font: ctx.fontBold, color: BLACK })
-    cursor.page.drawText('Date: ____________', { x: midX + 10, y: cursor.y - 36, size: 8, font: ctx.font, color: GRAY })
   }
-  
-  return { ...cursor, y: cursor.y - 50 }
+
+  const blockHeight = Math.max(leftSigHeight, rightSigHeight)
+  const lineY = cursor.y - blockHeight - 2
+
+  cursor.page.drawLine({ start: { x: MARGIN_L, y: lineY }, end: { x: midX - 30, y: lineY }, thickness: 0.5, color: GRAY })
+  cursor.page.drawText(leftLabel, { x: MARGIN_L, y: lineY - 12, size: 8, font: ctx.font, color: GRAY })
+  cursor.page.drawText(leftSig?.name || leftName, { x: MARGIN_L, y: lineY - 24, size: 9, font: ctx.fontBold, color: BLACK })
+  cursor.page.drawText(`Date: ${leftSig?.date || '____________'}`, { x: MARGIN_L, y: lineY - 36, size: 8, font: ctx.font, color: GRAY })
+
+  cursor.page.drawLine({ start: { x: midX + 10, y: lineY }, end: { x: PAGE_W - MARGIN_R, y: lineY }, thickness: 0.5, color: GRAY })
+  cursor.page.drawText(rightLabel, { x: midX + 10, y: lineY - 12, size: 8, font: ctx.font, color: GRAY })
+  cursor.page.drawText(rightSig?.name || rightName, { x: midX + 10, y: lineY - 24, size: 9, font: ctx.fontBold, color: BLACK })
+  cursor.page.drawText(`Date: ${rightSig?.date || '____________'}`, { x: midX + 10, y: lineY - 36, size: 8, font: ctx.font, color: GRAY })
+
+  return { ...cursor, y: lineY - 50 }
 }
 
-// ─── AB Contract (with signatures) ─────────────────────────────────
+// ─── AB Contract// ─── AB Contract (with signatures) ─────────────────────────────────
 
 async function buildABPdf(ctx: PdfCtx) {
   const d = ctx.data
@@ -376,33 +374,34 @@ async function buildABPdf(ctx: PdfCtx) {
   c = drawCenteredText(ctx, c, '"AS IS" CASH-OFFER', 11)
   c.y -= 5
 
-  c = drawClause(ctx, c, '1', 'PARTIES', `Klose LLC, a Wyoming Limited Liability Company (hereinafter "BUYER"), and ${v(d,'seller_name')} (hereinafter "SELLER"), hereby agree that Seller will sell and Buyer will buy the following property.`)
-  c = drawClause(ctx, c, '2', 'PROPERTY', `(Street Address): ${v(d,'property_address')} (City): ${v(d,'property_city')} (County): ${v(d,'property_county')} (State): ${v(d,'property_state','___')}. NOT Included: ${v(d,'not_included_items','None')}.`)
+  c = drawClause(ctx, c, '1', 'PARTIES', `Klose LLC, a Wyoming Limited Liability Company (hereinafter "BUYER"), and ${v(d,'seller_name')} (hereinafter "SELLER"), which terms may be singular or plural and will include the heirs, successors, personal representatives, and assigns of Seller and Buyer, hereby agree that Seller will sell and Buyer will buy the following property, upon the following terms and conditions.`)
+  c = drawClause(ctx, c, '2', 'PROPERTY', `(Street Address): ${v(d,'property_address')} (City): ${v(d,'property_city')} (County): ${v(d,'property_county')} (State): ${v(d,'property_state','___')}. The Property includes the land and all appurtenant rights, privileges and easements, all buildings and fixtures, including without limitation, all of the following as are NOW on the Property: electrical, heating, cooling, plumbing, bathroom mirrors and fixtures, awnings, screens, storm windows and doors, landscaping, disposals, TV antennas, built-in electronics wiring, ceiling fans, smoke alarms, security systems, doorbells, thermostats, garage door openers and controls, attached carpeting, ranges/ovens, microwave ovens, kitchen refrigerators, dishwashers, air conditioners, water softeners, existing window treatments, satellite/TV reception systems, affixed gas/oil tanks not including fuel therein unless otherwise agreed by the parties. NOT Included: ${v(d,'not_included_items','None')}. All property sold by this contract is called the "Property".`)
   c = drawClause(ctx, c, '3', 'CONTRACT TERMS', `Sale Price: $ ${money(d.sale_price)}`)
-  c = drawClause(ctx, c, '4', 'NON-FINANCING / ALL CASH', 'This is an all-cash sale.')
-  c = drawClause(ctx, c, '5', 'CLOSING', `Closing within ${v(d,'closing_days','30')} business days via ${v(d,'title_company')}.`)
-  c = drawClause(ctx, c, '6', 'TITLE POLICY', "Owner's Policy of Title Insurance at Buyer's expense.")
-  c = drawClause(ctx, c, '7', 'PROPERTY CONDITION', `"AS-IS" with ${v(d,'due_diligence_days','10')} day Due Diligence Period.`)
-  c = drawClause(ctx, c, '8', 'POSSESSION', 'Delivered at closing.')
-  c = drawClause(ctx, c, '9', 'PRE-MARKETING', "Seller furnishes key; Buyer may market the Property.")
-  c = drawClause(ctx, c, '10', 'PRORATIONS', 'Prorated through Closing Date.')
-  c = drawClause(ctx, c, '11', 'DOCUMENTATION', 'General Warranty Deed.')
-  c = drawClause(ctx, c, '12', 'CASUALTY LOSS', 'Seller restores if damaged.')
-  c = drawClause(ctx, c, '13', 'DEFAULT', 'Buyer may enforce specific performance or terminate.')
-  c = drawClause(ctx, c, '14', 'REPRESENTATIONS', 'No unrecorded liens at Closing.')
-  c = drawClause(ctx, c, '15', 'SALES EXPENSES', "Seller pays releases of liens; Buyer pays stipulated expenses.")
-  c = drawClause(ctx, c, '16', 'RESALE', 'Buyer retains all profit.')
-  c = drawClause(ctx, c, '17', 'ASSIGNMENT', 'Buyer may assign.')
-  c = drawClause(ctx, c, '18', 'HOLD HARMLESS', 'Buyer held harmless by Seller.')
-  c = drawClause(ctx, c, '19', 'ENTIRE AGREEMENT', 'Contains entire agreement.')
+  c = drawClause(ctx, c, '4', 'NON-FINANCING / ALL CASH', 'This is an all-cash sale; no financing is involved, unless agreed upon in writing by both parties at a later date.')
+  c = drawClause(ctx, c, '5', 'CLOSING', `Buyer will deliver contract to ${v(d,'title_company')} (the "Title Company") upon execution of the contract by both parties. Closing shall occur within ${v(d,'closing_days','30')} business days from the execution of this agreement, or within seven (7) days after objection to title has been cured, whichever date is later.`)
+  c = drawClause(ctx, c, '6', 'TITLE POLICY', "Seller shall furnish to Buyer at Buyer's expense an Owner's Policy of Title Insurance issued by the Title Company in the amount of the Sales Price, dated at or after closing, insuring Buyer against loss under the provisions of the Title Policy.")
+  c = drawClause(ctx, c, '7', 'PROPERTY CONDITION', `The Buyer is purchasing the Property in an "AS-IS" condition subject to a ${v(d,'due_diligence_days','10')} Business Day Due Diligence Period. During Due Diligence, Buyer will need to access the property with Inspectors, Appraisers, Investors, Contractors, and potentially others. If Buyer determines, in its sole and absolute discretion, before the expiration of the Due Diligence Period that the Property is unacceptable for Buyer's purposes, Buyer shall have the right to terminate this Agreement by giving Seller written notice before the expiration of the Due Diligence Period.`)
+  c = drawClause(ctx, c, '8', 'POSSESSION', 'The possession of the Property shall be delivered to the Buyer at closing. No exceptions, unless specifically agreed upon in writing by all parties.')
+  c = drawClause(ctx, c, '9', 'PRE-MARKETING AGREEMENT', `If vacant, and upon acceptance of this contract by Seller, Seller is to furnish Buyer a key or combination to lockbox and give Buyer permission to enter the premises for inspections prior to closing. At Buyer's option, Buyer is allowed to display a For Sale or similar sign in front of the Property. Buyer has the right to market its contract interest in the Property in Buyer's sole discretion.`)
+  c = drawClause(ctx, c, '10', 'PRORATIONS', 'Property Taxes, flood and hazard insurance, rents, maintenance fees, interest on any present loan, and any prepaid unearned mortgage insurance premium which is refundable in whole or in part shall be prorated through the Closing Date.')
+  c = drawClause(ctx, c, '11', 'PROPERTY DOCUMENTATION', 'Seller to furnish Buyer a General Warranty Deed conveying title subject only to liens securing payment of debt created as part of the consideration, taxes for the current year, restrictive covenants and utility easements common to the platted subdivision.')
+  c = drawClause(ctx, c, '12', 'CASUALTY LOSS', 'If any part of Property is damaged or destroyed by fire or other casualty loss, Seller shall restore the same to its previous condition as soon as reasonably possible, but in any event by Closing Date.')
+  c = drawClause(ctx, c, '13', 'DEFAULT', 'If Seller fails to comply herewith for any reason, Buyer may either (a) enforce specific performance hereof and seek such other relief as may be provided by law, or (b) terminate this contract, thereby releasing Seller from this contract.')
+  c = drawClause(ctx, c, '14', 'REPRESENTATIONS', 'Seller represents that as of the Closing Date (a) there will be no unrecorded liens, assessments, or Uniform Commercial Code Security interests against any of the Property, and (b) any loans will be without default.')
+  c = drawClause(ctx, c, '15', 'SALES EXPENSES', "A. Buyer's Expenses: Expenses stipulated to be paid by Buyer under other provisions of this contract. B. Seller's Expenses: Releases of existing liens, including prepayment penalties and recording fees; release of Seller's loan liability; tax statements or certificates; real estate transfer tax and/or conveyance fees. C. If Seller(s) fails to perform, they are responsible for any consequential damages.")
+  c = drawClause(ctx, c, '16', 'RESALE OF PROPERTY', 'Seller agrees that Buyer retains all profit, whether by note, trade, or cash, in the event of resale, simultaneous close, or assignment of this contract.')
+  c = drawClause(ctx, c, '17', 'ASSIGNMENT OF CONTRACT', 'Buyer may assign the contract. If assigned, all rights, interests, suits, claims, and titles in and to the contract will be assigned, and the Assignor will be released of all liability.')
+  c = drawClause(ctx, c, '18', 'HOLD HARMLESS AND ASSUMPTION OF LIABILITY', 'In the event the Seller has any damages or other liabilities caused by a third party, Buyer is to be held harmless by the Seller for these damages or other liabilities.')
+  c = drawClause(ctx, c, '19', 'ENTIRE AGREEMENT OF PARTIES', 'This contract contains the entire agreement of the parties and cannot be changed except by their written agreement.')
   c = drawClause(ctx, c, '20', 'SPECIAL PROVISIONS', v(d, 'special_provisions', 'None'))
   c.y -= 5
-  c = await embedDualSignature(ctx, c, 3, 'Seller Signature', v(d,'seller_name','_________________'), 'Buyer Signature', 'Klose LLC / Authorized Signatory')
+  c = await embedDualSignature(ctx, c, 3, 'Buyer Signature', 'Klose LLC / Authorized Signatory', 'Seller Signature', v(d,'seller_name','_________________'))
 
-  // Page 4-5: Seller Info
   c = addPage(ctx, 4)
   c = drawHeader(ctx, c, false)
   c = drawCenteredText(ctx, c, 'PRELIMINARY SELLER INFORMATION WORKSHEET', 13)
+  c.y -= 5
+  c = drawCenteredText(ctx, c, 'SELLER INFORMATION', 11)
   c.y -= 5
   c = drawParagraph(ctx, c, `Full Legal Name: ${v(d,'seller_name')}`)
   c = drawParagraph(ctx, c, `Date of Birth: ${v(d,'seller_dob')}`)
@@ -411,31 +410,17 @@ async function buildABPdf(ctx: PdfCtx) {
   c = drawParagraph(ctx, c, `Marital Status: ${v(d,'marital_status')}`)
   if (d.spouse_name) c = drawParagraph(ctx, c, `Spouse Name: ${d.spouse_name}`)
   c.y -= 20
-  c = await embedSignature(ctx, c, 5, 'Seller Signature - Info Worksheet')
+  c = await embedSignature(ctx, c, 5, 'Seller Signature')
 
-  // Page 6: Investor Disclosure
   c = await buildSignedInvestorDisclosure(ctx, 'Seller', 6)
-  c = await embedKloseSignature(ctx, c, 6, 'Buyer (Klose LLC) Signature - Investor Disclosure')
-
-  // Page 7: Fair Housing
   c = await buildSignedFairHousing(ctx, 'Seller', 7)
-  c = await embedKloseSignature(ctx, c, 7, 'Buyer (Klose LLC) Signature - Fair Housing')
-
-  // Page 8: Non-Representation
   c = await buildSignedNonRepresentation(ctx, 'Seller', 8)
-  c = await embedKloseSignature(ctx, c, 8, 'Buyer (Klose LLC) Signature - Non-Representation')
-
-  // Page 9: Auth to Sign (POA)
   c = await buildSignedAuthToSign(ctx, 9)
-
-  // Page 10: Release of Info
   c = await buildSignedReleaseAuth(ctx, 10)
-
-  // Page 11: Seller Responsibility
   c = await buildSignedSellerResponsibility(ctx, 11)
 }
 
-// ─── BC Contract ────────────────────────────────────────────────────
+// ─── BC Contract// ─── BC Contract ────────────────────────────────────────────────────
 
 function buildBCPdf(ctx: PdfCtx) {
   return buildBCPdfAsync(ctx)
@@ -467,7 +452,7 @@ async function buildBCPdfAsync(ctx: PdfCtx) {
   c = drawClause(ctx, c, '15', 'ENTIRE AGREEMENT', 'This is the entire agreement.')
   c = drawClause(ctx, c, '16', 'SPECIAL PROVISIONS', v(d,'special_provisions','None'))
   c.y -= 5
-  c = await embedDualSignature(ctx, c, 3, 'Assignee Signature', v(d,'assignee_name','___'), 'Assignor Signature', 'Klose LLC')
+  c = await embedDualSignature(ctx, c, 3, 'Assignor Signature', 'Klose LLC / Authorized Signatory', 'Assignee Signature', v(d,'assignee_name','___'))
 
   c = await buildSignedInvestorDisclosure(ctx, 'Buyer/Assignee', 4)
   c = await buildSignedNonRepresentation(ctx, 'Buyer/Assignee', 5)
@@ -496,7 +481,7 @@ async function buildAmendmentPdfAsync(ctx: PdfCtx) {
   if (d.new_closing_date) c = drawClause(ctx, c, 'Amendment 2', 'Closing Date', `New date: ${d.new_closing_date}`)
   if (d.additional_terms) c = drawClause(ctx, c, 'Amendment 3', 'Additional Terms', d.additional_terms)
   c.y -= 5
-  c = await embedDualSignature(ctx, c, 2, 'Seller Signature', v(d,'seller_name','___'), 'Buyer Signature', 'Klose LLC')
+  c = await embedDualSignature(ctx, c, 2, 'Buyer Signature', 'Klose LLC / Authorized Signatory', 'Seller Signature', v(d,'seller_name','___'))
 }
 
 // ─── Supporting pages with embedded signatures ──────────────────────
@@ -507,16 +492,16 @@ async function buildSignedInvestorDisclosure(ctx: PdfCtx, role: string, pageNum:
   c = drawCenteredText(ctx, c, 'WORKING WITH KLOSE LLC', 13)
   c = drawCenteredText(ctx, c, 'INVESTOR DISCLOSURE STATEMENT', 11)
   c.y -= 5
-  c = drawParagraph(ctx, c, `I, the undersigned, acknowledge and understand that Klose LLC is a for-profit real estate investment company.`)
+  c = drawParagraph(ctx, c, `I, the undersigned, acknowledge and understand that Klose LLC ("Klose") is a for-profit real estate investment company organized under the laws of Wyoming. Accordingly, the undersigned acknowledges the following:`)
   const items = [
-    'Klose is a real estate investor and is NOT a licensed broker or agent.',
-    'Klose holds an equitable interest through a Purchase and Sale Agreement.',
-    'Klose is not currently the fee simple owner at the time of assignment.',
-    'This transaction is contingent upon obtaining marketable title.',
-    "Marketable title means the title is free from significant liens or disputes.",
-    `The parties agree to use ${v(ctx.data,'title_company')} (Title Company).`,
+    'Klose is a real estate investor and is NOT a licensed real estate broker or agent.',
+    'Klose holds an equitable interest in the subject property through a Purchase and Sale Agreement.',
+    'Klose is not currently the fee simple owner of the property at the time of assignment.',
+    'This transaction is contingent upon Klose obtaining marketable title.',
+    "Marketable title means the property's title is free from significant liens, disputes, or legal issues.",
+    `The parties agree to use ${v(ctx.data,'title_company')} (Title Company) to determine marketable title.`,
     'If unable to obtain marketable title, Klose shall return option/earnest money.',
-    'Closing may occur through assignment, simultaneous closing, or traditional purchase.',
+    'The closing may occur through: (a) Assignment of Contract, (b) Simultaneous Closing, or (c) Traditional Purchase.',
     'This property is sold as-is, where-is.',
     'The undersigned is encouraged to seek independent legal counsel.',
   ]
@@ -527,7 +512,7 @@ async function buildSignedInvestorDisclosure(ctx: PdfCtx, role: string, pageNum:
   c = drawCenteredText(ctx, c, 'ACKNOWLEDGMENT', 11)
   c = drawParagraph(ctx, c, 'I/We have read and understand this disclosure.')
   c.y -= 10
-  return await embedSignature(ctx, c, pageNum, `${role} Signature - Investor Disclosure`)
+  return await embedSignature(ctx, c, pageNum, `${role} Signature`)
 }
 
 async function buildSignedFairHousing(ctx: PdfCtx, role: string, pageNum: number): Promise<Cursor> {
@@ -537,12 +522,12 @@ async function buildSignedFairHousing(ctx: PdfCtx, role: string, pageNum: number
   c = drawCenteredText(ctx, c, 'AFFILIATED BUSINESS DISCLOSURE', 13)
   c.y -= 5
   c = drawCenteredText(ctx, c, 'FAIR HOUSING STATEMENT', 11)
-  c = drawParagraph(ctx, c, 'It is illegal discrimination under the Federal Fair Housing Law to discriminate based on race, color, religion, sex, disability, familial status, or national origin.', 9)
+  c = drawParagraph(ctx, c, 'It is illegal discrimination under the Federal Fair Housing Law, 42 U.S.C.A. 3601 to take any of the following actions because of race, color, religion, sex (including gender identity and sexual orientation), disability, familial status, or national origin: Refuse to rent or sell housing; Refuse to negotiate for housing; Set different terms, conditions or privileges for sale or rental of a dwelling; Provide different housing services or facilities; Falsely deny that housing is available for inspection, sale or rental; Make, print or publish any notice, statement or advertisement indicating any preference, limitation or discrimination.', 9)
   c.y -= 5
   c = drawCenteredText(ctx, c, 'AFFILIATED BUSINESS DISCLOSURE', 11)
-  c = drawParagraph(ctx, c, 'Klose LLC may have relationships with certain service providers. You are NOT required to use any specific provider.', 9)
+  c = drawParagraph(ctx, c, 'Klose LLC and/or its affiliated companies may have relationships with certain service providers, including title companies and lenders. You are NOT required to use any specific title company, lender, or settlement service provider as a condition of your purchase or sale.', 9)
   c.y -= 10
-  return await embedSignature(ctx, c, pageNum, `${role} Signature - Fair Housing`)
+  return await embedSignature(ctx, c, pageNum, `${role} Signature`)
 }
 
 async function buildSignedNonRepresentation(ctx: PdfCtx, role: string, pageNum: number): Promise<Cursor> {
@@ -550,10 +535,11 @@ async function buildSignedNonRepresentation(ctx: PdfCtx, role: string, pageNum: 
   c = drawHeader(ctx, c)
   c = drawCenteredText(ctx, c, 'NOTICE OF NON-REPRESENTATION', 13)
   c.y -= 5
-  c = drawParagraph(ctx, c, 'You are hereby notified that Klose LLC does not represent you as a real estate broker or agent.')
-  c = drawParagraph(ctx, c, 'You are advised to seek independent legal counsel.')
+  c = drawParagraph(ctx, c, 'You are hereby notified that Klose LLC and its members, managers, and employees do not represent you in any capacity as a real estate broker or agent.')
+  c = drawParagraph(ctx, c, 'You should not assume that any representative of Klose LLC represents your interests unless you separately engage a licensed real estate agent or attorney. You are advised not to disclose any information you want held in confidence until you decide on representation.')
+  c = drawParagraph(ctx, c, 'Your signature below acknowledges receipt of this notice and does not establish a brokerage relationship.')
   c.y -= 10
-  return await embedSignature(ctx, c, pageNum, `${role} Signature - Non-Representation`)
+  return await embedSignature(ctx, c, pageNum, `${role} Signature`)
 }
 
 async function buildSignedAuthToSign(ctx: PdfCtx, pageNum: number): Promise<Cursor> {
@@ -563,10 +549,11 @@ async function buildSignedAuthToSign(ctx: PdfCtx, pageNum: number): Promise<Curs
   c = drawCenteredText(ctx, c, 'DOCUMENTS AND OFFERS', 13)
   c = drawCenteredText(ctx, c, '(Special Limited Power of Attorney)', 10, ctx.fontItalic)
   c.y -= 5
-  c = drawParagraph(ctx, c, `I/we, ${v(ctx.data,'seller_name')}, hereby appoint Klose LLC as Attorney-in-Fact to execute documents necessary to list, market, and sell the Property at ${v(ctx.data,'property_address')}.`)
-  c = drawParagraph(ctx, c, 'This authorization is effective upon execution.')
+  c = drawParagraph(ctx, c, `BE IT ACKNOWLEDGED that I/we, ${v(ctx.data,'seller_name')}, the "Seller", desire to execute and grant a SPECIAL LIMITED POWER OF ATTORNEY, hereby appointing Klose LLC, a Wyoming Limited Liability Company, as my Attorney-in-Fact to act as follows, GRANTING unto my Attorney-in-Fact full power to:`)
+  c = drawParagraph(ctx, c, `Do all things necessary to close on the sale of the property commonly known as ${v(ctx.data,'property_address')} (hereinafter "Property"), with full power and authority for me and my name to execute any and all documents necessary to list, market, and contract the Property on the Multiple Listing Services ("MLS"), investor networks, Zillow, and/or realtors for the purpose of marketing and selling the Property.`)
+  c = drawParagraph(ctx, c, 'This authorization is effective upon execution and shall be valid until such time as any revocation is executed.')
   c.y -= 10
-  return await embedSignature(ctx, c, pageNum, 'Seller Signature - Power of Attorney')
+  return await embedSignature(ctx, c, pageNum, 'Seller Signature')
 }
 
 async function buildSignedReleaseAuth(ctx: PdfCtx, pageNum: number): Promise<Cursor> {
@@ -574,10 +561,13 @@ async function buildSignedReleaseAuth(ctx: PdfCtx, pageNum: number): Promise<Cur
   c = drawHeader(ctx, c)
   c = drawCenteredText(ctx, c, 'AUTHORIZATION FOR THE RELEASE OF INFORMATION', 13)
   c.y -= 5
-  c = drawParagraph(ctx, c, `I/We authorize ${v(ctx.data,'title_company')} (Title Company) to request information related to mortgages, judgments, and other documents.`)
-  c = drawParagraph(ctx, c, 'A copy of this authorization may be accepted as an original.')
+  c = drawParagraph(ctx, c, `1. I/We have entered into a real property sales contract. As part of this process, ${v(ctx.data,'title_company')} (Title Company) may request information related to my current open mortgage(s), judgments, and other documents required in connection with and in preparation of a closing.`)
+  c = drawParagraph(ctx, c, '2. I/We authorize you to provide to the Title Company any and all information and documentation they request, including but not limited to: judgment and lien payoffs, payoff information on open mortgages, deeds of trust, etc.')
+  c = drawParagraph(ctx, c, '3. The Title Company or any title company substituted in their place may address this authorization to any party named in the loan application or related to any outstanding liens on the property.')
+  c = drawParagraph(ctx, c, '4. I agree to hold the Title Company and its agents and employees harmless for any judgment or lien payoff obtained that differs from one obtained independently.')
+  c = drawParagraph(ctx, c, '5. A copy of this authorization may be accepted as an original.')
   c.y -= 10
-  return await embedSignature(ctx, c, pageNum, 'Seller Signature - Release of Info')
+  return await embedSignature(ctx, c, pageNum, 'Seller Signature')
 }
 
 async function buildSignedSellerResponsibility(ctx: PdfCtx, pageNum: number): Promise<Cursor> {
@@ -585,9 +575,17 @@ async function buildSignedSellerResponsibility(ctx: PdfCtx, pageNum: number): Pr
   c = drawHeader(ctx, c)
   c = drawCenteredText(ctx, c, "SELLER'S RESPONSIBILITY ACKNOWLEDGEMENT", 13)
   c.y -= 5
-  c = drawParagraph(ctx, c, "Seller is required to pay off any outstanding mortgages, utility bills, property taxes, assessments, judgments, legal fees, and any other lien or encumbrance.")
-  c = drawParagraph(ctx, c, "Klose LLC is not responsible for directly paying any liens or property taxes.")
-  c = drawParagraph(ctx, c, 'By signing, I/we confirm understanding of all terms and payment obligations.')
+  c = drawCenteredText(ctx, c, '15. SALES EXPENSES:', 11)
+  c = drawParagraph(ctx, c, 'The following expenses shall be paid at or prior to closing:')
+  c = drawParagraph(ctx, c, "A. Buyer's Expenses: Expenses stipulated to be paid by Buyer under other provisions of this contract.")
+  c = drawParagraph(ctx, c, "B. Seller's Expenses: Releases of existing liens, including prepayment penalties and recording fees; release of Seller's loan liability; tax statements or certificates; real estate transfer tax and/or conveyance fees.")
+  c = drawParagraph(ctx, c, "C. If Seller(s) fails to perform, they are responsible for any consequential damages, including indirect expenses, incurred by Buyer or Buyer's assignee.")
+  c = drawParagraph(ctx, c, 'To facilitate a clear title transfer, the Seller is required to pay off any outstanding mortgages, utility bills, property taxes, assessments, judgments, legal fees, and any other lien or encumbrance on the property.')
+  c = drawParagraph(ctx, c, "Klose LLC's cash offer is based on the assumption that the Seller will use the proceeds from the sale of their property to cover the above-described expenses.")
+  c.y -= 5
+  c = drawParagraph(ctx, c, 'Klose LLC is not responsible for directly paying any liens, property taxes, or any other cost discovered in the title examination.')
+  c.y -= 5
+  c = drawParagraph(ctx, c, 'By signing this Acknowledgement, I/we confirm that: (i) I/we have carefully read, fully understand, and agree to all terms and conditions herein; (ii) this Acknowledgement constitutes the entire understanding between me/us and Klose LLC regarding my/our payment obligations associated with selling the property; and (iii) my/our payment obligations for the items outlined above will be deducted from the total purchase price.')
   c.y -= 10
-  return await embedSignature(ctx, c, pageNum, 'Seller Signature - Responsibility Acknowledgement')
+  return await embedSignature(ctx, c, pageNum, 'Seller Signature')
 }

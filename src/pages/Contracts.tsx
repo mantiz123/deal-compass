@@ -61,6 +61,14 @@ export default function Contracts() {
   const { toast } = useToast();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  const handleOpenPdf = (url: string | null) => {
+    if (!url) return;
+    const opened = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      toast({ title: 'Error', description: 'No se pudo abrir el PDF. Revisa si tu navegador bloqueó la ventana.', variant: 'destructive' });
+    }
+  };
+
   const handleDownload = async (url: string | null, contractId: string) => {
     if (!url) return;
     setDownloadingId(contractId);
@@ -187,6 +195,7 @@ export default function Contracts() {
                     const property = lead?.property;
                     const st = statusConfig[contract.status] || statusConfig.draft;
                     const tp = typeConfig[contract.contract_type] || typeConfig.AB;
+                    const preferredPdfUrl = contract.signed_pdf_url || contract.pdf_url;
                     return (
                       <TableRow
                         key={contract.id}
@@ -246,13 +255,13 @@ export default function Contracts() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                            {(contract.signed_pdf_url || contract.pdf_url) && (
-                              <Button variant="ghost" size="icon" onClick={() => handleDownload(contract.signed_pdf_url || contract.pdf_url, contract.id)}>
+                            {preferredPdfUrl && (
+                              <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(preferredPdfUrl)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
                             )}
-                            {contract.signed_pdf_url && (
-                              <Button variant="ghost" size="icon" onClick={() => handleDownload(contract.signed_pdf_url, contract.id)}>
+                            {preferredPdfUrl && (
+                              <Button variant="ghost" size="icon" onClick={() => handleDownload(preferredPdfUrl, contract.id)}>
                                 <Download className="h-4 w-4" />
                               </Button>
                             )}

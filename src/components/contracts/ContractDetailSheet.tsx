@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { useContractSignatures, useUpdateContract, type Contract } from '@/hooks/useContracts';
+import { useContractSignatures, type Contract } from '@/hooks/useContracts';
 import { Download, Eye, Send, FileText, Clock, MapPin, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -67,6 +67,18 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
   const lead = contract.lead as any;
   const property = lead?.property;
   const signingUrl = `${window.location.origin}/sign/${contract.signing_token}`;
+  const preferredPdfUrl = contract.signed_pdf_url || contract.pdf_url;
+  const preferredPdfName = contract.signed_pdf_url
+    ? `Contrato_Firmado_${contract.contract_type}.pdf`
+    : `Contrato_${contract.contract_type}.pdf`;
+
+  const handleOpenPdf = (url: string | null) => {
+    if (!url) return;
+    const opened = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      toast({ title: 'Error', description: 'No se pudo abrir el PDF. Revisa si tu navegador bloqueó la ventana.', variant: 'destructive' });
+    }
+  };
 
   const handleResend = async () => {
     try {
@@ -250,14 +262,14 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
 
           {/* Actions */}
           <div className="flex flex-col gap-2">
-            {contract.pdf_url && (
-              <Button variant="outline" disabled={downloading} onClick={() => handleDownloadPdf(contract.pdf_url!, `Contrato_${contract.contract_type}.pdf`)}>
-                {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Eye className="h-4 w-4 mr-2" />} Ver PDF Original
+            {preferredPdfUrl && (
+              <Button variant="outline" onClick={() => handleOpenPdf(preferredPdfUrl)}>
+                <Eye className="h-4 w-4 mr-2" /> {contract.signed_pdf_url ? 'Ver PDF Firmado' : 'Ver PDF Original'}
               </Button>
             )}
-            {contract.signed_pdf_url && (
-              <Button variant="outline" disabled={downloading} onClick={() => handleDownloadPdf(contract.signed_pdf_url!, `Contrato_Firmado_${contract.contract_type}.pdf`)}>
-                {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />} Descargar PDF Firmado
+            {preferredPdfUrl && (
+              <Button variant="outline" disabled={downloading} onClick={() => handleDownloadPdf(preferredPdfUrl, preferredPdfName)}>
+                {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />} {contract.signed_pdf_url ? 'Descargar PDF Firmado' : 'Descargar PDF Original'}
               </Button>
             )}
             {contract.status !== 'signed' && contract.status !== 'completed' && (
