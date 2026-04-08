@@ -362,7 +362,7 @@ async function embedDualSignature(ctx: PdfCtx, cursor: Cursor, pageNum: number, 
   return { ...cursor, y: lineY - 50 }
 }
 
-// ─── AB Contract// ─── AB Contract (with signatures) ─────────────────────────────────
+// ─── AB Contract (with signatures) ─────────────────────────────────
 
 async function buildABPdf(ctx: PdfCtx) {
   const d = ctx.data
@@ -420,7 +420,7 @@ async function buildABPdf(ctx: PdfCtx) {
   c = await buildSignedSellerResponsibility(ctx, 11)
 }
 
-// ─── BC Contract// ─── BC Contract ────────────────────────────────────────────────────
+// ─── BC Contract ────────────────────────────────────────────────────
 
 function buildBCPdf(ctx: PdfCtx) {
   return buildBCPdfAsync(ctx)
