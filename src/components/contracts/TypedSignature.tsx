@@ -128,8 +128,8 @@ export default function TypedSignature({ signerName, onSign, label, existingSign
               >
                 <span className="text-[10px] text-muted-foreground block mb-1">{font.name}</span>
                 <span
-                  style={{ fontFamily: font.family, fontWeight: font.weight, fontSize: '22px' }}
-                  className="block truncate text-foreground"
+                  style={{ fontFamily: font.family, fontWeight: font.weight, fontSize: '22px', color: '#1a1a1a' }}
+                  className="block truncate"
                 >
                   {typedName || signerName || 'Su Firma'}
                 </span>
@@ -146,8 +146,8 @@ export default function TypedSignature({ signerName, onSign, label, existingSign
               fontFamily: SIGNATURE_FONTS[selectedFont].family,
               fontWeight: SIGNATURE_FONTS[selectedFont].weight,
               fontSize: '36px',
+              color: '#1a1a1a',
             }}
-            className="text-foreground"
           >
             {typedName || signerName || 'Su Firma'}
           </div>
