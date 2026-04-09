@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
-import SignatureCanvas from 'react-signature-canvas';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Eraser, ArrowRight, ArrowLeft, CheckCircle, PenTool } from 'lucide-react';
+import { ArrowRight, ArrowLeft, PenTool } from 'lucide-react';
+import TypedSignature from './TypedSignature';
 
 export interface SignablePage {
   pageNum: number;
@@ -24,20 +24,11 @@ interface SigningWizardProps {
 export default function SigningWizard({ pages, signerName, onComplete, onBack }: SigningWizardProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [signatures, setSignatures] = useState<Record<number, string>>({});
-  const sigRef = useRef<SignatureCanvas | null>(null);
 
   const page = pages[currentPage];
   const progress = ((currentPage + 1) / pages.length) * 100;
   const totalSignatures = pages.filter(p => p.requiresSignature).length;
   const completedSignatures = Object.keys(signatures).length;
-
-  const handleClear = () => sigRef.current?.clear();
-
-  const handleSign = () => {
-    if (!sigRef.current || sigRef.current.isEmpty()) return;
-    const sig = sigRef.current.toDataURL('image/png');
-    setSignatures(prev => ({ ...prev, [page.pageNum]: sig }));
-  };
 
   const canProceed = !page.requiresSignature || signatures[page.pageNum];
   const isLastPage = currentPage === pages.length - 1;
