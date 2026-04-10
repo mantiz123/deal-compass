@@ -43,6 +43,8 @@ export const BC_CONTRACT_FIELDS: ContractField[] = [
   { key: 'property_city', label: 'City', source: 'auto', autoField: 'property.city' },
   { key: 'property_state', label: 'State', source: 'auto', autoField: 'property.state' },
   { key: 'assignee_name', label: 'Assignee Name (Buyer)', source: 'manual', required: true },
+  { key: 'buyer_email', label: 'Buyer Email', source: 'manual', type: 'text', required: true },
+  { key: 'buyer_phone', label: 'Buyer Phone', source: 'manual', type: 'text' },
   { key: 'total_assignment_amount', label: 'Total Assignment Amount ($)', source: 'manual', type: 'number', required: true },
   { key: 'payment_method', label: 'Payment Method', source: 'manual', type: 'select', options: ['Cash', 'Private or Hard Money Lending', 'Conventional Lending'], required: true },
   { key: 'lender_name', label: 'Lender Name', source: 'manual' },
