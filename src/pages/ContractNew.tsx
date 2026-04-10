@@ -202,7 +202,20 @@ export default function ContractNew() {
     }
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
+    if (createdContractId) {
+      try {
+        await updateContract.mutateAsync({
+          id: createdContractId,
+          status: 'draft' as any,
+          seller_email: formValues.seller_email || null,
+          seller_phone: formValues.seller_phone || null,
+          contract_data: formValues as any,
+        });
+      } catch (e) {
+        console.error('Error saving draft:', e);
+      }
+    }
     toast({ title: 'Guardado', description: 'Contrato guardado como borrador.' });
     navigate('/contracts');
   };
