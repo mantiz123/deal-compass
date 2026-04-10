@@ -53,6 +53,9 @@ export default function ContractNew() {
   const createContract = useCreateContract();
   const updateContract = useUpdateContract();
 
+  const isBC = contractType === 'BC';
+  const recipientLabel = isBC ? 'Buyer' : 'Seller';
+
   // Load lead data
   useEffect(() => {
     if (!leadId) { setLoading(false); return; }
@@ -95,22 +98,28 @@ export default function ContractNew() {
     setFormValues(prev => ({ ...prev, [key]: value }));
   };
 
+  // Get the recipient email depending on contract type
+  const getRecipientEmail = () => isBC ? formValues.buyer_email : formValues.seller_email;
+  const getRecipientPhone = () => isBC ? formValues.buyer_phone : formValues.seller_phone;
+
   const handleGenerate = async () => {
     if (!contractType || !leadId) return;
     setGenerating(true);
     try {
-      // Create contract in DB
+      const recipientEmail = getRecipientEmail();
+      const recipientPhone = getRecipientPhone();
+
       const result = await createContract.mutateAsync({
         lead_id: leadId,
         contract_type: contractType,
         contract_data: formValues,
-        seller_email: formValues.seller_email,
-        seller_phone: formValues.seller_phone,
+        seller_email: recipientEmail,
+        seller_phone: recipientPhone,
       });
 
       setCreatedContractId(result.id);
       setSigningToken(result.signing_token);
-      // Generate PDF via edge function
+
       const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-contract-pdf', {
         body: {
           contractId: result.id,
@@ -130,9 +139,8 @@ export default function ContractNew() {
         });
       }
 
-      // Go to Klose signing step
       setStep('klose_sign');
-      toast({ title: 'Contrato Creado', description: 'Ahora firma como representante de Klose LLC antes de enviar al seller.' });
+      toast({ title: 'Contrato Creado', description: `Ahora firma como representante de Klose LLC antes de enviar al ${recipientLabel.toLowerCase()}.` });
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
@@ -148,7 +156,6 @@ export default function ContractNew() {
     try {
       const repName = kloseSignerName || profile?.full_name || 'Klose LLC Representative';
 
-      // Store Klose rep signatures
       const sigInserts = Object.entries(signatures).map(([pageNum, sig]) => ({
         contract_id: createdContractId,
         signer_name: repName,
@@ -161,7 +168,7 @@ export default function ContractNew() {
       const { error: sigError } = await supabase.from('contract_signatures').insert(sigInserts);
       if (sigError) throw sigError;
 
-      toast({ title: '✅ Firmado', description: `${Object.keys(signatures).length} firma(s) de Klose LLC registradas.` });
+      toast({ title: 'Firmado', description: `${Object.keys(signatures).length} firma(s) de Klose LLC registradas.` });
       setStep('send');
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -186,14 +193,15 @@ export default function ContractNew() {
   };
 
   const handleSendEmail = async () => {
-    if (!createdContractId || !formValues.seller_email) return;
+    const email = getRecipientEmail();
+    if (!createdContractId || !email) return;
     setSending(true);
     try {
       const { error } = await supabase.functions.invoke('send-contract-email', {
         body: { contractId: createdContractId },
       });
       if (error) throw error;
-      toast({ title: '📧 Enviado', description: 'El email con el enlace de firma ha sido enviado.' });
+      toast({ title: 'Enviado', description: `El email con el enlace de firma ha sido enviado al ${recipientLabel.toLowerCase()}.` });
       navigate('/contracts');
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -208,8 +216,8 @@ export default function ContractNew() {
         await updateContract.mutateAsync({
           id: createdContractId,
           status: 'draft' as any,
-          seller_email: formValues.seller_email || null,
-          seller_phone: formValues.seller_phone || null,
+          seller_email: getRecipientEmail() || null,
+          seller_phone: getRecipientPhone() || null,
           contract_data: formValues as any,
         });
       } catch (e) {
@@ -296,6 +304,11 @@ export default function ContractNew() {
                   <FileText className="h-5 w-5 text-primary" />
                   {CONTRACT_TEMPLATES.find(t => t.type === contractType)?.name}
                 </CardTitle>
+                {isBC && (
+                  <CardDescription className="text-purple-400">
+                    Este contrato se envía al Buyer/Assignee para que firme. Klose actúa como Assignor.
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -305,7 +318,7 @@ export default function ContractNew() {
                         {field.label}
                         {field.source === 'auto' && formValues[field.key] && (
                           <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/30">
-                            ✓ Auto
+                            Auto
                           </Badge>
                         )}
                         {field.source === 'manual' && !formValues[field.key] && (
@@ -373,7 +386,9 @@ export default function ContractNew() {
                 <div className="flex items-center gap-3">
                   <PenTool className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="font-semibold text-foreground">Firma del Representante de Klose LLC</p>
+                    <p className="font-semibold text-foreground">
+                      Firma del {isBC ? 'Assignor' : 'Representante'} de Klose LLC
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       Ingresa el nombre completo del firmante y firma en cada bloque.
                     </p>
@@ -407,13 +422,13 @@ export default function ContractNew() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-400" />
-                  Contrato Firmado por Klose — Listo para Enviar
+                  Contrato Firmado por Klose — Listo para Enviar al {recipientLabel}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                   <p className="text-sm text-green-400 font-medium">
-                    ✅ {Object.keys(kloseSignatures).length} firma(s) de Klose LLC registradas. El seller recibirá el contrato para contrafirmar.
+                    {Object.keys(kloseSignatures).length} firma(s) de Klose LLC registradas. El {recipientLabel.toLowerCase()} recibirá el contrato para contrafirmar.
                   </p>
                 </div>
 
@@ -439,7 +454,7 @@ export default function ContractNew() {
                     <Button variant="outline" onClick={() => {
                       const signingUrl = `${window.location.origin}/sign/${signingToken}`;
                       navigator.clipboard.writeText(signingUrl);
-                      toast({ title: '📋 Link copiado', description: 'El enlace de firma ha sido copiado al portapapeles.' });
+                      toast({ title: 'Link copiado', description: 'El enlace de firma ha sido copiado al portapapeles.' });
                     }}>
                       <Copy className="h-4 w-4 mr-2" /> Copiar Link de Firma
                     </Button>
@@ -461,7 +476,7 @@ export default function ContractNew() {
                 {signingToken && (
                   <div className="bg-muted/50 border border-border rounded-lg p-3 space-y-1">
                     <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                      <Link className="h-3 w-3" /> Enlace de firma para el seller
+                      <Link className="h-3 w-3" /> Enlace de firma para el {recipientLabel.toLowerCase()}
                     </p>
                     <p className="text-xs text-foreground font-mono break-all select-all">
                       {window.location.origin}/sign/{signingToken}
@@ -473,20 +488,20 @@ export default function ContractNew() {
 
                 <div className="space-y-3">
                   <div>
-                    <Label>Email del Vendedor</Label>
+                    <Label>Email del {recipientLabel}</Label>
                     <Input
                       type="email"
-                      value={formValues.seller_email || ''}
-                      onChange={(e) => handleFieldChange('seller_email', e.target.value)}
+                      value={isBC ? (formValues.buyer_email || '') : (formValues.seller_email || '')}
+                      onChange={(e) => handleFieldChange(isBC ? 'buyer_email' : 'seller_email', e.target.value)}
                       placeholder="email@ejemplo.com"
                     />
                   </div>
                   <div>
-                    <Label>Teléfono del Vendedor</Label>
+                    <Label>Teléfono del {recipientLabel}</Label>
                     <Input
                       type="tel"
-                      value={formValues.seller_phone || ''}
-                      onChange={(e) => handleFieldChange('seller_phone', e.target.value)}
+                      value={isBC ? (formValues.buyer_phone || '') : (formValues.seller_phone || '')}
+                      onChange={(e) => handleFieldChange(isBC ? 'buyer_phone' : 'seller_phone', e.target.value)}
                       placeholder="+1 (555) 000-0000"
                     />
                   </div>
@@ -500,12 +515,12 @@ export default function ContractNew() {
               </Button>
               <Button
                 onClick={handleSendEmail}
-                disabled={sending || !formValues.seller_email}
+                disabled={sending || !getRecipientEmail()}
               >
                 {sending ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
                 ) : (
-                  <><Send className="h-4 w-4 mr-2" /> 📧 Enviar al Seller</>
+                  <><Send className="h-4 w-4 mr-2" /> Enviar al {recipientLabel}</>
                 )}
               </Button>
             </div>

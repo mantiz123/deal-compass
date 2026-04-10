@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useContracts, type Contract } from '@/hooks/useContracts';
 import { ContractDetailSheet } from '@/components/contracts/ContractDetailSheet';
 import { Search, Download, Eye, Loader2, CheckCircle2 } from 'lucide-react';
@@ -15,7 +16,6 @@ import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
-
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   draft: { label: 'Borrador', color: 'bg-muted text-muted-foreground' },
@@ -33,14 +33,14 @@ const typeConfig: Record<string, { label: string; color: string }> = {
 
 export default function Contracts() {
   const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('AB');
 
   const { data: contracts = [], isLoading } = useContracts({
     status: statusFilter,
-    contract_type: typeFilter,
+    contract_type: 'all',
     search,
   });
 
@@ -60,6 +60,11 @@ export default function Contracts() {
 
   const { toast } = useToast();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  // Split contracts by type
+  const abContracts = useMemo(() => contracts.filter(c => c.contract_type === 'AB'), [contracts]);
+  const bcContracts = useMemo(() => contracts.filter(c => c.contract_type === 'BC'), [contracts]);
+  const amdContracts = useMemo(() => contracts.filter(c => c.contract_type === 'AMENDMENT'), [contracts]);
 
   const handleOpenPdf = (url: string | null) => {
     if (!url) return;
@@ -109,6 +114,128 @@ export default function Contracts() {
     }
   };
 
+  const renderTable = (list: Contract[], recipientLabel: string) => (
+    <Card variant="glass">
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Propiedad</TableHead>
+              <TableHead>{recipientLabel}</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Klose</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Creado</TableHead>
+              <TableHead>Firmado</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  Cargando contratos...
+                </TableCell>
+              </TableRow>
+            ) : list.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  No hay contratos de este tipo. Genera uno desde el detalle de un lead.
+                </TableCell>
+              </TableRow>
+            ) : (
+              list.map((contract) => {
+                const lead = contract.lead as any;
+                const property = lead?.property;
+                const st = statusConfig[contract.status] || statusConfig.draft;
+                const tp = typeConfig[contract.contract_type] || typeConfig.AB;
+                const preferredPdfUrl = contract.signed_pdf_url || contract.pdf_url;
+                const cData = (contract as any).contract_data as Record<string, string> | null;
+                const recipientName = contract.contract_type === 'BC'
+                  ? (cData?.assignee_name || 'N/A')
+                  : (property?.owner_name || 'N/A');
+
+                return (
+                  <TableRow
+                    key={contract.id}
+                    className="cursor-pointer"
+                    onClick={() => { setSelectedContract(contract); setDetailOpen(true); }}
+                  >
+                    <TableCell className="font-medium">
+                      {property?.address || 'N/A'}
+                      <div className="text-xs text-muted-foreground">
+                        {property?.city}, {property?.state}
+                      </div>
+                    </TableCell>
+                    <TableCell>{recipientName}</TableCell>
+                    <TableCell>
+                      <Badge className={tp.color}>{tp.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {kloseSignatures[contract.id] ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="success" className="gap-1 cursor-help">
+                                <CheckCircle2 className="h-3 w-3" />
+                                {kloseSignatures[contract.id].name}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Firmado el {format(new Date(kloseSignatures[contract.id].signedAt), "dd MMM yyyy 'a las' HH:mm", { locale: es })}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Pendiente</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={st.color}>{st.label}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {format(new Date(contract.created_at), 'dd MMM yyyy', { locale: es })}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {contract.signed_at ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help border-b border-dotted border-muted-foreground">
+                                {format(new Date(contract.signed_at), 'dd MMM yyyy', { locale: es })}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{contract.contract_type === 'BC' ? 'Buyer' : 'Seller'} firmó el {format(new Date(contract.signed_at), "dd MMM yyyy 'a las' HH:mm", { locale: es })}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : '—'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        {preferredPdfUrl && (
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(preferredPdfUrl)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {preferredPdfUrl && (
+                          <Button variant="ghost" size="icon" onClick={() => handleDownload(preferredPdfUrl, contract.id)}>
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -126,7 +253,7 @@ export default function Contracts() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por dirección o vendedor..."
+                  placeholder="Buscar por dirección o nombre..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
@@ -145,136 +272,45 @@ export default function Contracts() {
                   <SelectItem value="completed">Completado</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="AB">AB Contract</SelectItem>
-                  <SelectItem value="BC">BC Contract</SelectItem>
-                  <SelectItem value="AMENDMENT">Amendment</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* Table */}
-        <Card variant="glass">
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Propiedad</TableHead>
-                  <TableHead>Vendedor</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Klose</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Creado</TableHead>
-                  <TableHead>Firmado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Cargando contratos...
-                    </TableCell>
-                  </TableRow>
-                ) : contracts.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No hay contratos. Genera uno desde el detalle de un lead.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  contracts.map((contract) => {
-                    const lead = contract.lead as any;
-                    const property = lead?.property;
-                    const st = statusConfig[contract.status] || statusConfig.draft;
-                    const tp = typeConfig[contract.contract_type] || typeConfig.AB;
-                    const preferredPdfUrl = contract.signed_pdf_url || contract.pdf_url;
-                    return (
-                      <TableRow
-                        key={contract.id}
-                        className="cursor-pointer"
-                        onClick={() => { setSelectedContract(contract); setDetailOpen(true); }}
-                      >
-                        <TableCell className="font-medium">
-                          {property?.address || 'N/A'}
-                          <div className="text-xs text-muted-foreground">
-                            {property?.city}, {property?.state}
-                          </div>
-                        </TableCell>
-                        <TableCell>{property?.owner_name || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge className={tp.color}>{tp.label}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {kloseSignatures[contract.id] ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="success" className="gap-1 cursor-help">
-                                    <CheckCircle2 className="h-3 w-3" />
-                                    {kloseSignatures[contract.id].name}
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Firmado el {format(new Date(kloseSignatures[contract.id].signedAt), "dd MMM yyyy 'a las' HH:mm", { locale: es })}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Pendiente</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={st.color}>{st.label}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(contract.created_at), 'dd MMM yyyy', { locale: es })}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {contract.signed_at ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="cursor-help border-b border-dotted border-muted-foreground">
-                                    {format(new Date(contract.signed_at), 'dd MMM yyyy', { locale: es })}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Seller firmó el {format(new Date(contract.signed_at), "dd MMM yyyy 'a las' HH:mm", { locale: es })}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ) : '—'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                            {preferredPdfUrl && (
-                              <Button variant="ghost" size="icon" onClick={() => handleOpenPdf(preferredPdfUrl)}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {preferredPdfUrl && (
-                              <Button variant="ghost" size="icon" onClick={() => handleDownload(preferredPdfUrl, contract.id)}>
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        {/* Tabs: AB / BC / Amendments */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsTrigger value="AB" className="gap-2">
+              AB — Seller
+              {abContracts.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{abContracts.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="BC" className="gap-2">
+              BC — Buyer
+              {bcContracts.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{bcContracts.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="AMENDMENT" className="gap-2">
+              Amendments
+              {amdContracts.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{amdContracts.length}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="AB" className="mt-4">
+            {renderTable(abContracts, 'Vendedor')}
+          </TabsContent>
+
+          <TabsContent value="BC" className="mt-4">
+            {renderTable(bcContracts, 'Buyer/Assignee')}
+          </TabsContent>
+
+          <TabsContent value="AMENDMENT" className="mt-4">
+            {renderTable(amdContracts, 'Vendedor')}
+          </TabsContent>
+        </Tabs>
       </div>
 
       <ContractDetailSheet
