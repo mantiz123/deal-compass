@@ -76,8 +76,12 @@ export default function ContractSign() {
         setKloseSignatures(parsed);
       }
 
-      // For AB contracts, go to seller info first; for others, go straight to signing
-      setFlowStep(data.contract_type === 'AB' ? 'seller_info' : 'signing');
+      // For AB contracts, go to seller info first; for BC/others, go straight to signing
+      if (data.contract_type === 'AB') {
+        setFlowStep('seller_info');
+      } else {
+        setFlowStep('signing');
+      }
     } catch { setFlowStep('error'); }
   };
 
@@ -98,7 +102,10 @@ export default function ContractSign() {
       let ip = '';
       try { const r = await fetch('https://api.ipify.org?format=json'); ip = (await r.json()).ip; } catch {}
 
-      const signerName = contractData.seller_name || '';
+      const isBC = contract.contract_type === 'BC';
+      const signerName = isBC
+        ? (contractData.assignee_name || '')
+        : (contractData.seller_name || '');
 
       // Insert all page signatures
       const sigInserts = Object.entries(pageSignatures).map(([pageNum, sig]) => ({
@@ -252,7 +259,7 @@ export default function ContractSign() {
         <div className="max-w-3xl mx-auto p-4 space-y-4 mt-4">
           <SigningWizard
             pages={buildWizardPages()}
-            signerName={contractData.seller_name || ''}
+            signerName={contract?.contract_type === 'BC' ? (contractData.assignee_name || '') : (contractData.seller_name || '')}
             onComplete={handleSigningComplete}
             onBack={() => contract?.contract_type === 'AB' ? setFlowStep('seller_info') : null}
           />
@@ -277,7 +284,7 @@ export default function ContractSign() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Signer</p>
-                <p className="font-medium">{contractData.seller_name}</p>
+                <p className="font-medium">{contract?.contract_type === 'BC' ? contractData.assignee_name : contractData.seller_name}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Signatures Collected</p>
