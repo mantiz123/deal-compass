@@ -420,7 +420,7 @@ async function buildABPdf(ctx: PdfCtx) {
   c = await buildSignedSellerResponsibility(ctx, 11)
 }
 
-// ─── BC Contract ────────────────────────────────────────────────────
+// ─── BC Contract (Full Legal Text) ──────────────────────────────────
 
 function buildBCPdf(ctx: PdfCtx) {
   return buildBCPdfAsync(ctx)
@@ -428,6 +428,11 @@ function buildBCPdf(ctx: PdfCtx) {
 
 async function buildBCPdfAsync(ctx: PdfCtx) {
   const d = ctx.data
+  const assigneeName = v(d, 'assignee_name')
+  const sellerName = v(d, 'seller_name')
+  const fullAddr = [d.property_address, d.property_city, d.property_state].filter(Boolean).join(', ')
+
+  // ── Page 1 ──
   let c = addPage(ctx, 1)
   c = drawHeader(ctx, c)
   c.y -= 10
@@ -435,25 +440,42 @@ async function buildBCPdfAsync(ctx: PdfCtx) {
   c = drawCenteredText(ctx, c, 'PURCHASE AND SALE AGREEMENT', 14)
   c.y -= 5
 
-  c = drawClause(ctx, c, '1', 'PARTIES', `The undersigned Klose LLC (the "ASSIGNOR"), having executed a Purchase and Sale Agreement with ${v(d,'seller_name')} (the "SELLER"), hereby assigns all rights to ${v(d,'assignee_name')} (the "ASSIGNEE").`)
-  c = drawClause(ctx, c, '2', 'PROPERTY', `${v(d,'property_address')}, ${v(d,'property_city','')}, ${v(d,'property_state','')}.`)
-  c = drawClause(ctx, c, '3', 'ASSIGNMENT TERMS', `Assignee shall pay $ ${money(d.total_assignment_amount)}.`)
-  c = drawClause(ctx, c, '4', 'METHOD OF PAYMENT', `${v(d,'payment_method')}.`)
-  c = drawClause(ctx, c, '5', 'CLOSING COSTS', 'ASSIGNEE pays all closing costs.')
-  c = drawClause(ctx, c, '6', 'ASSIGNEE REPRESENTATIONS', 'ASSIGNEE acknowledges receipt of the INITIAL PURCHASE AGREEMENT.')
-  c = drawClause(ctx, c, '7', 'ASSIGNOR REPRESENTATIONS', 'ASSIGNOR represents the agreement is in full force.')
-  c = drawClause(ctx, c, '8', 'AS-IS', `Property sold as-is. EXCEPT: ${v(d,'exceptions','None')}.`)
-  c = drawClause(ctx, c, '9', 'OPTION FEE', `$ ${money(d.option_fee)} to ${v(d,'title_company')}.`)
-  c = drawClause(ctx, c, '10', 'CLOSING', `On or before ${v(d,'closing_date')}.`)
-  c = drawClause(ctx, c, '11', 'TITLE POLICY', "Owner's Policy of Title Insurance.")
-  c = drawClause(ctx, c, '12', 'DEFAULT', "ASSIGNEE's sole remedy is termination.")
-  c = drawClause(ctx, c, '13', 'MARKETABLE TITLE', 'Contingent upon marketable title.')
-  c = drawClause(ctx, c, '14', 'HOLD HARMLESS', 'Assignee assumes risk.')
-  c = drawClause(ctx, c, '15', 'ENTIRE AGREEMENT', 'This is the entire agreement.')
-  c = drawClause(ctx, c, '16', 'SPECIAL PROVISIONS', v(d,'special_provisions','None'))
-  c.y -= 5
-  c = await embedDualSignature(ctx, c, 3, 'Assignor Signature', 'Klose LLC / Authorized Signatory', 'Assignee Signature', v(d,'assignee_name','___'))
+  c = drawClause(ctx, c, '1', 'PARTIES', `The undersigned Klose LLC, a Wyoming Limited Liability Company (the "ASSIGNOR"), having executed an "As Is" Cash-Offer Purchase and Sale Agreement (the "INITIAL PURCHASE AGREEMENT") with ${sellerName} (the "SELLER"), for the Property identified in Paragraph 2 of this Assignment Agreement (the "ASSIGNMENT"), hereby assigns and otherwise transfers all rights, title, and interest held by Assignor in said Property to ${assigneeName} (the "ASSIGNEE") in exchange for an Assignment Fee as described below.`)
 
+  c = drawClause(ctx, c, '2', 'PROPERTY', `${v(d,'property_address')}, ${v(d,'property_city','')}, ${v(d,'property_state','')}, including all fixtures, appliances, other permanently installed equipment, and all other items stipulated under other provisions of this contract.`)
+
+  c = drawClause(ctx, c, '3', 'AGREEMENT AND ASSIGNMENT TERMS', `Assignee shall pay a gross amount of $ ${money(d.total_assignment_amount)} (which shall include the purchase price in the Purchase and Sale Agreement being assigned and the Assignment Fee due to the Assignor).`)
+
+  c = drawClause(ctx, c, '4', 'METHOD OF PAYMENT', `ASSIGNEE warrants that at Closing they will have sufficient cash to complete the purchase. ASSIGNEE'S method of payment: ${v(d,'payment_method')}.`)
+
+  c = drawClause(ctx, c, '5', 'CLOSING COSTS', 'ASSIGNEE expressly agrees to pay all closing costs associated with this transaction.')
+
+  c = drawClause(ctx, c, '6', 'ASSIGNEE REPRESENTATIONS', `ASSIGNEE represents and acknowledges receipt of the INITIAL PURCHASE AGREEMENT prior to the execution of this ASSIGNMENT. ASSIGNEE further agrees to: 1) Perform as required under the terms of the INITIAL PURCHASE AGREEMENT in good faith; 2) Indemnify and hold harmless the ASSIGNOR from any claim related to the purchase, ownership, rehabilitation, and/or operation of the Property, title, the physical conditions thereof, the financial or legal status thereof and/or the compliance of the Property with any and all municipal, state and federal laws, rules, regulations, and orders; 3) Indemnify and hold harmless the ASSIGNOR for any cost related to any waste, debris, personal property, and/or junk removal of any kind from the Property; 4) Waive any right to further assign this ASSIGNMENT to any other party or entity; 5) Acknowledge that ASSIGNOR makes no warranty, guarantee, promise, or representation with respect to the Property, its condition, values, or future performance.`)
+
+  c = drawClause(ctx, c, '7', 'ASSIGNOR REPRESENTATIONS', 'ASSIGNOR represents that the INITIAL PURCHASE AGREEMENT is in full force and effect and is fully assignable.')
+
+  c = drawClause(ctx, c, '8', 'CONDITION OF THE PROPERTY – "AS-IS"', `ASSIGNEE acknowledges purchasing the Property in its present physical condition and accepts the Property "AS-IS, WHERE-IS" including all faults, defects, and deficiencies, whether known or unknown, visible or hidden. EXCEPT: ${v(d,'exceptions','None')}.`)
+
+  c = drawClause(ctx, c, '9', 'NON-REFUNDABLE OPTION FEE', `ASSIGNEE has paid or will pay immediately upon execution of this ASSIGNMENT a non-refundable Assignment Option Fee of $ ${money(d.option_fee)} to ${v(d,'title_company')} (the "TITLE COMPANY"). This Option Fee shall be applied toward the purchase price at Closing. If ASSIGNEE fails to close, the Option Fee shall be forfeited.`)
+
+  c = drawClause(ctx, c, '10', 'CLOSING', `ASSIGNOR will deliver this ASSIGNMENT to the TITLE COMPANY. Closing shall occur on or before ${v(d,'closing_date')}.`)
+
+  c = drawClause(ctx, c, '11', 'TITLE POLICY', "The SELLER shall furnish to ASSIGNEE an Owner's Policy of Title Insurance issued by the Title Company in the amount of the Sales Price, dated at or after closing, insuring ASSIGNEE against loss under the provisions of the Title Policy.")
+
+  c = drawClause(ctx, c, '12', 'DEFAULT', "If the ASSIGNOR is unable to perform for any reason, the ASSIGNEE'S sole remedy shall be limited to termination of this ASSIGNMENT and the return of the Non-Refundable Option Fee. Under no circumstances shall ASSIGNOR be liable for any consequential, special, or incidental damages.")
+
+  c = drawClause(ctx, c, '13', 'MARKETABLE TITLE', 'This sale is contingent upon Seller obtaining marketable title. If Seller is unable to deliver marketable title, Seller shall return option money to ASSIGNEE within 10 business days.')
+
+  c = drawClause(ctx, c, '14', 'HOLD HARMLESS AND ASSUMPTION OF LIABILITY', 'Assignor is to be held harmless by the Assignee for any damages or other liabilities caused by a third-party action, claim, or proceeding related to the Property.')
+
+  c = drawClause(ctx, c, '15', 'ENTIRE AGREEMENT OF PARTIES', 'This contract contains the entire agreement of the parties and cannot be changed except by their written agreement. All prior negotiations, representations, warranties, and agreements are merged into this contract.')
+
+  c = drawClause(ctx, c, '16', 'SPECIAL PROVISIONS', v(d,'special_provisions','None'))
+
+  c.y -= 5
+  c = await embedDualSignature(ctx, c, 3, 'Assignor Signature', 'Klose LLC / Authorized Signatory', 'Assignee Signature', assigneeName)
+
+  // ── Disclosure pages (use assignee name, not seller) ──
   c = await buildSignedInvestorDisclosure(ctx, 'Buyer/Assignee', 4)
   c = await buildSignedNonRepresentation(ctx, 'Buyer/Assignee', 5)
   c = await buildSignedFairHousing(ctx, 'Buyer/Assignee', 6)
