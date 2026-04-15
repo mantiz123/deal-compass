@@ -173,7 +173,7 @@ export function getBCKloseSignablePages(): SignablePageInfo[] {
 
 export function getAmendmentKloseSignablePages(): SignablePageInfo[] {
   return [
-    { pageNum: 2, title: 'Amendment — Buyer Signature', requiresSignature: true, signatureLabel: 'Buyer (Klose LLC) Signature — Amendment' },
+    { pageNum: 1, title: 'Amendment — Buyer (Klose) Signature', requiresSignature: true, signatureLabel: 'Buyer (Klose LLC) Signature — Amendment' },
   ];
 }
 
