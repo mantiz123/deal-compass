@@ -396,6 +396,11 @@ export default function ContractNew() {
                     Este contrato se envía al Buyer/Assignee para que firme. Klose actúa como Assignor.
                   </CardDescription>
                 )}
+                {contractType === 'AMENDMENT' && (
+                  <CardDescription className="text-amber-400">
+                    El Amendment modifica precio, fecha de cierre o terminos de un contrato AB existente. Se envía al Seller para contrafirmar.
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
