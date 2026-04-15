@@ -78,7 +78,7 @@ export const CONTRACT_TEMPLATES: ContractTemplate[] = [
   {
     type: 'AMENDMENT',
     name: 'Amendment',
-    description: 'Use to modify an existing Purchase and Sale Agreement',
+    description: 'Modifica precio, fecha de cierre o terminos de un AB Contract existente',
     icon: '🔄',
     fields: AMENDMENT_FIELDS,
   },

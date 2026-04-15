@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useCreateContract, useUpdateContract } from '@/hooks/useContracts';
+import { useCreateContract, useUpdateContract, useContractsForLead } from '@/hooks/useContracts';
 import { useProfile } from '@/hooks/useProfile';
 import {
   CONTRACT_TEMPLATES,
@@ -27,7 +27,7 @@ import {
   getAmendmentKloseSignablePages,
 } from '@/components/contracts/ContractPageViewer';
 
-type Step = 'select' | 'fill' | 'klose_sign' | 'send';
+type Step = 'select' | 'select_parent' | 'fill' | 'klose_sign' | 'send';
 
 export default function ContractNew() {
   const [searchParams] = useSearchParams();
@@ -49,9 +49,17 @@ export default function ContractNew() {
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [kloseSignatures, setKloseSignatures] = useState<Record<number, string>>({});
   const [kloseSignerName, setKloseSignerName] = useState('');
+  const [, setSelectedParentContract] = useState<any>(null);
 
   const createContract = useCreateContract();
   const updateContract = useUpdateContract();
+
+  // Fetch existing contracts for this lead (for Amendment parent selection)
+  const { data: existingContracts } = useContractsForLead(leadId || undefined);
+  const abContracts = useMemo(() => 
+    (existingContracts || []).filter(c => c.contract_type === 'AB' && c.status !== 'draft'),
+    [existingContracts]
+  );
 
   const isBC = contractType === 'BC';
   const recipientLabel = isBC ? 'Buyer' : 'Seller';
@@ -91,6 +99,29 @@ export default function ContractNew() {
   const handleSelectType = (type: 'AB' | 'BC' | 'AMENDMENT') => {
     setContractType(type);
     setFormValues({});
+    setSelectedParentContract(null);
+    if (type === 'AMENDMENT' && abContracts.length > 0) {
+      setStep('select_parent');
+    } else {
+      setStep('fill');
+    }
+  };
+
+  const handleSelectParentContract = (contract: any) => {
+    setSelectedParentContract(contract);
+    const parentData = (contract.contract_data || {}) as Record<string, any>;
+    // Auto-fill from the parent AB contract
+    const prefill: Record<string, string> = {};
+    if (parentData.seller_name) prefill.seller_name = parentData.seller_name;
+    if (parentData.property_address) prefill.property_address = parentData.property_address;
+    if (contract.created_at) {
+      prefill.binding_agreement_date = new Date(contract.created_at).toISOString().split('T')[0];
+    }
+    if (parentData.sale_price) prefill.new_purchase_price = parentData.sale_price;
+    // Also carry over seller contact info
+    if (parentData.seller_email || contract.seller_email) prefill.seller_email = parentData.seller_email || contract.seller_email;
+    if (parentData.seller_phone || contract.seller_phone) prefill.seller_phone = parentData.seller_phone || contract.seller_phone;
+    setFormValues(prev => ({ ...prefill, ...prev, parent_contract_id: contract.id }));
     setStep('fill');
   };
 
@@ -238,8 +269,8 @@ export default function ContractNew() {
     );
   }
 
-  const stepOrder: Step[] = ['select', 'fill', 'klose_sign', 'send'];
-  const currentStepIdx = stepOrder.indexOf(step);
+  const progressSteps: Step[] = ['select', 'fill', 'klose_sign', 'send'];
+  const currentStepIdx = step === 'select_parent' ? 0 : progressSteps.indexOf(step);
 
   return (
     <Layout>
@@ -261,10 +292,10 @@ export default function ContractNew() {
 
         {/* Progress */}
         <div className="flex items-center gap-2">
-          {(['select', 'fill', 'klose_sign', 'send'] as Step[]).map((s, i) => (
+          {progressSteps.map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step === s ? 'bg-primary text-primary-foreground' :
+                step === s || (step === 'select_parent' && s === 'select') ? 'bg-primary text-primary-foreground' :
                 currentStepIdx > i ? 'bg-green-500/20 text-green-400' :
                 'bg-muted text-muted-foreground'
               }`}>
@@ -295,7 +326,63 @@ export default function ContractNew() {
           </div>
         )}
 
-        {/* Step 2: Fill Fields */}
+        {/* Step 1b: Select Parent AB Contract (for Amendments) */}
+        {step === 'select_parent' && (
+          <div className="space-y-4">
+            <Card variant="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  🔄 Seleccionar Contrato AB a Modificar
+                </CardTitle>
+                <CardDescription>
+                  El Amendment modifica un contrato AB existente. Selecciona cuál contrato deseas enmendar para pre-llenar los datos automáticamente.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {abContracts.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <p className="font-medium">No hay contratos AB firmados para este lead</p>
+                    <p className="text-sm mt-1">Puedes crear un Amendment sin contrato padre, pero deberás llenar todos los campos manualmente.</p>
+                    <Button variant="outline" className="mt-4" onClick={() => setStep('fill')}>
+                      Continuar sin contrato padre
+                    </Button>
+                  </div>
+                ) : (
+                  abContracts.map((c) => {
+                    const cd = (c.contract_data || {}) as Record<string, any>;
+                    return (
+                      <Card
+                        key={c.id}
+                        variant="interactive"
+                        className="cursor-pointer hover:border-primary/50"
+                        onClick={() => handleSelectParentContract(c)}
+                      >
+                        <CardContent className="py-3 flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">{cd.property_address || 'Sin dirección'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Seller: {cd.seller_name || '—'} · Precio: ${cd.sale_price ? Number(cd.sale_price).toLocaleString() : '—'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Creado: {new Date(c.created_at).toLocaleDateString('es')}
+                            </p>
+                          </div>
+                          <Badge variant={c.status === 'signed' ? 'default' : 'outline'} className="text-xs">
+                            {c.status === 'signed' ? '✅ Firmado' : c.status === 'sent' ? '📤 Enviado' : c.status}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+            <Button variant="outline" onClick={() => { setStep('select'); setContractType(null); }}>
+              <ArrowLeft className="h-4 w-4 mr-2" /> Atrás
+            </Button>
+          </div>
+        )}
+
         {step === 'fill' && contractType && (
           <div className="space-y-4">
             <Card variant="glass">
@@ -307,6 +394,11 @@ export default function ContractNew() {
                 {isBC && (
                   <CardDescription className="text-purple-400">
                     Este contrato se envía al Buyer/Assignee para que firme. Klose actúa como Assignor.
+                  </CardDescription>
+                )}
+                {contractType === 'AMENDMENT' && (
+                  <CardDescription className="text-amber-400">
+                    El Amendment modifica precio, fecha de cierre o terminos de un contrato AB existente. Se envía al Seller para contrafirmar.
                   </CardDescription>
                 )}
               </CardHeader>
@@ -364,7 +456,13 @@ export default function ContractNew() {
             </Card>
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => { setStep('select'); setContractType(null); }}>
+              <Button variant="outline" onClick={() => { 
+                if (contractType === 'AMENDMENT' && abContracts.length > 0) {
+                  setStep('select_parent');
+                } else {
+                  setStep('select'); setContractType(null);
+                }
+              }}>
                 <ArrowLeft className="h-4 w-4 mr-2" /> Atrás
               </Button>
               <Button onClick={handleGenerate} disabled={generating}>
