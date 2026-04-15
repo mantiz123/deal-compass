@@ -18,7 +18,7 @@ import {
   getFieldsForType,
   autoFillFields,
 } from '@/lib/contractTemplates';
-import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye, PenTool, Copy, Link, EyeOff, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye, PenTool, Copy, Link, EyeOff } from 'lucide-react';
 import SigningWizard, { type SignablePage } from '@/components/contracts/SigningWizard';
 import {
   ABPage,
@@ -269,8 +269,8 @@ export default function ContractNew() {
     );
   }
 
-  const stepOrder: Step[] = ['select', 'fill', 'klose_sign', 'send'];
-  const currentStepIdx = stepOrder.indexOf(step);
+  const progressSteps: Step[] = ['select', 'fill', 'klose_sign', 'send'];
+  const currentStepIdx = step === 'select_parent' ? 0 : progressSteps.indexOf(step);
 
   return (
     <Layout>
@@ -292,10 +292,10 @@ export default function ContractNew() {
 
         {/* Progress */}
         <div className="flex items-center gap-2">
-          {(['select', 'fill', 'klose_sign', 'send'] as Step[]).map((s, i) => (
+          {progressSteps.map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step === s ? 'bg-primary text-primary-foreground' :
+                step === s || (step === 'select_parent' && s === 'select') ? 'bg-primary text-primary-foreground' :
                 currentStepIdx > i ? 'bg-green-500/20 text-green-400' :
                 'bg-muted text-muted-foreground'
               }`}>
