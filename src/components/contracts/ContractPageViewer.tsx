@@ -306,7 +306,7 @@ function AmendmentPageSingle({ pageNum, d, mode = 'view', kloseSignature }: { pa
 export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB', kloseSignatures = [] }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; contractType?: 'AB' | 'BC' | 'AMENDMENT'; kloseSignatures?: KloseSignatureData[] }) {
   const kloseForPage = kloseSignatures.find(s => s.pageNum === pageNum);
   if (contractType === 'BC') return <BCPageSingle pageNum={pageNum} d={d} mode={mode} kloseSignature={kloseForPage} />;
-  if (contractType === 'AMENDMENT') return <AmendmentPageSingle pageNum={pageNum} d={d} mode={mode} />;
+  if (contractType === 'AMENDMENT') return <AmendmentPageSingle pageNum={pageNum} d={d} mode={mode} kloseSignature={kloseForPage} />;
   const totalPages = 11;
 
   switch (pageNum) {
