@@ -11,14 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useCreateContract, useUpdateContract } from '@/hooks/useContracts';
+import { useCreateContract, useUpdateContract, useContractsForLead } from '@/hooks/useContracts';
 import { useProfile } from '@/hooks/useProfile';
 import {
   CONTRACT_TEMPLATES,
   getFieldsForType,
   autoFillFields,
 } from '@/lib/contractTemplates';
-import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye, PenTool, Copy, Link, EyeOff } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye, PenTool, Copy, Link, EyeOff, AlertTriangle } from 'lucide-react';
 import SigningWizard, { type SignablePage } from '@/components/contracts/SigningWizard';
 import {
   ABPage,
@@ -27,7 +27,7 @@ import {
   getAmendmentKloseSignablePages,
 } from '@/components/contracts/ContractPageViewer';
 
-type Step = 'select' | 'fill' | 'klose_sign' | 'send';
+type Step = 'select' | 'select_parent' | 'fill' | 'klose_sign' | 'send';
 
 export default function ContractNew() {
   const [searchParams] = useSearchParams();
@@ -49,9 +49,17 @@ export default function ContractNew() {
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [kloseSignatures, setKloseSignatures] = useState<Record<number, string>>({});
   const [kloseSignerName, setKloseSignerName] = useState('');
+  const [selectedParentContract, setSelectedParentContract] = useState<any>(null);
 
   const createContract = useCreateContract();
   const updateContract = useUpdateContract();
+
+  // Fetch existing contracts for this lead (for Amendment parent selection)
+  const { data: existingContracts } = useContractsForLead(leadId || undefined);
+  const abContracts = useMemo(() => 
+    (existingContracts || []).filter(c => c.contract_type === 'AB' && c.status !== 'draft'),
+    [existingContracts]
+  );
 
   const isBC = contractType === 'BC';
   const recipientLabel = isBC ? 'Buyer' : 'Seller';
@@ -91,6 +99,29 @@ export default function ContractNew() {
   const handleSelectType = (type: 'AB' | 'BC' | 'AMENDMENT') => {
     setContractType(type);
     setFormValues({});
+    setSelectedParentContract(null);
+    if (type === 'AMENDMENT' && abContracts.length > 0) {
+      setStep('select_parent');
+    } else {
+      setStep('fill');
+    }
+  };
+
+  const handleSelectParentContract = (contract: any) => {
+    setSelectedParentContract(contract);
+    const parentData = (contract.contract_data || {}) as Record<string, any>;
+    // Auto-fill from the parent AB contract
+    const prefill: Record<string, string> = {};
+    if (parentData.seller_name) prefill.seller_name = parentData.seller_name;
+    if (parentData.property_address) prefill.property_address = parentData.property_address;
+    if (contract.created_at) {
+      prefill.binding_agreement_date = new Date(contract.created_at).toISOString().split('T')[0];
+    }
+    if (parentData.sale_price) prefill.new_purchase_price = parentData.sale_price;
+    // Also carry over seller contact info
+    if (parentData.seller_email || contract.seller_email) prefill.seller_email = parentData.seller_email || contract.seller_email;
+    if (parentData.seller_phone || contract.seller_phone) prefill.seller_phone = parentData.seller_phone || contract.seller_phone;
+    setFormValues(prev => ({ ...prefill, ...prev, parent_contract_id: contract.id }));
     setStep('fill');
   };
 
