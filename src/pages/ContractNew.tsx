@@ -456,7 +456,13 @@ export default function ContractNew() {
             </Card>
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => { setStep('select'); setContractType(null); }}>
+              <Button variant="outline" onClick={() => { 
+                if (contractType === 'AMENDMENT' && abContracts.length > 0) {
+                  setStep('select_parent');
+                } else {
+                  setStep('select'); setContractType(null);
+                }
+              }}>
                 <ArrowLeft className="h-4 w-4 mr-2" /> Atrás
               </Button>
               <Button onClick={handleGenerate} disabled={generating}>
