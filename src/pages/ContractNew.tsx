@@ -326,7 +326,63 @@ export default function ContractNew() {
           </div>
         )}
 
-        {/* Step 2: Fill Fields */}
+        {/* Step 1b: Select Parent AB Contract (for Amendments) */}
+        {step === 'select_parent' && (
+          <div className="space-y-4">
+            <Card variant="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  🔄 Seleccionar Contrato AB a Modificar
+                </CardTitle>
+                <CardDescription>
+                  El Amendment modifica un contrato AB existente. Selecciona cuál contrato deseas enmendar para pre-llenar los datos automáticamente.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {abContracts.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <p className="font-medium">No hay contratos AB firmados para este lead</p>
+                    <p className="text-sm mt-1">Puedes crear un Amendment sin contrato padre, pero deberás llenar todos los campos manualmente.</p>
+                    <Button variant="outline" className="mt-4" onClick={() => setStep('fill')}>
+                      Continuar sin contrato padre
+                    </Button>
+                  </div>
+                ) : (
+                  abContracts.map((c) => {
+                    const cd = (c.contract_data || {}) as Record<string, any>;
+                    return (
+                      <Card
+                        key={c.id}
+                        variant="interactive"
+                        className="cursor-pointer hover:border-primary/50"
+                        onClick={() => handleSelectParentContract(c)}
+                      >
+                        <CardContent className="py-3 flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">{cd.property_address || 'Sin dirección'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Seller: {cd.seller_name || '—'} · Precio: ${cd.sale_price ? Number(cd.sale_price).toLocaleString() : '—'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Creado: {new Date(c.created_at).toLocaleDateString('es')}
+                            </p>
+                          </div>
+                          <Badge variant={c.status === 'signed' ? 'default' : 'outline'} className="text-xs">
+                            {c.status === 'signed' ? '✅ Firmado' : c.status === 'sent' ? '📤 Enviado' : c.status}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+            <Button variant="outline" onClick={() => { setStep('select'); setContractType(null); }}>
+              <ArrowLeft className="h-4 w-4 mr-2" /> Atrás
+            </Button>
+          </div>
+        )}
+
         {step === 'fill' && contractType && (
           <div className="space-y-4">
             <Card variant="glass">
