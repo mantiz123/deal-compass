@@ -494,16 +494,31 @@ async function buildAmendmentPdfAsync(ctx: PdfCtx) {
   c.y -= 10
   c = drawCenteredText(ctx, c, 'AMENDMENT TO PURCHASE AND SALE AGREEMENT', 14)
   c.y -= 10
-  c = drawParagraph(ctx, c, `Buyer: Klose LLC`)
+  c = drawParagraph(ctx, c, `Buyer: Klose LLC, a Wyoming Limited Liability Company`)
   c = drawParagraph(ctx, c, `Seller: ${v(d,'seller_name')}`)
   c = drawParagraph(ctx, c, `Property: ${v(d,'property_address')}`)
   c.y -= 5
-  c = drawParagraph(ctx, c, `The parties agree to amend the Purchase and Sale Agreement with a Binding Agreement Date of ${v(d,'binding_agreement_date')}.`)
-  if (d.new_purchase_price) c = drawClause(ctx, c, 'Amendment 1', 'Purchase Price', `New price: $ ${money(d.new_purchase_price)}`)
-  if (d.new_closing_date) c = drawClause(ctx, c, 'Amendment 2', 'Closing Date', `New date: ${d.new_closing_date}`)
+  c = drawParagraph(ctx, c, `In consideration of the mutual covenants herein and other good and valuable consideration, the receipt and sufficiency of which is hereby acknowledged, the parties agree to amend that certain Purchase and Sale Agreement with a Binding Agreement Date of ${v(d,'binding_agreement_date')} and any incorporated addenda, exhibits, or prior amendments (collectively referred to herein as "Agreement") for the purchase and sale of the real property specified above as follows:`)
+  if (d.new_purchase_price) c = drawClause(ctx, c, 'Amendment 1', 'Purchase Price', `Buyer & Seller hereby mutually agree to amend the purchase price to: $ ${money(d.new_purchase_price)}`)
+  if (d.new_closing_date) c = drawClause(ctx, c, 'Amendment 2', 'Closing / Expiration / Due Diligence Date', `Buyer & Seller hereby mutually agree to amend the closing, contract expiration, and due diligence date to: ${d.new_closing_date}`)
   if (d.additional_terms) c = drawClause(ctx, c, 'Amendment 3', 'Additional Terms', d.additional_terms)
   c.y -= 5
-  c = await embedDualSignature(ctx, c, 2, 'Buyer Signature', 'Klose LLC / Authorized Signatory', 'Seller Signature', v(d,'seller_name','___'))
+  c = drawParagraph(ctx, c, 'This Amendment shall become binding when signed by all parties and shall be incorporated into the Agreement. All other terms and conditions of the Purchase and Sale Agreement shall remain in full force and effect.')
+  c = drawParagraph(ctx, c, 'The party(ies) below have signed and acknowledge receipt of a copy.')
+  c.y -= 5
+  // Klose (Buyer) signature on page 1
+  c = await embedKloseSignature(ctx, c, 1, 'Buyer Signature — Klose LLC / Authorized Signatory')
+  if (!ctx.kloseSigByPage[1]) {
+    c = drawUnsignedBlock(ctx, c, 'Buyer Signature — Klose LLC / Authorized Signatory')
+  }
+
+  // Page 2: Seller signatures
+  c = addPage(ctx, 2)
+  c = drawHeader(ctx, c, false)
+  c.y -= 10
+  c = drawParagraph(ctx, c, 'The party(ies) below have signed and acknowledge receipt of a copy.')
+  c.y -= 10
+  c = await embedSignature(ctx, c, 2, 'Seller Signature')
 }
 
 // ─── Supporting pages with embedded signatures ──────────────────────
