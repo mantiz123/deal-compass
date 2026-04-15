@@ -66,7 +66,12 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
 
   const lead = contract.lead as any;
   const property = lead?.property;
-  const signingUrl = `${window.location.origin}/sign/${contract.signing_token}`;
+  
+  // Use custom domain for professional appearance
+  const baseUrl = window.location.hostname.includes('lovable.app') 
+    ? 'https://goklose.com' 
+    : window.location.origin;
+  const signingUrl = `${baseUrl}/sign/${contract.signing_token}`;
   const preferredPdfUrl = contract.signed_pdf_url || contract.pdf_url;
   const preferredPdfName = contract.signed_pdf_url
     ? `Contrato_Firmado_${contract.contract_type}.pdf`
