@@ -265,32 +265,37 @@ function BCPageSingle({ pageNum, d, mode = 'view', kloseSignature }: { pageNum: 
 }
 
 // ─── Amendment single page renderer ───
-function AmendmentPageSingle({ pageNum, d, mode = 'view' }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing' }) {
+function AmendmentPageSingle({ pageNum, d, mode = 'view', kloseSignature }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; kloseSignature?: KloseSignatureData }) {
   const totalPages = 2;
   switch (pageNum) {
     case 1: return (
       <PageWrapper pageNum={1} total={totalPages}>
-        <PageHeader showEIN={false} />
+        <PageHeader showEIN />
         <h3 className="text-center text-lg font-bold mb-6">AMENDMENT TO PURCHASE AND SALE AGREEMENT</h3>
         <div className="text-sm space-y-2 mb-4">
-          <p>Buyer: Klose LLC, a Wyoming Limited Liability Company</p>
-          <p>Seller: <V k="seller_name" data={d} /></p>
-          <p>Property: <V k="property_address" data={d} /></p>
+          <p><strong>Buyer:</strong> Klose LLC, a Wyoming Limited Liability Company</p>
+          <p><strong>Seller:</strong> <V k="seller_name" data={d} /></p>
+          <p><strong>Property:</strong> <V k="property_address" data={d} /></p>
         </div>
-        <p className="text-sm leading-relaxed">The parties agree to amend the Purchase and Sale Agreement with a Binding Agreement Date of <V k="binding_agreement_date" data={d} />.</p>
-        <h4 className="font-bold mt-6 mb-2">Amendment 1 – Purchase Price:</h4>
-        <p className="text-sm leading-relaxed">New purchase price: $ <V k="new_purchase_price" data={d} /></p>
-        <h4 className="font-bold mt-4 mb-2">Amendment 2 – Closing Date:</h4>
-        <p className="text-sm leading-relaxed">New closing date: <V k="new_closing_date" data={d} /></p>
-        <h4 className="font-bold mt-4 mb-2">Amendment 3 – Additional Terms:</h4>
+        <p className="text-sm leading-relaxed mb-4">In consideration of the mutual covenants herein and other good and valuable consideration, the receipt and sufficiency of which is hereby acknowledged, the parties agree to amend that certain Purchase and Sale Agreement with a Binding Agreement Date of <V k="binding_agreement_date" data={d} /> and any incorporated addenda, exhibits, or prior amendments (collectively referred to herein as "Agreement") for the purchase and sale of the real property specified above as follows:</p>
+        <h4 className="font-bold mt-4 mb-2">Amendment 1 - Purchase Price:</h4>
+        <p className="text-sm leading-relaxed">Buyer & Seller hereby mutually agree to amend the purchase price to: $ <V k="new_purchase_price" data={d} /></p>
+        <h4 className="font-bold mt-4 mb-2">Amendment 2 - Closing / Expiration / Due Diligence Date:</h4>
+        <p className="text-sm leading-relaxed">Buyer & Seller hereby mutually agree to amend the closing, contract expiration, and due diligence date to: <V k="new_closing_date" data={d} /></p>
+        <h4 className="font-bold mt-4 mb-2">Amendment 3 - Additional Terms (if applicable):</h4>
         <p className="text-sm leading-relaxed">{d.additional_terms || '______________________________________________________________________'}</p>
-        <DualSignatureMarker leftLabel="BUYER Signature" rightLabel="BUYER (2nd)" leftPrint="Klose LLC / Authorized Signatory" rightPrint="Printed Name / Title" mode={mode} />
+        <p className="text-sm leading-relaxed mt-4">This Amendment shall become binding when signed by all parties and shall be incorporated into the Agreement. All other terms and conditions of the Purchase and Sale Agreement shall remain in full force and effect.</p>
+        <p className="text-sm leading-relaxed mt-2">The party(ies) below have signed and acknowledge receipt of a copy.</p>
+        <DualSignatureMarker leftLabel="BUYER Signature" rightLabel="BUYER (2nd, if applicable)" leftPrint="Klose LLC / Authorized Signatory" rightPrint="Printed Name / Title" mode={mode} kloseSignature={kloseSignature} />
       </PageWrapper>
     );
     case 2: return (
       <PageWrapper pageNum={2} total={totalPages}>
         <p className="text-sm mb-4">The party(ies) below have signed and acknowledge receipt of a copy.</p>
-        <DualSignatureMarker leftLabel="SELLER Signature" rightLabel="SELLER (2nd)" leftPrint="Seller Printed Name" rightPrint="Printed Name" mode={mode} />
+        <SignatureMarker label="SELLER Signature" mode={mode} />
+        <div className="mt-8">
+          <SignatureMarker label="SELLER (2nd, if applicable)" mode={mode} />
+        </div>
       </PageWrapper>
     );
     default: return null;

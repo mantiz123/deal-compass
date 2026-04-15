@@ -49,7 +49,7 @@ export default function ContractNew() {
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [kloseSignatures, setKloseSignatures] = useState<Record<number, string>>({});
   const [kloseSignerName, setKloseSignerName] = useState('');
-  const [selectedParentContract, setSelectedParentContract] = useState<any>(null);
+  const [, setSelectedParentContract] = useState<any>(null);
 
   const createContract = useCreateContract();
   const updateContract = useUpdateContract();
