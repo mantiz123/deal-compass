@@ -7,6 +7,7 @@ import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { DeadLeadsAnalytics } from "@/components/dashboard/DeadLeadsAnalytics";
 import { BuyerLiquidityWidget } from "@/components/dashboard/BuyerLiquidityWidget";
 import { HotLeadsWidget } from "@/components/dashboard/HotLeadsWidget";
+import { CriticalActionsWidget } from "@/components/dashboard/CriticalActionsWidget";
 import { StaleLeadsAlert } from "@/components/dashboard/StaleLeadsAlert";
 import { PipelineHygieneWidget } from "@/components/dashboard/PipelineHygieneWidget";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
@@ -104,9 +105,10 @@ const Index = () => {
         <StaleLeadsAlert />
       </div>
 
-      {/* Hot Leads Widget */}
-      <div className="mb-6">
+      {/* Hot Leads + Critical Actions side by side */}
+      <div className="mb-6 grid gap-6 lg:grid-cols-2">
         <HotLeadsWidget />
+        <CriticalActionsWidget />
       </div>
 
       {/* Centro de Acción - Full Width */}
