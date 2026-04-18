@@ -66,7 +66,7 @@ function priorityLabel(priority: number) {
 export function CriticalActionsWidget() {
   const { data: actions, isLoading } = useCriticalActions(5);
   const [selectedAction, setSelectedAction] = useState<CriticalAction | null>(null);
-  const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  const [openLead, setOpenLead] = useState<any | null>(null);
 
   if (isLoading) {
     return (
@@ -178,18 +178,18 @@ export function CriticalActionsWidget() {
           onOpenChange={open => {
             if (!open) setSelectedAction(null);
           }}
-          onOpenLead={leadId => {
+          onOpenLead={lead => {
             setSelectedAction(null);
-            setOpenLeadId(leadId);
+            setOpenLead(lead);
           }}
         />
       )}
 
-      {openLeadId && (
+      {openLead && (
         <LeadDetailSheet
-          lead={{ id: openLeadId } as any}
-          open={!!openLeadId}
-          onOpenChange={open => !open && setOpenLeadId(null)}
+          lead={openLead}
+          open={!!openLead}
+          onOpenChange={open => !open && setOpenLead(null)}
         />
       )}
     </>
@@ -209,7 +209,7 @@ function ActionModal({
   action: CriticalAction;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onOpenLead: (leadId: string) => void;
+  onOpenLead: (lead: any) => void;
 }) {
   const { toast } = useToast();
   const markContacted = useMarkLeadContacted();
