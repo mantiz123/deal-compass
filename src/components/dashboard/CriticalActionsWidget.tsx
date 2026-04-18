@@ -268,7 +268,7 @@ function ActionModal({
               <Button
                 variant="outline"
                 className="w-full justify-start"
-                onClick={() => action.leadId && onOpenLead(action.leadId)}
+                onClick={() => action.entity && onOpenLead(action.entity)}
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
                 Abrir detalle del lead
@@ -337,7 +337,7 @@ function ActionModal({
                 <Button
                   variant="ghost"
                   className="w-full justify-start"
-                  onClick={() => onOpenLead(action.leadId!)}
+                  onClick={() => action.entity?.lead && onOpenLead(action.entity.lead)}
                 >
                   <ExternalLink className="mr-2 h-4 w-4" />
                   Abrir lead del contrato
