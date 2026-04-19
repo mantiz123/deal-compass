@@ -957,7 +957,14 @@ export function LeadDetailSheet({
         propertyAddress={`${property?.address || ''}, ${property?.city || ''}`}
       />
 
-      {/* Permanent delete confirmation */}
+      {/* AI Voice Agent Sheet */}
+      <VoiceAgentSheet
+        lead={lead}
+        open={showVoiceAgent}
+        onOpenChange={setShowVoiceAgent}
+      />
+
+
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
