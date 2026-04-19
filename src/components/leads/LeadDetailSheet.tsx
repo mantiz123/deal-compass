@@ -36,6 +36,7 @@ import { LogConversationDialog } from './LogConversationDialog';
 import { SkipTraceInput } from './SkipTraceInput';
 import { OutreachEmailGenerator } from './OutreachEmailGenerator';
 import { ConversationHistory } from './ConversationHistory';
+import { VoiceAgentSheet } from './VoiceAgentSheet';
 import { useInteractions } from '@/hooks/useInteractions';
 import { usePermanentlyDeleteLead } from '@/hooks/useArchiveLead';
 import { useUpdateProperty } from '@/hooks/useProperties';
@@ -101,6 +102,7 @@ export function LeadDetailSheet({
   const [showLogConversation, setShowLogConversation] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSkipTrace, setShowSkipTrace] = useState(false);
+  const [showVoiceAgent, setShowVoiceAgent] = useState(false);
   const deleteLead = usePermanentlyDeleteLead();
   const { data: interactions, isLoading: loadingInteractions } = useInteractions(lead?.id || '');
   const { data: latestConversation } = useLatestConversation(lead?.id);
@@ -222,6 +224,15 @@ export function LeadDetailSheet({
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowVoiceAgent(true)}
+                  size="sm"
+                  className="bg-accent/10 border-accent/30 hover:bg-accent/20"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  AI Agent
+                </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setShowLogConversation(true)}
@@ -946,7 +957,14 @@ export function LeadDetailSheet({
         propertyAddress={`${property?.address || ''}, ${property?.city || ''}`}
       />
 
-      {/* Permanent delete confirmation */}
+      {/* AI Voice Agent Sheet */}
+      <VoiceAgentSheet
+        lead={lead}
+        open={showVoiceAgent}
+        onOpenChange={setShowVoiceAgent}
+      />
+
+
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
