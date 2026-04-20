@@ -1325,6 +1325,57 @@ export type Database = {
           },
         ]
       }
+      training_sessions: {
+        Row: {
+          agent_score: number | null
+          created_at: string
+          duration_seconds: number | null
+          elevenlabs_conversation_id: string | null
+          final_offer: number | null
+          id: string
+          outcome: string | null
+          persona: string
+          raw_result_tag: string | null
+          strengths: string[] | null
+          transcript: Json | null
+          user_id: string
+          weaknesses: string[] | null
+          would_close: boolean | null
+        }
+        Insert: {
+          agent_score?: number | null
+          created_at?: string
+          duration_seconds?: number | null
+          elevenlabs_conversation_id?: string | null
+          final_offer?: number | null
+          id?: string
+          outcome?: string | null
+          persona: string
+          raw_result_tag?: string | null
+          strengths?: string[] | null
+          transcript?: Json | null
+          user_id: string
+          weaknesses?: string[] | null
+          would_close?: boolean | null
+        }
+        Update: {
+          agent_score?: number | null
+          created_at?: string
+          duration_seconds?: number | null
+          elevenlabs_conversation_id?: string | null
+          final_offer?: number | null
+          id?: string
+          outcome?: string | null
+          persona?: string
+          raw_result_tag?: string | null
+          strengths?: string[] | null
+          transcript?: Json | null
+          user_id?: string
+          weaknesses?: string[] | null
+          would_close?: boolean | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
