@@ -39,7 +39,7 @@ const PERSONALITY_INFO: Record<Personality, { label: string; desc: string; emoji
   discovery: { label: 'Alex — Discovery', desc: 'Solo pregunta, no ofrece. Para qualify inicial', emoji: '🔍' },
 };
 
-export function VoiceAgentSheet({ lead, open, onOpenChange }: VoiceAgentSheetProps) {
+function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps) {
   const { toast } = useToast();
   const [personality, setPersonality] = useState<Personality>('sarah');
   const [isStarting, setIsStarting] = useState(false);
