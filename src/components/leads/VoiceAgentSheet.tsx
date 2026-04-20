@@ -316,3 +316,11 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     </Sheet>
   );
 }
+
+export function VoiceAgentSheet(props: VoiceAgentSheetProps) {
+  return (
+    <ConversationProvider>
+      <VoiceAgentSheetInner {...props} />
+    </ConversationProvider>
+  );
+}
