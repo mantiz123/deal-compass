@@ -48,15 +48,88 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
   const [negotiationCtx, setNegotiationCtx] = useState<{ mao: number; min_offer: number; arv: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Refs for persistence (avoid stale closures in onDisconnect)
+  const transcriptRef = useRef<TranscriptEntry[]>([]);
+  const callStartRef = useRef<number | null>(null);
+  const personalityRef = useRef<Personality>('sarah');
+  const escalationsRef = useRef<{ approvals: number; rejections: number; dnc: boolean }>({ approvals: 0, rejections: 0, dnc: false });
+  const leadRef = useRef<Lead | null>(null);
+
+  useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
+  useEffect(() => { personalityRef.current = personality; }, [personality]);
+  useEffect(() => { leadRef.current = lead; }, [lead]);
+
+  const persistCallToTimeline = useCallback(async () => {
+    const currentLead = leadRef.current;
+    const entries = transcriptRef.current;
+    if (!currentLead || entries.length === 0 || !callStartRef.current) return;
+
+    const durationSec = Math.round((Date.now() - callStartRef.current) / 1000);
+    const personalityLabel = PERSONALITY_INFO[personalityRef.current].label;
+    const esc = escalationsRef.current;
+
+    const transcriptText = entries
+      .map((e) => `[${e.role === 'agent' ? 'AGENTE' : 'SELLER'}] ${e.text}`)
+      .join('\n\n');
+
+    const escalationSummary: string[] = [];
+    if (esc.approvals > 0) escalationSummary.push(`✅ ${esc.approvals} aprobación(es) humana(s)`);
+    if (esc.rejections > 0) escalationSummary.push(`❌ ${esc.rejections} rechazo(s) humano(s)`);
+    if (esc.dnc) escalationSummary.push(`🚫 LEAD MARCADO COMO DNC`);
+
+    const header = [
+      `🤖 LLAMADA AI VOICE AGENT`,
+      `Personalidad: ${personalityLabel}`,
+      `Duración: ${Math.floor(durationSec / 60)}m ${durationSec % 60}s`,
+      `Mensajes: ${entries.length}`,
+      escalationSummary.length > 0 ? `Escalations: ${escalationSummary.join(' · ')}` : null,
+    ].filter(Boolean).join('\n');
+
+    const fullContent = `${header}\n\n--- TRANSCRIPT ---\n\n${transcriptText}`;
+
+    const sentiment = esc.dnc ? 'negative' : esc.approvals > 0 ? 'positive' : 'neutral';
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from('interactions').insert({
+        lead_id: currentLead.id,
+        interaction_type: 'ai_call',
+        direction: 'outbound',
+        content: fullContent,
+        sentiment,
+        created_by: user?.id ?? null,
+      });
+      if (error) throw error;
+
+      // Update last_contact_at on the lead
+      await supabase
+        .from('leads')
+        .update({ last_contact_at: new Date().toISOString() })
+        .eq('id', currentLead.id);
+
+      toast({ title: '💾 Conversación guardada', description: 'Transcript añadido al timeline del lead' });
+    } catch (err: any) {
+      console.error('Failed to persist transcript:', err);
+      toast({ variant: 'destructive', title: 'No se pudo guardar el transcript', description: err.message });
+    }
+  }, [toast]);
+
   const conversation = useConversation({
-    onConnect: () => toast({ title: '🎙️ Llamada iniciada', description: 'El agente está hablando con el lead' }),
-    onDisconnect: () => toast({ title: 'Llamada finalizada' }),
+    onConnect: () => {
+      callStartRef.current = Date.now();
+      escalationsRef.current = { approvals: 0, rejections: 0, dnc: false };
+      toast({ title: '🎙️ Llamada iniciada', description: 'El agente está hablando con el lead' });
+    },
+    onDisconnect: () => {
+      toast({ title: 'Llamada finalizada' });
+      // Persist transcript to lead timeline
+      void persistCallToTimeline();
+    },
     onError: (err) => {
       console.error('ElevenLabs error:', err);
       toast({ variant: 'destructive', title: 'Error de conexión', description: String(err) });
     },
     onMessage: (msg: any) => {
-      // Handle transcript events
       if (msg?.source === 'user' && msg?.message) {
         setTranscript((t) => [...t, { role: 'user', text: msg.message, ts: Date.now() }]);
       } else if (msg?.source === 'ai' && msg?.message) {
@@ -73,13 +146,26 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
         });
         return 'Approval requested. Waiting for human decision. Stall the seller politely.';
       },
-      mark_dnc: (params: { reason: string }) => {
+      mark_dnc: async (params: { reason: string }) => {
+        escalationsRef.current.dnc = true;
         toast({
           variant: 'destructive',
           title: '🚫 Lead marcado como DNC',
           description: params.reason,
         });
-        // TODO: persist DNC flag in DB
+        // Persist DNC flag to property
+        const currentLead = leadRef.current;
+        const propertyId = (currentLead as any)?.properties?.id ?? (currentLead as any)?.property_id;
+        if (propertyId) {
+          try {
+            await supabase
+              .from('properties')
+              .update({ do_not_mail: true, notes: `[DNC via AI call] ${params.reason}` })
+              .eq('id', propertyId);
+          } catch (e) {
+            console.error('Failed to mark DNC:', e);
+          }
+        }
         return 'Lead marked as Do Not Call. Ending conversation politely.';
       },
     },
