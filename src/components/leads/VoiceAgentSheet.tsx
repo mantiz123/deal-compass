@@ -5,13 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, PhoneOff, AlertTriangle, Loader2, Bot, User, ShieldAlert, PhoneCall } from 'lucide-react';
+import { Mic, PhoneOff, AlertTriangle, Loader2, Bot, User, ShieldAlert, PhoneCall, GraduationCap } from 'lucide-react';
 import type { Lead } from '@/hooks/useLeads';
+import {
+  useCreateTrainingSession,
+  useTrainingStats,
+  parseTrainingResult,
+} from '@/hooks/useTrainingSessions';
+import { TrainingResultsPanel } from './TrainingResultsPanel';
 
 interface VoiceAgentSheetProps {
   lead: Lead | null;
@@ -42,21 +49,28 @@ const PERSONALITY_INFO: Record<Personality, { label: string; desc: string; emoji
 function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps) {
   const { toast } = useToast();
   const [personality, setPersonality] = useState<Personality>('sarah');
+  const [trainingMode, setTrainingMode] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
   const [negotiationCtx, setNegotiationCtx] = useState<{ mao: number; min_offer: number; arv: number } | null>(null);
+  const [trainingResult, setTrainingResult] = useState<ReturnType<typeof parseTrainingResult> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Refs for persistence (avoid stale closures in onDisconnect)
+  const createTrainingSession = useCreateTrainingSession();
+  const { data: trainingStats } = useTrainingStats();
+
+  // Refs for persistence
   const transcriptRef = useRef<TranscriptEntry[]>([]);
   const callStartRef = useRef<number | null>(null);
   const personalityRef = useRef<Personality>('sarah');
+  const trainingModeRef = useRef<boolean>(false);
   const escalationsRef = useRef<{ approvals: number; rejections: number; dnc: boolean }>({ approvals: 0, rejections: 0, dnc: false });
   const leadRef = useRef<Lead | null>(null);
 
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
   useEffect(() => { personalityRef.current = personality; }, [personality]);
+  useEffect(() => { trainingModeRef.current = trainingMode; }, [trainingMode]);
   useEffect(() => { leadRef.current = lead; }, [lead]);
 
   const persistCallToTimeline = useCallback(async () => {
@@ -86,7 +100,6 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     ].filter(Boolean).join('\n');
 
     const fullContent = `${header}\n\n--- TRANSCRIPT ---\n\n${transcriptText}`;
-
     const sentiment = esc.dnc ? 'negative' : esc.approvals > 0 ? 'positive' : 'neutral';
 
     try {
@@ -101,7 +114,6 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
       });
       if (error) throw error;
 
-      // Update last_contact_at on the lead
       await supabase
         .from('leads')
         .update({ last_contact_at: new Date().toISOString() })
@@ -114,16 +126,66 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     }
   }, [toast]);
 
+  const persistTrainingSession = useCallback(async () => {
+    const entries = transcriptRef.current;
+    if (entries.length === 0 || !callStartRef.current) return;
+
+    const durationSec = Math.round((Date.now() - callStartRef.current) / 1000);
+    const fullText = entries.map((e) => `[${e.role}] ${e.text}`).join('\n');
+    const result = parseTrainingResult(fullText);
+
+    setTrainingResult(result);
+
+    try {
+      await createTrainingSession.mutateAsync({
+        persona: result.persona,
+        outcome: result.outcome,
+        agent_score: result.agent_score,
+        strengths: result.strengths,
+        weaknesses: result.weaknesses,
+        final_offer: result.final_offer,
+        would_close: result.would_close,
+        duration_seconds: durationSec,
+        transcript: entries,
+        raw_result_tag: result.raw_tag,
+      });
+
+      if (result.agent_score !== null) {
+        toast({
+          title: `🎓 Score: ${result.agent_score}/100`,
+          description: result.would_close ? '¡Cerraste el deal!' : 'Sigue practicando',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Sin score válido',
+          description: 'El simulador no devolvió el tag [TRAINING_RESULT]. Revisa el transcript.',
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to persist training session:', err);
+    }
+  }, [createTrainingSession, toast]);
+
   const conversation = useConversation({
     onConnect: () => {
       callStartRef.current = Date.now();
       escalationsRef.current = { approvals: 0, rejections: 0, dnc: false };
-      toast({ title: '🎙️ Llamada iniciada', description: 'El agente está hablando con el lead' });
+      setTrainingResult(null);
+      toast({
+        title: trainingModeRef.current ? '🎓 Entrenamiento iniciado' : '🎙️ Llamada iniciada',
+        description: trainingModeRef.current
+          ? 'Practica con un seller simulado'
+          : 'El agente está hablando con el lead',
+      });
     },
     onDisconnect: () => {
       toast({ title: 'Llamada finalizada' });
-      // Persist transcript to lead timeline
-      void persistCallToTimeline();
+      if (trainingModeRef.current) {
+        void persistTrainingSession();
+      } else {
+        void persistCallToTimeline();
+      }
     },
     onError: (err) => {
       console.error('ElevenLabs error:', err);
@@ -153,7 +215,10 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
           title: '🚫 Lead marcado como DNC',
           description: params.reason,
         });
-        // Persist DNC flag to property
+        // Skip DB update in training mode
+        if (trainingModeRef.current) {
+          return 'Training mode: DNC noted but not persisted.';
+        }
         const currentLead = leadRef.current;
         const propertyId = (currentLead as any)?.properties?.id ?? (currentLead as any)?.property_id;
         if (propertyId) {
@@ -184,40 +249,50 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
       setTranscript([]);
       setPendingApproval(null);
       setNegotiationCtx(null);
+      setTrainingResult(null);
     }
   }, [open]);
 
   const startCall = useCallback(async () => {
-    if (!lead) return;
+    // In training mode lead is optional
+    if (!trainingMode && !lead) return;
     setIsStarting(true);
+    setTrainingResult(null);
     try {
-      // Mic permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Get token + context from edge function
+      const invokeBody = trainingMode
+        ? { mode: 'training' }
+        : { mode: 'live', lead_id: lead!.id, personality };
+
       const { data, error } = await supabase.functions.invoke('elevenlabs-conversation-token', {
-        body: { lead_id: lead.id, personality },
+        body: invokeBody,
       });
 
       if (error || !data?.token) {
         throw new Error(error?.message || 'No token received');
       }
 
-      setNegotiationCtx(data.negotiation);
+      if (!trainingMode) {
+        setNegotiationCtx(data.negotiation);
+      }
 
-      await conversation.startSession({
+      const sessionConfig: any = {
         conversationToken: data.token,
         connectionType: 'webrtc',
-        dynamicVariables: data.dynamic_variables,
-        overrides: data.overrides,
-      } as any);
+      };
+
+      if (data.dynamic_variables) sessionConfig.dynamicVariables = data.dynamic_variables;
+      if (data.overrides) sessionConfig.overrides = data.overrides;
+
+      await conversation.startSession(sessionConfig);
     } catch (err: any) {
       console.error('Failed to start:', err);
       toast({ variant: 'destructive', title: 'No se pudo iniciar', description: err.message });
     } finally {
       setIsStarting(false);
     }
-  }, [lead, personality, conversation, toast]);
+  }, [lead, personality, trainingMode, conversation, toast]);
 
   const endCall = useCallback(async () => {
     await conversation.endSession();
@@ -245,20 +320,68 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
 
   const isConnected = conversation.status === 'connected';
   const property = (lead as any)?.properties;
+  const canStartCall = trainingMode || !!lead;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader className="pb-4">
           <SheetTitle className="flex items-center gap-2">
-            <PhoneCall className="h-5 w-5 text-primary" />
-            AI Voice Agent — Llamada en Vivo
+            {trainingMode ? (
+              <><GraduationCap className="h-5 w-5 text-primary" />Modo Entrenamiento</>
+            ) : (
+              <><PhoneCall className="h-5 w-5 text-primary" />AI Voice Agent — Llamada en Vivo</>
+            )}
           </SheetTitle>
         </SheetHeader>
 
         <div className="space-y-4">
-          {/* Lead context */}
-          {lead && property && (
+          {/* Training Mode Toggle */}
+          {!isConnected && (
+            <Card variant="glass" className={`p-3 transition-colors ${trainingMode ? 'border-primary bg-primary/5' : ''}`}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1">
+                  <Label htmlFor="training-toggle" className="font-medium cursor-pointer flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    🎓 Modo Entrenamiento
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {trainingMode
+                      ? 'Hablarás con un SELLER SIMULADO. Sin riesgo. Random persona.'
+                      : 'Practica antes de llamar leads reales — sin contactar nadie real'}
+                  </p>
+                  {trainingMode && trainingStats && trainingStats.totalCalls > 0 && (
+                    <div className="flex gap-3 mt-2 text-xs">
+                      <span><strong>{trainingStats.totalCalls}</strong> sesiones</span>
+                      <span>Promedio: <strong>{trainingStats.avgScore}</strong>/100</span>
+                      <span>Cierre: <strong>{trainingStats.closeRate}%</strong></span>
+                    </div>
+                  )}
+                </div>
+                <Switch
+                  id="training-toggle"
+                  checked={trainingMode}
+                  onCheckedChange={setTrainingMode}
+                />
+              </div>
+            </Card>
+          )}
+
+          {/* Training Mode Banner (during call) */}
+          {isConnected && trainingMode && (
+            <Card className="p-3 border-2 border-primary bg-primary/10">
+              <p className="font-semibold text-sm flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" />
+                🎓 ENTRENAMIENTO — No es un seller real
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                La persona se revelará al terminar la llamada
+              </p>
+            </Card>
+          )}
+
+          {/* Lead context (live mode only) */}
+          {!trainingMode && lead && property && (
             <Card variant="glass" className="p-3 text-sm">
               <p className="font-semibold">{property.owner_name || 'Owner'}</p>
               <p className="text-muted-foreground">{property.address}, {property.city}, {property.state}</p>
@@ -270,8 +393,8 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
             </Card>
           )}
 
-          {/* Personality selector (only before call) */}
-          {!isConnected && (
+          {/* Personality selector (live mode only, before call) */}
+          {!isConnected && !trainingMode && (
             <div>
               <Label className="text-sm font-medium mb-2 block">Personalidad del agente</Label>
               <RadioGroup value={personality} onValueChange={(v) => setPersonality(v as Personality)}>
@@ -299,8 +422,8 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
             </div>
           )}
 
-          {/* Negotiation range (during call) */}
-          {isConnected && negotiationCtx && (
+          {/* Negotiation range (live mode, during call) */}
+          {isConnected && !trainingMode && negotiationCtx && (
             <Card variant="glass" className="p-3">
               <p className="text-xs font-medium text-muted-foreground mb-2">RANGO AUTORIZADO</p>
               <div className="grid grid-cols-3 gap-2 text-sm">
@@ -341,16 +464,18 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
           {/* Call controls */}
           <div className="flex gap-2">
             {!isConnected ? (
-              <Button onClick={startCall} disabled={isStarting || !lead} className="flex-1" size="lg">
+              <Button onClick={startCall} disabled={isStarting || !canStartCall} className="flex-1" size="lg">
                 {isStarting ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Conectando...</>
+                ) : trainingMode ? (
+                  <><GraduationCap className="h-4 w-4 mr-2" />Iniciar Entrenamiento</>
                 ) : (
                   <><Mic className="h-4 w-4 mr-2" />Iniciar Llamada</>
                 )}
               </Button>
             ) : (
               <Button onClick={endCall} variant="destructive" className="flex-1" size="lg">
-                <PhoneOff className="h-4 w-4 mr-2" />Terminar Llamada
+                <PhoneOff className="h-4 w-4 mr-2" />Terminar {trainingMode ? 'Entrenamiento' : 'Llamada'}
               </Button>
             )}
           </div>
@@ -359,8 +484,24 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
           {isConnected && (
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <div className={`h-2 w-2 rounded-full ${conversation.isSpeaking ? 'bg-success animate-pulse' : 'bg-muted-foreground'}`} />
-              {conversation.isSpeaking ? 'Agente hablando...' : 'Escuchando al seller...'}
+              {conversation.isSpeaking
+                ? (trainingMode ? 'Seller simulado hablando...' : 'Agente hablando...')
+                : (trainingMode ? 'Esperando tu respuesta...' : 'Escuchando al seller...')}
             </div>
+          )}
+
+          {/* Training Results Panel (post-call) */}
+          {trainingResult && !isConnected && (
+            <TrainingResultsPanel
+              persona={trainingResult.persona}
+              outcome={trainingResult.outcome}
+              agent_score={trainingResult.agent_score}
+              strengths={trainingResult.strengths}
+              weaknesses={trainingResult.weaknesses}
+              final_offer={trainingResult.final_offer}
+              would_close={trainingResult.would_close}
+              avgScore={trainingStats?.avgScore}
+            />
           )}
 
           <Separator />
@@ -384,7 +525,9 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
                       )}
                       <div className="flex-1">
                         <p className="text-xs font-medium text-muted-foreground">
-                          {entry.role === 'agent' ? 'Agente' : 'Seller'}
+                          {entry.role === 'agent'
+                            ? (trainingMode ? 'Seller (simulado)' : 'Agente')
+                            : (trainingMode ? 'Tú (agente)' : 'Seller')}
                         </p>
                         <p>{entry.text}</p>
                       </div>
@@ -397,7 +540,9 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
 
           <p className="text-xs text-muted-foreground flex items-start gap-1">
             <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-            Prototipo web — el audio se reproduce en tu navegador. Twilio (llamadas reales al teléfono del seller) llegará en Fase 2.
+            {trainingMode
+              ? 'Modo entrenamiento — ningún seller real es contactado. Los resultados se guardan en tu historial de práctica.'
+              : 'Prototipo web — el audio se reproduce en tu navegador. Twilio (llamadas reales al teléfono del seller) llegará en Fase 2.'}
           </p>
         </div>
       </SheetContent>

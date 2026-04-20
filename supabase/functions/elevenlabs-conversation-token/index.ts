@@ -1,5 +1,7 @@
-// Edge function: generates ElevenLabs conversation token with lead-specific context
-// Returns token + dynamic variables + system prompt overrides for the AI Voice Agent
+// Edge function: generates ElevenLabs conversation token
+// Supports two modes:
+//   - 'live'     → real seller call (uses ALEX_AGENT_ID with lead context)
+//   - 'training' → simulated seller for practice (uses SELLER_SIMULATOR_AGENT_ID, no lead data)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -7,7 +9,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ELEVENLABS_AGENT_ID = "agent_6101kpkakyxmev8rddtv93eazfsn";
+const ALEX_AGENT_ID = "agent_6101kpkakyxmev8rddtv93eazfsn";
+const SELLER_SIMULATOR_AGENT_ID = "agent_0201kpnewys8fhh97bbq95w09vc2";
 
 // 3 personality system prompts (English, with Spanish auto-detection)
 const PERSONALITIES = {
@@ -124,11 +127,43 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
+    const mode = (body.mode || "live") as "live" | "training";
+
+    // ============================================================
+    // TRAINING MODE: Seller Simulator (no lead context needed)
+    // ============================================================
+    if (mode === "training") {
+      const tokenRes = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${SELLER_SIMULATOR_AGENT_ID}`,
+        { headers: { "xi-api-key": ELEVENLABS_API_KEY } }
+      );
+
+      if (!tokenRes.ok) {
+        const errText = await tokenRes.text();
+        console.error("ElevenLabs token error (training):", tokenRes.status, errText);
+        throw new Error(`Token failed [${tokenRes.status}]: ${errText}`);
+      }
+
+      const { token } = await tokenRes.json();
+
+      return new Response(
+        JSON.stringify({
+          token,
+          agent_id: SELLER_SIMULATOR_AGENT_ID,
+          mode: "training",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ============================================================
+    // LIVE MODE: Real seller call with lead context
+    // ============================================================
     const leadId = body.lead_id;
     const personality = (body.personality || "sarah") as keyof typeof PERSONALITIES;
 
     if (!leadId) {
-      return new Response(JSON.stringify({ error: "lead_id required" }), {
+      return new Response(JSON.stringify({ error: "lead_id required for live mode" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -167,7 +202,7 @@ Deno.serve(async (req) => {
     // Compute negotiation range
     const arv = Number(property.arv || 0);
     const mao = Number(lead.offer_amount || property.mao || Math.round(arv * 0.7));
-    const minOffer = Math.round(mao * 0.85); // open 15% below MAO
+    const minOffer = Math.round(mao * 0.85);
 
     const dynamicVariables: Record<string, string | number> = {
       owner_name: property.owner_name || "the owner",
@@ -184,9 +219,8 @@ Deno.serve(async (req) => {
       min_offer: minOffer.toLocaleString(),
     };
 
-    // Get conversation token from ElevenLabs
     const tokenRes = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${ELEVENLABS_AGENT_ID}`,
+      `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${ALEX_AGENT_ID}`,
       { headers: { "xi-api-key": ELEVENLABS_API_KEY } }
     );
 
@@ -201,7 +235,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         token,
-        agent_id: ELEVENLABS_AGENT_ID,
+        agent_id: ALEX_AGENT_ID,
+        mode: "live",
         dynamic_variables: dynamicVariables,
         overrides: {
           agent: {
