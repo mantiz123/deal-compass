@@ -225,6 +225,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
 
   const approveOffer = () => {
     if (!pendingApproval) return;
+    escalationsRef.current.approvals += 1;
     conversation.sendContextualUpdate(
       `HUMAN APPROVED: You may offer up to $${pendingApproval.proposed_offer.toLocaleString()}. Proceed with the negotiation.`
     );
@@ -234,6 +235,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
 
   const rejectOffer = () => {
     if (!pendingApproval) return;
+    escalationsRef.current.rejections += 1;
     conversation.sendContextualUpdate(
       `HUMAN REJECTED: Do NOT exceed $${negotiationCtx?.mao.toLocaleString() || 'MAO'}. Tell the seller you need to think about it and offer a callback.`
     );
