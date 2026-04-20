@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useConversation } from '@elevenlabs/react';
+import { ConversationProvider, useConversation } from '@elevenlabs/react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -39,7 +39,7 @@ const PERSONALITY_INFO: Record<Personality, { label: string; desc: string; emoji
   discovery: { label: 'Alex — Discovery', desc: 'Solo pregunta, no ofrece. Para qualify inicial', emoji: '🔍' },
 };
 
-export function VoiceAgentSheet({ lead, open, onOpenChange }: VoiceAgentSheetProps) {
+function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps) {
   const { toast } = useToast();
   const [personality, setPersonality] = useState<Personality>('sarah');
   const [isStarting, setIsStarting] = useState(false);
@@ -314,5 +314,13 @@ export function VoiceAgentSheet({ lead, open, onOpenChange }: VoiceAgentSheetPro
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+export function VoiceAgentSheet(props: VoiceAgentSheetProps) {
+  return (
+    <ConversationProvider>
+      <VoiceAgentSheetInner {...props} />
+    </ConversationProvider>
   );
 }
