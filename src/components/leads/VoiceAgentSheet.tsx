@@ -277,15 +277,33 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
         setNegotiationCtx(data.negotiation);
       }
 
-      const sessionConfig: any = {
+      const baseConfig: any = {
         conversationToken: data.token,
-        connectionType: 'webrtc',
       };
+      if (data.dynamic_variables) baseConfig.dynamicVariables = data.dynamic_variables;
+      if (data.overrides) baseConfig.overrides = data.overrides;
 
-      if (data.dynamic_variables) sessionConfig.dynamicVariables = data.dynamic_variables;
-      if (data.overrides) sessionConfig.overrides = data.overrides;
+      // Try WebRTC first, fall back to WebSocket on connection errors (e.g. 1006)
+      try {
+        await conversation.startSession({ ...baseConfig, connectionType: 'webrtc' });
+      } catch (webrtcErr: any) {
+        const msg = String(webrtcErr?.message || webrtcErr || '');
+        const shouldFallback =
+          msg.includes('1006') ||
+          msg.toLowerCase().includes('webrtc') ||
+          msg.toLowerCase().includes('livekit') ||
+          msg.toLowerCase().includes('transport') ||
+          msg.toLowerCase().includes('connect');
 
-      await conversation.startSession(sessionConfig);
+        if (!shouldFallback) throw webrtcErr;
+
+        console.warn('[VoiceAgent] WebRTC failed, retrying with WebSocket:', msg);
+        toast({
+          title: 'Reintentando vía WebSocket…',
+          description: 'WebRTC no disponible, cambiando de transporte',
+        });
+        await conversation.startSession({ ...baseConfig, connectionType: 'websocket' });
+      }
     } catch (err: any) {
       console.error('Failed to start:', err);
       toast({ variant: 'destructive', title: 'No se pudo iniciar', description: err.message });
