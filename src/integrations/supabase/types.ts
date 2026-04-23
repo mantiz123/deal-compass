@@ -674,6 +674,69 @@ export type Database = {
           },
         ]
       }
+      payment_links: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_email: string | null
+          customer_name: string | null
+          description: string | null
+          environment: string
+          expires_at: string | null
+          id: string
+          notes: string | null
+          paddle_customer_id: string | null
+          paddle_transaction_id: string | null
+          paid_at: string | null
+          status: string
+          title: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          description?: string | null
+          environment?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          paddle_customer_id?: string | null
+          paddle_transaction_id?: string | null
+          paid_at?: string | null
+          status?: string
+          title: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          description?: string | null
+          environment?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          paddle_customer_id?: string | null
+          paddle_transaction_id?: string | null
+          paid_at?: string | null
+          status?: string
+          title?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
