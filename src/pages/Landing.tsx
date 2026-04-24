@@ -301,6 +301,9 @@ const Landing = () => {
         <div className="lp-footer-links">
           <a href="mailto:sergio@goklose.com">Contact</a>
           <Link to="/auth">Login</Link>
+          <Link to="/legal/terms">Terms</Link>
+          <Link to="/legal/refund">Refund Policy</Link>
+          <Link to="/legal/privacy">Privacy</Link>
         </div>
       </footer>
     </div>
