@@ -193,7 +193,7 @@ export function AdminUsersPanel() {
             className="gap-1"
           >
             {approveUser.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserCheck className="h-3 w-3" />}
-            Approve
+            Activar Closer
           </Button>
         )}
         {showRevoke && (
@@ -205,7 +205,7 @@ export function AdminUsersPanel() {
             className="gap-1"
           >
             {rejectUser.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserX className="h-3 w-3" />}
-            Revoke
+            Revocar acceso
           </Button>
         )}
       </div>
