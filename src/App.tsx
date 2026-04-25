@@ -30,6 +30,7 @@ import NotFound from "./pages/NotFound";
 import Cobros from "./pages/Cobros";
 import Training from "./pages/Training";
 import AdminKCFY from "./pages/AdminKCFY";
+import Earnings from "./pages/Earnings";
 import PayCheckout from "./pages/PayCheckout";
 import Terms from "./pages/legal/Terms";
 import Refund from "./pages/legal/Refund";
@@ -70,6 +71,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/training" element={<Training />} />
               <Route path="/admin/kcfy" element={<AdminKCFY />} />
+              <Route path="/earnings" element={<Earnings />} />
               <Route path="/cobros" element={<Cobros />} />
               <Route path="/pay/:token" element={<PayCheckout />} />
               <Route path="/legal/terms" element={<Terms />} />
