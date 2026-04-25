@@ -240,15 +240,57 @@ export default function ContractorAgreement() {
                 </div>
 
                 <div>
-                  <Label htmlFor="taxIdFull">TIN / SSN / EIN *</Label>
+                  <Label htmlFor="tinType">Tipo de identificación fiscal *</Label>
+                  <Select
+                    value={form.tinType}
+                    onValueChange={(v) =>
+                      setForm({ ...form, tinType: v as TinType, taxIdFull: "" })
+                    }
+                  >
+                    <SelectTrigger id="tinType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TIN_TYPE_LABELS).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="taxIdFull">
+                    {form.tinType === "ein" ? "EIN" : form.tinType.toUpperCase()} *
+                  </Label>
                   <Input
                     id="taxIdFull"
-                    value={form.taxIdFull}
+                    value={formatTinDisplay(form.taxIdFull, form.tinType)}
                     onChange={(e) => setForm({ ...form, taxIdFull: e.target.value })}
-                    placeholder="123-45-6789 o 12-3456789"
+                    placeholder={form.tinType === "ein" ? "12-3456789" : "123-45-6789"}
                     maxLength={11}
+                    aria-invalid={tinTouched && !tinValid}
+                    className={tinTouched && !tinValid ? "border-destructive" : ""}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Solo se mostrarán los últimos 4 dígitos.</p>
+                  {tinTouched && !tinValid ? (
+                    <p className="text-xs text-destructive mt-1">
+                      Formato inválido para {form.tinType.toUpperCase()}.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Solo se mostrarán los últimos 4 dígitos. Tu data está cifrada.
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <Alert className="border-primary/30 bg-primary/5">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs leading-relaxed">
+                      <strong className="text-foreground">Aceptamos SSN, ITIN o EIN.</strong> Si no tienes SSN, puedes obtener un{" "}
+                      <strong className="text-foreground">ITIN</strong> gratis con el IRS llenando el formulario W-7. Tu status migratorio es{" "}
+                      <strong className="text-foreground">irrelevante</strong> mientras tengas un TIN válido — operas como contratista independiente, no empleado.
+                    </AlertDescription>
+                  </Alert>
                 </div>
 
                 <div className="md:col-span-2">
