@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreateLead } from "@/hooks/useLeads";
 import { useRealtors, useCreateRealtor } from "@/hooks/useRealtors";
+import { useICAGuard } from "@/hooks/useICAGuard";
 import { Loader2, Home, DollarSign, AlertTriangle, UserPlus, Users } from "lucide-react";
 
 interface NewLeadDialogProps {
@@ -21,6 +22,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
   const createLead = useCreateLead();
   const { data: realtors = [] } = useRealtors();
   const createRealtor = useCreateRealtor();
+  const { requireICA } = useICAGuard();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Mode
@@ -140,7 +142,11 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
 
   const handleSubmit = async () => {
     if (!address || !city || !zipCode) return;
-    
+    if (!requireICA("crear leads")) {
+      onOpenChange(false);
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Loader2, Sparkles, HandshakeIcon, ShieldCheck } from 'lucide-react';
 import { useCreateKCFYRequest, useKCFYRequestForLead, type KCFYPriority } from '@/hooks/useKCFYRequests';
+import { useICAGuard } from '@/hooks/useICAGuard';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -32,12 +33,17 @@ const STATUS_LABELS: Record<string, { label: string; variant: 'secondary' | 'war
 export function RequestKCFYDialog({ open, onOpenChange, leadId, leadAddress, estimatedDealValue }: RequestKCFYDialogProps) {
   const { data: existingRequest, isLoading } = useKCFYRequestForLead(leadId);
   const createRequest = useCreateKCFYRequest();
+  const { requireICA } = useICAGuard();
 
   const [priority, setPriority] = useState<KCFYPriority>('normal');
   const [notes, setNotes] = useState('');
   const [dealValue, setDealValue] = useState(estimatedDealValue?.toString() ?? '');
 
   const handleSubmit = async () => {
+    if (!requireICA("solicitar KCFY")) {
+      onOpenChange(false);
+      return;
+    }
     await createRequest.mutateAsync({
       lead_id: leadId,
       priority,
