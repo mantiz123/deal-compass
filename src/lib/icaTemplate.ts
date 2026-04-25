@@ -176,9 +176,10 @@ export function buildICASections(data: ICATemplateData): ICASection[] {
         `Nombre legal: **${data.legalName}**`,
         data.businessName ? `Nombre comercial / DBA: **${data.businessName}**` : "Sin nombre comercial / DBA.",
         `Clasificación fiscal: **${TAX_CLASSIFICATION_LABELS[data.taxClassification] ?? data.taxClassification}**`,
-        `TIN/SSN/EIN (últimos 4 dígitos visibles): **XXX-XX-${data.taxIdLast4}**`,
+        `Tipo de identificación fiscal: **${TIN_TYPE_LABELS[data.tinType]}**`,
+        `${data.tinType === "ein" ? "EIN" : data.tinType.toUpperCase()} (últimos 4 dígitos visibles): **${data.tinType === "ein" ? `XX-XXX${data.taxIdLast4}` : `XXX-XX-${data.taxIdLast4}`}**`,
         `Dirección fiscal: ${fullAddress}`,
-        `El Contratista certifica bajo pena de perjurio que: (1) el TIN provisto es correcto, (2) no está sujeto a backup withholding, y (3) es ciudadano o residente de EE.UU. (o entidad estadounidense). Esta declaración satisface los requisitos del IRS Form W-9.`,
+        `El Contratista certifica bajo pena de perjurio que: (1) el TIN provisto es correcto y emitido por el IRS, (2) no está sujeto a backup withholding, y (3) es ciudadano, residente fiscal de EE.UU., o entidad estadounidense con TIN válido (SSN, ITIN o EIN). Esta declaración satisface los requisitos del IRS Form W-9. El status migratorio del Contratista es irrelevante para este Acuerdo siempre que tenga un TIN válido.`,
       ],
     },
     {
