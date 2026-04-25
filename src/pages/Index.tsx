@@ -22,7 +22,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 const Index = () => {
   const { data: stats, isLoading } = useDashboardStats();
   const { user } = useAuth();
-  
+  const { currentOrg, isSuperAdmin } = useOrganization();
+
+  // Klose-only widgets (Stripe/Mercury, buyers IP, hygiene engine, dead-leads analytics)
+  // visible solo para super admin u orgs internal/elite. Estudiantes (free/pro) ven UI accionable.
+  const showInternalWidgets =
+    isSuperAdmin ||
+    currentOrg?.is_klose_internal ||
+    currentOrg?.tier === 'internal' ||
+    currentOrg?.tier === 'elite';
+
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Usuario';
 
   return (
