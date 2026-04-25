@@ -193,7 +193,16 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     onConnect: () => {
       callStartRef.current = Date.now();
       escalationsRef.current = { approvals: 0, rejections: 0, dnc: false };
+      conversationIdRef.current = null;
       setTrainingResult(null);
+      // Try to capture conversation ID right after connect
+      setTimeout(() => {
+        try {
+          conversationIdRef.current = (conversation as any)?.getId?.() || null;
+        } catch {
+          // ignore
+        }
+      }, 500);
       toast({
         title: trainingModeRef.current ? '🎓 Entrenamiento iniciado' : '🎙️ Llamada iniciada',
         description: trainingModeRef.current
