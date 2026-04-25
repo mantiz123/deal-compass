@@ -2,7 +2,14 @@ import { useState, useMemo } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContractorAgreement } from "@/hooks/useContractorAgreement";
-import { buildICASections, TAX_CLASSIFICATION_LABELS } from "@/lib/icaTemplate";
+import {
+  buildICASections,
+  TAX_CLASSIFICATION_LABELS,
+  TIN_TYPE_LABELS,
+  validateTinFormat,
+  formatTinDisplay,
+  type TinType,
+} from "@/lib/icaTemplate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +32,7 @@ interface FormState {
   legalName: string;
   businessName: string;
   taxClassification: TaxClassification;
+  tinType: TinType;
   taxIdFull: string;
   addressLine1: string;
   addressLine2: string;
@@ -39,6 +47,7 @@ const initialForm = (defaultEmail = ""): FormState => ({
   legalName: "",
   businessName: "",
   taxClassification: "individual",
+  tinType: "ssn",
   taxIdFull: "",
   addressLine1: "",
   addressLine2: "",
