@@ -34,6 +34,7 @@ import { TrainingResultsPanel } from '@/components/leads/TrainingResultsPanel';
 import { SkillBreakdown } from '@/components/leads/SkillBreakdown';
 import { TrainingAudioPlayer } from '@/components/leads/TrainingAudioPlayer';
 import { VoiceAgentSheet } from '@/components/leads/VoiceAgentSheet';
+import { AgentDemoGenerator } from '@/components/leads/AgentDemoGenerator';
 
 function formatDuration(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -92,6 +93,9 @@ export default function Training() {
             Nueva sesión de práctica
           </Button>
         </div>
+
+        {/* Audición de Agentes (Demo Generator) */}
+        <AgentDemoGenerator />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
