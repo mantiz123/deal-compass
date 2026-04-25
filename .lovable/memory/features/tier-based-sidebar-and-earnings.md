@@ -34,6 +34,14 @@ Vista personal del estudiante con:
 3. **Pricing Pro**: Buyers + Tracking + Campaigns + Importación ilimitada justifican $47/mes
 4. **Mis Ganancias**: prioridad 8/10 → implementado en Fase 2.6
 
+## Dashboard tier-aware (`src/pages/Index.tsx`)
+Flag `showInternalWidgets = isSuperAdmin || is_klose_internal || tier in ('internal','elite')`.
+
+- **Estudiante free/pro** ve solo: Stats (Total Leads, En Pipeline, Deals Activos, K-Score), StaleLeadsAlert, HotLeads, CriticalActions, LeadsDelDia, PipelinePreview, ActivityFeed.
+- Stat "Buyers Activos" reemplazado por "En Pipeline" (suma contacto+bajo_contrato+cesion) para no exponer red de buyers.
+- Widgets ocultos a estudiantes: PayoutSchedule (Stripe→Mercury de Klose LLC), PipelineHygiene (operacional admin), BuyerLiquidity (IP Klose), DeadLeadsAnalytics (org-wide noise).
+- Cuando no hay columna derecha, el grid colapsa a `lg:grid-cols-1` para evitar hueco visual.
+
 ## Pendiente para próximas fases
 - Fase 4: Stripe pricing tiers (free/pro/elite) + paywall en Pro items
 - Fase 4: Landing `/apply` con form de calificación + auto-scoring IA

@@ -13,6 +13,7 @@ import { PipelineHygieneWidget } from "@/components/dashboard/PipelineHygieneWid
 import { PayoutScheduleWidget } from "@/components/dashboard/PayoutScheduleWidget";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOrganization } from "@/contexts/OrganizationContext";
 import { Target, Users, DollarSign, TrendingUp, Zap, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 const Index = () => {
   const { data: stats, isLoading } = useDashboardStats();
   const { user } = useAuth();
-  
+  const { currentOrg, isSuperAdmin } = useOrganization();
+
+  // Klose-only widgets (Stripe/Mercury, buyers IP, hygiene engine, dead-leads analytics)
+  // visible solo para super admin u orgs internal/elite. Estudiantes (free/pro) ven UI accionable.
+  const showInternalWidgets =
+    isSuperAdmin ||
+    currentOrg?.is_klose_internal ||
+    currentOrg?.tier === 'internal' ||
+    currentOrg?.tier === 'elite';
+
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Usuario';
 
   return (
@@ -73,14 +83,29 @@ const Index = () => {
               icon={Target}
               iconColor="text-primary"
             />
-            <StatsCard
-              title="Buyers Activos"
-              value={stats?.buyersInNetwork.toString() || "0"}
-              change="En la red de compradores"
-              changeType="neutral"
-              icon={Users}
-              iconColor="text-info"
-            />
+            {showInternalWidgets ? (
+              <StatsCard
+                title="Buyers Activos"
+                value={stats?.buyersInNetwork.toString() || "0"}
+                change="En la red de compradores"
+                changeType="neutral"
+                icon={Users}
+                iconColor="text-info"
+              />
+            ) : (
+              <StatsCard
+                title="En Pipeline"
+                value={(
+                  (stats?.leadsByStatus?.contacto || 0) +
+                  (stats?.leadsByStatus?.bajo_contrato || 0) +
+                  (stats?.leadsByStatus?.cesion || 0)
+                ).toString()}
+                change="Leads activos en seguimiento"
+                changeType="neutral"
+                icon={Users}
+                iconColor="text-info"
+              />
+            )}
             <StatsCard
               title="Deals Activos"
               value={stats?.activeDeals.toString() || "0"}
@@ -118,20 +143,22 @@ const Index = () => {
       </div>
 
       {/* Secondary Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className={`grid gap-6 ${showInternalWidgets ? 'lg:grid-cols-3' : 'lg:grid-cols-1'}`}>
         {/* Left Column - Pipeline + Activity */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`${showInternalWidgets ? 'lg:col-span-2' : ''} space-y-6`}>
           <PipelinePreview />
           <ActivityFeed />
         </div>
 
-        {/* Right Column - Hygiene, Buyers & Dead Leads */}
-        <div className="space-y-6">
-          <PayoutScheduleWidget />
-          <PipelineHygieneWidget />
-          <BuyerLiquidityWidget />
-          <DeadLeadsAnalytics />
-        </div>
+        {/* Right Column - widgets internos solo para Klose admin/internal/elite */}
+        {showInternalWidgets && (
+          <div className="space-y-6">
+            <PayoutScheduleWidget />
+            <PipelineHygieneWidget />
+            <BuyerLiquidityWidget />
+            <DeadLeadsAnalytics />
+          </div>
+        )}
       </div>
     </Layout>
   );
