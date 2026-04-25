@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 import { toast } from 'sonner';
 
 export type AgentPersona = 'sarah' | 'mike' | 'alex_discovery';
@@ -59,6 +60,7 @@ export function useAgentDemos() {
 
 export function useGenerateAgentDemo() {
   const queryClient = useQueryClient();
+  const orgId = useCurrentOrgIdSafe();
   return useMutation({
     mutationFn: async (params: {
       agent_persona: AgentPersona;
@@ -66,7 +68,7 @@ export function useGenerateAgentDemo() {
       language: 'en' | 'es';
     }) => {
       const { data, error } = await supabase.functions.invoke('generate-agent-demo', {
-        body: params,
+        body: { ...params, organization_id: orgId },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
