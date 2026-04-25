@@ -624,6 +624,13 @@ const Leads = () => {
                         style={{ animationDelay: `${index * 50}ms` }}
                         onClick={() => setSelectedLead(lead)}
                       >
+                        <td className="p-4 w-10" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.includes(lead.id)}
+                            onCheckedChange={(c) => toggleOne(lead.id, c === true)}
+                            aria-label="Seleccionar lead"
+                          />
+                        </td>
                         <td className="p-4">
                           <div className="flex items-start gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
