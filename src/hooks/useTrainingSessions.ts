@@ -171,6 +171,35 @@ export function parseTrainingResult(transcriptText: string): {
   }
 }
 
+/**
+ * AI-powered fallback when the [TRAINING_RESULT] tag is missing from the transcript.
+ * Calls the analyze-training-call edge function which uses Gemini to score the call.
+ */
+export async function analyzeTrainingCallWithAI(transcriptText: string): Promise<{
+  persona: TrainingPersona;
+  outcome: string | null;
+  agent_score: number | null;
+  strengths: string[];
+  weaknesses: string[];
+  final_offer: number | null;
+  would_close: boolean | null;
+  source: 'ai_fallback';
+} | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('analyze-training-call', {
+      body: { transcript: transcriptText },
+    });
+    if (error || !data || data.error) {
+      console.error('AI fallback failed:', error || data?.error);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error('AI fallback exception:', e);
+    return null;
+  }
+}
+
 export const PERSONA_LABELS: Record<TrainingPersona, { name: string; emoji: string; color: string }> = {
   DESPERATE_FORECLOSURE: { name: 'Robert (Foreclosure desesperado)', emoji: '🔥', color: 'destructive' },
   SKEPTICAL_PROBATE: { name: 'Linda (Probate desconfiada)', emoji: '🤨', color: 'warning' },
