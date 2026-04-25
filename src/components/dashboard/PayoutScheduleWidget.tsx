@@ -1,15 +1,9 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Banknote, CheckCircle2, AlertCircle } from "lucide-react";
+import { Banknote, CheckCircle2, AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -39,23 +33,26 @@ const WEEKLY_LABELS: Record<WeeklyAnchor, string> = {
 const intervalLabel = (s: ScheduleData) => {
   switch (s.interval) {
     case "daily":
-      return "Diario";
+      return `Diario (T+${s.delay_days ?? 2} días)`;
     case "weekly":
-      return `Semanal (${WEEKLY_LABELS[s.weekly_anchor ?? "friday"]})`;
+      return `Semanal — ${WEEKLY_LABELS[s.weekly_anchor ?? "friday"]}`;
     case "monthly":
-      return `Mensual (día ${s.monthly_anchor ?? 1})`;
+      return `Mensual — día ${s.monthly_anchor ?? 1}`;
     case "manual":
       return "Manual";
   }
 };
 
+const isOptimal = (s: ScheduleData | null) =>
+  s?.interval === "weekly" && s?.weekly_anchor === "friday";
+
 export const PayoutScheduleWidget = () => {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [schedule, setSchedule] = useState<ScheduleData | null>(null);
   const [payoutsEnabled, setPayoutsEnabled] = useState<boolean>(false);
 
   const fetchSchedule = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke(
         "stripe-payout-schedule",
@@ -76,69 +73,28 @@ export const PayoutScheduleWidget = () => {
     fetchSchedule();
   }, []);
 
-  const updateSchedule = async (payload: {
-    interval: Interval;
-    weekly_anchor?: WeeklyAnchor;
-    monthly_anchor?: number;
-  }) => {
-    setSaving(true);
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "stripe-payout-schedule",
-        { body: { action: "update", ...payload } },
-      );
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setSchedule(data.schedule);
-      toast.success("Payout schedule actualizado en Stripe");
-    } catch (err) {
-      console.error("[PayoutSchedule] update error:", err);
-      toast.error(
-        err instanceof Error ? err.message : "Error al actualizar",
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleIntervalChange = (value: Interval) => {
-    if (value === "weekly") {
-      updateSchedule({ interval: "weekly", weekly_anchor: "friday" });
-    } else if (value === "monthly") {
-      updateSchedule({ interval: "monthly", monthly_anchor: 1 });
-    } else {
-      updateSchedule({ interval: value });
-    }
-  };
-
-  const handleWeeklyAnchorChange = (value: WeeklyAnchor) => {
-    updateSchedule({ interval: "weekly", weekly_anchor: value });
-  };
-
-  const handleMonthlyAnchorChange = (value: string) => {
-    updateSchedule({ interval: "monthly", monthly_anchor: parseInt(value) });
-  };
+  const optimal = isOptimal(schedule);
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
             <Banknote className="h-5 w-5 text-primary" />
             <div>
-              <CardTitle className="text-base">Payout Schedule (Stripe)</CardTitle>
+              <CardTitle className="text-base">Payout Schedule</CardTitle>
               <CardDescription>
-                Frecuencia con la que Stripe deposita en Mercury
+                Frecuencia de depósitos Stripe → Mercury
               </CardDescription>
             </div>
           </div>
           {!loading &&
             (payoutsEnabled ? (
-              <Badge variant="secondary" className="gap-1">
+              <Badge variant="secondary" className="gap-1 shrink-0">
                 <CheckCircle2 className="h-3 w-3" /> Activo
               </Badge>
             ) : (
-              <Badge variant="destructive" className="gap-1">
+              <Badge variant="destructive" className="gap-1 shrink-0">
                 <AlertCircle className="h-3 w-3" /> Pendiente
               </Badge>
             ))}
@@ -146,94 +102,67 @@ export const PayoutScheduleWidget = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
-          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-32 w-full" />
         ) : (
           <>
             {schedule && (
-              <div className="rounded-md bg-muted/50 p-3 text-sm">
-                <span className="text-muted-foreground">Configuración actual: </span>
-                <span className="font-semibold">{intervalLabel(schedule)}</span>
+              <div
+                className={`rounded-md p-3 text-sm border ${
+                  optimal
+                    ? "bg-primary/5 border-primary/20"
+                    : "bg-muted/50 border-border"
+                }`}
+              >
+                <div className="text-xs text-muted-foreground mb-1">
+                  Configuración actual
+                </div>
+                <div className="font-semibold text-base">
+                  {intervalLabel(schedule)}
+                </div>
+                {!optimal && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    💡 Recomendado: <span className="font-medium">Semanal — Viernes</span> para
+                    facilitar la conciliación contable.
+                  </div>
+                )}
+                {optimal && (
+                  <div className="mt-2 text-xs text-primary">
+                    ✓ Configuración óptima para wholesaling
+                  </div>
+                )}
               </div>
             )}
 
-            <div className="grid gap-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                  Frecuencia
-                </label>
-                <Select
-                  value={schedule?.interval ?? "weekly"}
-                  onValueChange={(v) => handleIntervalChange(v as Interval)}
-                  disabled={saving}
+            <div className="flex flex-col gap-2">
+              <Button
+                asChild
+                size="sm"
+                variant={optimal ? "outline" : "default"}
+                className="w-full"
+              >
+                <a
+                  href="https://dashboard.stripe.com/settings/payouts"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Diario</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="monthly">Mensual</SelectItem>
-                    <SelectItem value="manual">Manual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {schedule?.interval === "weekly" && (
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Día de depósito
-                  </label>
-                  <Select
-                    value={schedule.weekly_anchor ?? "friday"}
-                    onValueChange={(v) =>
-                      handleWeeklyAnchorChange(v as WeeklyAnchor)
-                    }
-                    disabled={saving}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(WEEKLY_LABELS) as WeeklyAnchor[]).map(
-                        (d) => (
-                          <SelectItem key={d} value={d}>
-                            {WEEKLY_LABELS[d]}
-                          </SelectItem>
-                        ),
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {schedule?.interval === "monthly" && (
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Día del mes
-                  </label>
-                  <Select
-                    value={String(schedule.monthly_anchor ?? 1)}
-                    onValueChange={handleMonthlyAnchorChange}
-                    disabled={saving}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                        <SelectItem key={d} value={String(d)}>
-                          Día {d}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  {optimal ? "Gestionar en Stripe" : "Cambiar a Semanal-Viernes"}
+                </a>
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={fetchSchedule}
+                disabled={loading}
+              >
+                <RefreshCw className="mr-2 h-3 w-3" />
+                Actualizar estado
+              </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Los cambios se aplican automáticamente en tu cuenta de Stripe.
-              Los fondos llegan a Mercury vía ACH (T+2 días hábiles).
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Stripe no permite modificar el schedule vía API en cuentas standalone.
+              Configúralo una vez en el Dashboard → quedará guardado permanentemente.
             </p>
           </>
         )}
