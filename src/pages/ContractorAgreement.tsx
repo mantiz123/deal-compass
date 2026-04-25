@@ -73,6 +73,7 @@ export default function ContractorAgreement() {
         legalName: form.legalName || "[Nombre Legal]",
         businessName: form.businessName || undefined,
         taxClassification: form.taxClassification,
+        tinType: form.tinType,
         taxIdLast4: form.taxIdFull.replace(/\D/g, "").slice(-4) || "XXXX",
         addressLine1: form.addressLine1 || "[Dirección]",
         addressLine2: form.addressLine2 || undefined,
@@ -86,6 +87,10 @@ export default function ContractorAgreement() {
       }),
     [form]
   );
+
+  const tinDigits = form.taxIdFull.replace(/\D/g, "");
+  const tinValid = tinDigits.length === 9 && validateTinFormat(tinDigits, form.tinType);
+  const tinTouched = tinDigits.length >= 9;
 
   // Early returns AFTER hooks
   if (!authLoading && !user) {
