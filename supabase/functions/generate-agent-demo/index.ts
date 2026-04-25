@@ -328,15 +328,26 @@ Deno.serve(async (req) => {
     );
     console.log(`[demo ${demoId}] Generated ${turns.length} turns`);
 
-    // 2. Sintetizar cada turno con la voz correspondiente (secuencial para evitar rate limits)
+    // 2. Sintetizar cada turno con voz, velocidad dinámica y request stitching.
+    //    Insertar silencios MP3 reales entre turnos para simular respiración/pensamiento.
     const audioChunks: Uint8Array[] = [];
     for (let i = 0; i < turns.length; i++) {
       const turn = turns[i];
       const voiceId = turn.speaker === "agent"
         ? VOICES.agent[agentPersona]
         : VOICES.seller[sellerPersona];
-      console.log(`[demo ${demoId}] Synthesizing turn ${i + 1}/${turns.length} (${turn.speaker})`);
-      const chunk = await synthesizeTurn(turn.text, voiceId, ELEVENLABS_API_KEY, language);
+      const speed = getSpeedFor(turn.speaker, agentPersona, sellerPersona);
+      const prevText = i > 0 ? turns[i - 1].text : undefined;
+      const nextText = i < turns.length - 1 ? turns[i + 1].text : undefined;
+      console.log(`[demo ${demoId}] Synthesizing turn ${i + 1}/${turns.length} (${turn.speaker}, speed=${speed})`);
+      const chunk = await synthesizeTurn(
+        turn.text, voiceId, ELEVENLABS_API_KEY, language, speed, prevText, nextText
+      );
+      // Pausa ANTES del turno actual (excepto el primero) — silencio MP3 real
+      if (i > 0) {
+        const pauseMs = getPauseMs(turns[i - 1].text, turns[i - 1].speaker);
+        audioChunks.push(generateSilence(pauseMs));
+      }
       audioChunks.push(chunk);
     }
 
