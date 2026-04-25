@@ -24,6 +24,8 @@ import {
   Briefcase,
   Menu,
   X,
+  Wallet,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,24 +35,41 @@ import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import kloseLogo from "@/assets/klose-logo.png";
 
-const navigation = [
+type NavItem = {
+  name: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  /** Tiers que pueden ver este item. Si no se define, todos lo ven. */
+  tiers?: Array<'free' | 'pro' | 'elite' | 'internal'>;
+  /** Solo super admin de Klose lo ve */
+  superAdminOnly?: boolean;
+};
+
+// Items SIEMPRE visibles (todos los tiers, incluido free / estudiante Modelo A)
+const coreItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Guía", href: "/guide", icon: BookOpen },
   { name: "Importar", href: "/import", icon: Upload },
   { name: "Leads", href: "/leads", icon: Target },
   { name: "Pipeline", href: "/pipeline", icon: Zap },
-  { name: "Buyers", href: "/buyers", icon: Users },
-  { name: "Realtors", href: "/realtors", icon: UserCheck },
-  { name: "Payments", href: "/payments", icon: DollarSign },
-  { name: "Cobros", href: "/cobros", icon: Link2 },
-  { name: "Tracking", href: "/tracking", icon: Mail },
-  { name: "Campaigns", href: "/campaigns", icon: MessageSquare },
-  { name: "Deals", href: "/deals", icon: FileText },
-  { name: "Contratos", href: "/contracts", icon: FileSignature },
   { name: "Properties", href: "/properties", icon: Building2 },
   { name: "Entrenamiento AI", href: "/training", icon: GraduationCap },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Mis Ganancias", href: "/earnings", icon: Wallet },
 ];
+
+// Items SOLO Pro/Elite/Internal (estudiante free NO los ve — Modelo A puro)
+const proItems: NavItem[] = [
+  { name: "Buyers", href: "/buyers", icon: Users, tiers: ['pro', 'elite', 'internal'] },
+  { name: "Realtors", href: "/realtors", icon: UserCheck, tiers: ['pro', 'elite', 'internal'] },
+  { name: "Tracking", href: "/tracking", icon: Mail, tiers: ['pro', 'elite', 'internal'] },
+  { name: "Campaigns", href: "/campaigns", icon: MessageSquare, tiers: ['pro', 'elite', 'internal'] },
+  { name: "Deals", href: "/deals", icon: FileText, tiers: ['pro', 'elite', 'internal'] },
+  { name: "Contratos", href: "/contracts", icon: FileSignature, tiers: ['pro', 'elite', 'internal'] },
+  { name: "Payments", href: "/payments", icon: DollarSign, tiers: ['pro', 'elite', 'internal'] },
+  { name: "Cobros", href: "/cobros", icon: Link2, tiers: ['pro', 'elite', 'internal'] },
+];
+
+const settingsItem: NavItem = { name: "Settings", href: "/settings", icon: Settings };
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
