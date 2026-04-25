@@ -73,6 +73,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
   const callStartRef = useRef<number | null>(null);
   const personalityRef = useRef<Personality>('sarah');
   const trainingModeRef = useRef<boolean>(false);
+  const difficultyRef = useRef<TrainingDifficulty>('medium');
   const escalationsRef = useRef<{ approvals: number; rejections: number; dnc: boolean }>({ approvals: 0, rejections: 0, dnc: false });
   const leadRef = useRef<Lead | null>(null);
   const conversationIdRef = useRef<string | null>(null);
@@ -80,6 +81,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
   useEffect(() => { personalityRef.current = personality; }, [personality]);
   useEffect(() => { trainingModeRef.current = trainingMode; }, [trainingMode]);
+  useEffect(() => { difficultyRef.current = difficulty; }, [difficulty]);
   useEffect(() => { leadRef.current = lead; }, [lead]);
 
   const persistCallToTimeline = useCallback(async () => {
@@ -163,12 +165,27 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
 
     // ElevenLabs conversation ID was captured on connect
     const elevenLabsConvId = conversationIdRef.current;
+    const currentDifficulty = difficultyRef.current;
+
+    // 3. Run deep skill analysis in parallel (non-blocking for the basic save)
+    let deep: DeepAnalysisResult | null = null;
+    if (entries.length >= 4) {
+      setIsAnalyzingDeep(true);
+      try {
+        deep = await deepAnalyzeTraining(fullText, result.persona, currentDifficulty);
+        if (deep) setDeepAnalysis(deep);
+      } catch (e) {
+        console.error('Deep analysis error:', e);
+      } finally {
+        setIsAnalyzingDeep(false);
+      }
+    }
 
     try {
       await createTrainingSession.mutateAsync({
         persona: result.persona,
         outcome: result.outcome,
-        agent_score: result.agent_score,
+        agent_score: deep?.overall_score ?? result.agent_score,
         strengths: result.strengths,
         weaknesses: result.weaknesses,
         final_offer: result.final_offer,
@@ -177,11 +194,15 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
         transcript: entries,
         elevenlabs_conversation_id: elevenLabsConvId,
         raw_result_tag: result.raw_tag,
+        difficulty: currentDifficulty,
+        skill_scores: deep?.skill_scores ?? null,
+        coaching_summary: deep?.coaching_summary ?? null,
       });
 
-      if (result.agent_score !== null) {
+      const finalScore = deep?.overall_score ?? result.agent_score;
+      if (finalScore !== null && finalScore !== undefined) {
         toast({
-          title: `🎓 Score: ${result.agent_score}/100${usedFallback ? ' (IA)' : ''}`,
+          title: `🎓 Score: ${finalScore}/100${usedFallback ? ' (IA)' : ''}`,
           description: result.would_close ? '¡Cerraste el deal!' : 'Sigue practicando',
         });
       } else {
