@@ -68,6 +68,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
   const trainingModeRef = useRef<boolean>(false);
   const escalationsRef = useRef<{ approvals: number; rejections: number; dnc: boolean }>({ approvals: 0, rejections: 0, dnc: false });
   const leadRef = useRef<Lead | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
 
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
   useEffect(() => { personalityRef.current = personality; }, [personality]);
@@ -153,13 +154,8 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
 
     setTrainingResult(result);
 
-    // Try to capture ElevenLabs conversation ID (available after session ends)
-    let elevenLabsConvId: string | null = null;
-    try {
-      elevenLabsConvId = conversation.getId?.() || null;
-    } catch {
-      elevenLabsConvId = null;
-    }
+    // ElevenLabs conversation ID was captured on connect
+    const elevenLabsConvId = conversationIdRef.current;
 
     try {
       await createTrainingSession.mutateAsync({
@@ -191,7 +187,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     } catch (err: any) {
       console.error('Failed to persist training session:', err);
     }
-  }, [createTrainingSession, toast, conversation]);
+  }, [createTrainingSession, toast]);
 
   const conversation = useConversation({
     onConnect: () => {
