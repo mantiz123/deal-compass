@@ -17,6 +17,7 @@ import {
   useCreateTrainingSession,
   useTrainingStats,
   parseTrainingResult,
+  analyzeTrainingCallWithAI,
 } from '@/hooks/useTrainingSessions';
 import { TrainingResultsPanel } from './TrainingResultsPanel';
 
@@ -67,6 +68,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
   const trainingModeRef = useRef<boolean>(false);
   const escalationsRef = useRef<{ approvals: number; rejections: number; dnc: boolean }>({ approvals: 0, rejections: 0, dnc: false });
   const leadRef = useRef<Lead | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
 
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
   useEffect(() => { personalityRef.current = personality; }, [personality]);
@@ -132,9 +134,28 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
 
     const durationSec = Math.round((Date.now() - callStartRef.current) / 1000);
     const fullText = entries.map((e) => `[${e.role}] ${e.text}`).join('\n');
-    const result = parseTrainingResult(fullText);
+
+    // 1. Try parsing the [TRAINING_RESULT] tag first
+    let result = parseTrainingResult(fullText);
+    let usedFallback = false;
+
+    // 2. If no tag (raw_tag is null) AND we have enough conversation, fall back to AI analysis
+    if (!result.raw_tag && entries.length >= 4) {
+      toast({
+        title: '🧠 Analizando con IA...',
+        description: 'El simulador no devolvió score, usando Gemini para evaluar',
+      });
+      const aiResult = await analyzeTrainingCallWithAI(fullText);
+      if (aiResult) {
+        result = { ...aiResult, raw_tag: null };
+        usedFallback = true;
+      }
+    }
 
     setTrainingResult(result);
+
+    // ElevenLabs conversation ID was captured on connect
+    const elevenLabsConvId = conversationIdRef.current;
 
     try {
       await createTrainingSession.mutateAsync({
@@ -147,19 +168,20 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
         would_close: result.would_close,
         duration_seconds: durationSec,
         transcript: entries,
+        elevenlabs_conversation_id: elevenLabsConvId,
         raw_result_tag: result.raw_tag,
       });
 
       if (result.agent_score !== null) {
         toast({
-          title: `🎓 Score: ${result.agent_score}/100`,
+          title: `🎓 Score: ${result.agent_score}/100${usedFallback ? ' (IA)' : ''}`,
           description: result.would_close ? '¡Cerraste el deal!' : 'Sigue practicando',
         });
       } else {
         toast({
           variant: 'destructive',
           title: 'Sin score válido',
-          description: 'El simulador no devolvió el tag [TRAINING_RESULT]. Revisa el transcript.',
+          description: 'No se pudo evaluar la sesión. Conversación demasiado corta o error de IA.',
         });
       }
     } catch (err: any) {
@@ -171,7 +193,16 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     onConnect: () => {
       callStartRef.current = Date.now();
       escalationsRef.current = { approvals: 0, rejections: 0, dnc: false };
+      conversationIdRef.current = null;
       setTrainingResult(null);
+      // Try to capture conversation ID right after connect
+      setTimeout(() => {
+        try {
+          conversationIdRef.current = (conversation as any)?.getId?.() || null;
+        } catch {
+          // ignore
+        }
+      }, 500);
       toast({
         title: trainingModeRef.current ? '🎓 Entrenamiento iniciado' : '🎙️ Llamada iniciada',
         description: trainingModeRef.current
