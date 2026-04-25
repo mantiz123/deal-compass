@@ -53,7 +53,7 @@ async function generateDialogue(
 ): Promise<{ turns: DialogueTurn[]; scenarioSummary: string }> {
   const langInstruction = language === "es"
     ? "ENTIRE dialogue MUST be in Spanish (Latin American neutral)."
-    : "ENTIRE dialogue MUST be in English.";
+    : "ENTIRE dialogue MUST be in natural conversational American English (Alabama/Southern US flavor when appropriate).";
 
   const prompt = `Generate a realistic 10-turn cold-call dialogue for KLOSE LLC real estate wholesaling training.
 
@@ -65,11 +65,16 @@ ${langInstruction}
 REQUIREMENTS:
 - 10 turns total, alternating agent/seller, starting with agent
 - Each turn: 1-3 sentences MAX (natural phone conversation length)
-- Agent must sound natural, never robotic or pushy
-- Include realistic objections, pauses, and emotional reactions from seller
-- Use a real-sounding fake address (e.g. "1245 Maple Drive in Birmingham")
+- MUST sound 100% human, NEVER scripted or robotic
+- Include natural filler words: "uh", "um", "you know", "I mean", "well...", "look,"
+- Use ellipses (...) to mark thinking pauses, and commas for breath pauses
+- Include real emotional reactions: hesitation, surprise, frustration, relief, doubt
+- Agent should use contractions (I'm, we're, that's, gonna, wanna) — never formal
+- Seller should sound like a real homeowner: tired, suspicious, or stressed depending on persona
+- Use a real-sounding fake address (e.g. "1245 Maple Drive in Birmingham, Alabama")
 - End with a natural conclusion (callback scheduled, polite no, or hangup)
-- NO stage directions, NO "[pause]", NO narrator text — only spoken dialogue
+- NO stage directions, NO "[pause]" markers, NO narrator text — only spoken words
+- Each line should read like a real phone transcript, not a sales script
 
 Also provide a 1-sentence scenario summary describing the situation.`;
 
@@ -133,8 +138,18 @@ Also provide a 1-sentence scenario summary describing the situation.`;
 async function synthesizeTurn(
   text: string,
   voiceId: string,
-  apiKey: string
+  apiKey: string,
+  language: "en" | "es"
 ): Promise<Uint8Array> {
+  // Inglés → turbo_v2_5 (más natural y expresivo en EN-US)
+  // Español → multilingual_v2 (único que soporta ES bien)
+  const modelId = language === "en" ? "eleven_turbo_v2_5" : "eleven_multilingual_v2";
+
+  // Ajustes más expresivos para sonar humano
+  const voiceSettings = language === "en"
+    ? { stability: 0.35, similarity_boost: 0.8, style: 0.65, use_speaker_boost: true, speed: 1.0 }
+    : { stability: 0.5, similarity_boost: 0.75, style: 0.4, use_speaker_boost: true, speed: 1.0 };
+
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
     {
@@ -145,13 +160,8 @@ async function synthesizeTurn(
       },
       body: JSON.stringify({
         text,
-        model_id: "eleven_multilingual_v2",
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-          style: 0.4,
-          use_speaker_boost: true,
-        },
+        model_id: modelId,
+        voice_settings: voiceSettings,
       }),
     }
   );
@@ -255,7 +265,7 @@ Deno.serve(async (req) => {
         ? VOICES.agent[agentPersona]
         : VOICES.seller[sellerPersona];
       console.log(`[demo ${demoId}] Synthesizing turn ${i + 1}/${turns.length} (${turn.speaker})`);
-      const chunk = await synthesizeTurn(turn.text, voiceId, ELEVENLABS_API_KEY);
+      const chunk = await synthesizeTurn(turn.text, voiceId, ELEVENLABS_API_KEY, language);
       audioChunks.push(chunk);
     }
 
