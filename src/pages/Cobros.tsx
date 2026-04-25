@@ -124,7 +124,7 @@ export default function Cobros() {
       qc.invalidateQueries({ queryKey: ["payment_links"] });
       setOpen(false);
       setForm({ title: "", description: "", amount: "", customer_email: "", customer_name: "", notes: "" });
-      const url = `${window.location.origin}/pay/${link.token}`;
+      const url = `${PUBLIC_BASE_URL}/pay/${link.token}`;
       navigator.clipboard.writeText(url);
       toast.success("Cobro creado", {
         description: "Link copiado al portapapeles",
@@ -134,7 +134,7 @@ export default function Cobros() {
   });
 
   const copyLink = (token: string) => {
-    const url = `${window.location.origin}/pay/${token}`;
+    const url = `${PUBLIC_BASE_URL}/pay/${token}`;
     navigator.clipboard.writeText(url);
     toast.success("Link copiado");
   };
