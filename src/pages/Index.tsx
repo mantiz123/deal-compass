@@ -150,13 +150,15 @@ const Index = () => {
           <ActivityFeed />
         </div>
 
-        {/* Right Column - Hygiene, Buyers & Dead Leads */}
-        <div className="space-y-6">
-          <PayoutScheduleWidget />
-          <PipelineHygieneWidget />
-          <BuyerLiquidityWidget />
-          <DeadLeadsAnalytics />
-        </div>
+        {/* Right Column - widgets internos solo para Klose admin/internal/elite */}
+        {showInternalWidgets && (
+          <div className="space-y-6">
+            <PayoutScheduleWidget />
+            <PipelineHygieneWidget />
+            <BuyerLiquidityWidget />
+            <DeadLeadsAnalytics />
+          </div>
+        )}
       </div>
     </Layout>
   );
