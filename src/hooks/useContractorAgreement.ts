@@ -59,6 +59,7 @@ export function useContractorAgreement() {
           legal_name: payload.legalName,
           business_name: payload.businessName || null,
           tax_classification: payload.taxClassification,
+          tin_type: payload.tinType,
           tax_id_full: payload.taxIdFull,
           tax_id_last4: taxIdLast4,
           address_line1: payload.addressLine1,
@@ -77,6 +78,16 @@ export function useContractorAgreement() {
         .single();
 
       if (error) throw error;
+
+      // Fire-and-await PDF generation (non-blocking on failure)
+      try {
+        await supabase.functions.invoke("generate-ica-pdf", {
+          body: { agreement_id: data.id },
+        });
+      } catch (pdfErr) {
+        console.error("[ICA] PDF generation failed (non-blocking):", pdfErr);
+      }
+
       return data;
     },
     onSuccess: () => {
