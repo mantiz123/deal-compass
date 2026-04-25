@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "./NotificationBell";
+import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useProfile, useUserRole } from "@/hooks/useProfile";
 
