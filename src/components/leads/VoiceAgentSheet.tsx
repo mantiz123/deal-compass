@@ -223,6 +223,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
       escalationsRef.current = { approvals: 0, rejections: 0, dnc: false };
       conversationIdRef.current = null;
       setTrainingResult(null);
+      setDeepAnalysis(null);
       // Try to capture conversation ID right after connect
       setTimeout(() => {
         try {
@@ -309,6 +310,8 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
       setPendingApproval(null);
       setNegotiationCtx(null);
       setTrainingResult(null);
+      setDeepAnalysis(null);
+      setIsAnalyzingDeep(false);
     }
   }, [open]);
 
@@ -317,11 +320,12 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     if (!trainingMode && !lead) return;
     setIsStarting(true);
     setTrainingResult(null);
+    setDeepAnalysis(null);
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
       const invokeBody = trainingMode
-        ? { mode: 'training' }
+        ? { mode: 'training', difficulty }
         : { mode: 'live', lead_id: lead!.id, personality };
 
       const { data, error } = await supabase.functions.invoke('elevenlabs-conversation-token', {
