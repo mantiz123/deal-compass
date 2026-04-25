@@ -18,8 +18,12 @@ import {
   useTrainingStats,
   parseTrainingResult,
   analyzeTrainingCallWithAI,
+  deepAnalyzeTraining,
+  type TrainingDifficulty,
+  type DeepAnalysisResult,
 } from '@/hooks/useTrainingSessions';
 import { TrainingResultsPanel } from './TrainingResultsPanel';
+import { SkillBreakdown } from './SkillBreakdown';
 
 interface VoiceAgentSheetProps {
   lead: Lead | null;
@@ -51,11 +55,14 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
   const { toast } = useToast();
   const [personality, setPersonality] = useState<Personality>('sarah');
   const [trainingMode, setTrainingMode] = useState(false);
+  const [difficulty, setDifficulty] = useState<TrainingDifficulty>('medium');
   const [isStarting, setIsStarting] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
   const [negotiationCtx, setNegotiationCtx] = useState<{ mao: number; min_offer: number; arv: number } | null>(null);
   const [trainingResult, setTrainingResult] = useState<ReturnType<typeof parseTrainingResult> | null>(null);
+  const [deepAnalysis, setDeepAnalysis] = useState<DeepAnalysisResult | null>(null);
+  const [isAnalyzingDeep, setIsAnalyzingDeep] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const createTrainingSession = useCreateTrainingSession();
