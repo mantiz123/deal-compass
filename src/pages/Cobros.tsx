@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Plus, Copy, ExternalLink, Link2, CheckCircle, Clock, XCircle } from "lucide-react";
 
+const PUBLIC_BASE_URL = "https://goklose.com";
 
 type PaymentLink = {
   id: string;
@@ -124,7 +125,7 @@ export default function Cobros() {
       qc.invalidateQueries({ queryKey: ["payment_links"] });
       setOpen(false);
       setForm({ title: "", description: "", amount: "", customer_email: "", customer_name: "", notes: "" });
-      const url = `${window.location.origin}/pay/${link.token}`;
+      const url = `${PUBLIC_BASE_URL}/pay/${link.token}`;
       navigator.clipboard.writeText(url);
       toast.success("Cobro creado", {
         description: "Link copiado al portapapeles",
@@ -134,7 +135,7 @@ export default function Cobros() {
   });
 
   const copyLink = (token: string) => {
-    const url = `${window.location.origin}/pay/${token}`;
+    const url = `${PUBLIC_BASE_URL}/pay/${token}`;
     navigator.clipboard.writeText(url);
     toast.success("Link copiado");
   };
@@ -230,7 +231,7 @@ export default function Cobros() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => window.open(`/pay/${l.token}`, "_blank")}
+                      onClick={() => window.open(`${PUBLIC_BASE_URL}/pay/${l.token}`, "_blank")}
                       title="Abrir checkout"
                     >
                       <ExternalLink className="h-4 w-4" />
