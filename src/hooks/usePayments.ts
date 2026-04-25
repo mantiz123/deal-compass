@@ -67,12 +67,15 @@ export function usePayments() {
 }
 
 export function usePaymentStats() {
+  const orgId = useCurrentOrgIdSafe();
   return useQuery({
-    queryKey: ['payment-stats'],
+    queryKey: ['payment-stats', orgId],
+    enabled: !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payments')
-        .select('amount, status');
+        .select('amount, status')
+        .eq('organization_id', orgId!);
 
       if (error) throw error;
 
