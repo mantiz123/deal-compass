@@ -456,6 +456,9 @@ const Leads = () => {
         </Card>
       )}
 
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar selectedIds={selectedIds} onClear={() => setSelectedIds([])} />
+
       {/* Leads Table */}
       {!isLoading && !error && leads.length > 0 && (
         <Card variant="glass">
@@ -465,6 +468,13 @@ const Leads = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border text-left text-sm text-muted-foreground">
+                    <th className="p-4 w-10">
+                      <Checkbox
+                        checked={headerCheckState}
+                        onCheckedChange={(c) => toggleAllVisible(c === true)}
+                        aria-label="Seleccionar todos los leads visibles"
+                      />
+                    </th>
                     <th className="p-4 font-medium">Propiedad</th>
                     <th className="p-4 font-medium">Propietario</th>
                     <th className="p-4 font-medium">
