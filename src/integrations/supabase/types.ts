@@ -25,6 +25,7 @@ export type Database = {
           error_message: string | null
           id: string
           language: string
+          organization_id: string
           scenario_summary: string | null
           seller_persona: string
           status: string
@@ -41,6 +42,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           language?: string
+          organization_id?: string
           scenario_summary?: string | null
           seller_persona: string
           status?: string
@@ -57,13 +59,22 @@ export type Database = {
           error_message?: string | null
           id?: string
           language?: string
+          organization_id?: string
           scenario_summary?: string | null
           seller_persona?: string
           status?: string
           transcript?: Json
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agent_demos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       buyers: {
         Row: {
@@ -85,6 +96,7 @@ export type Database = {
           max_repair_level: string | null
           min_arv: number | null
           notes: string | null
+          organization_id: string
           phone: string | null
           preferred_cities: string[] | null
           preferred_discount_percent: number | null
@@ -117,6 +129,7 @@ export type Database = {
           max_repair_level?: string | null
           min_arv?: number | null
           notes?: string | null
+          organization_id?: string
           phone?: string | null
           preferred_cities?: string[] | null
           preferred_discount_percent?: number | null
@@ -149,6 +162,7 @@ export type Database = {
           max_repair_level?: string | null
           min_arv?: number | null
           notes?: string | null
+          organization_id?: string
           phone?: string | null
           preferred_cities?: string[] | null
           preferred_discount_percent?: number | null
@@ -162,7 +176,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "buyers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaign_enrollments: {
         Row: {
@@ -321,6 +343,7 @@ export type Database = {
           contract_id: string
           id: string
           ip_address: string | null
+          organization_id: string
           signature_image: string | null
           signed_at: string
           signer_email: string | null
@@ -331,6 +354,7 @@ export type Database = {
           contract_id: string
           id?: string
           ip_address?: string | null
+          organization_id?: string
           signature_image?: string | null
           signed_at?: string
           signer_email?: string | null
@@ -341,6 +365,7 @@ export type Database = {
           contract_id?: string
           id?: string
           ip_address?: string | null
+          organization_id?: string
           signature_image?: string | null
           signed_at?: string
           signer_email?: string | null
@@ -355,6 +380,13 @@ export type Database = {
             referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contract_signatures_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       contracts: {
@@ -366,6 +398,7 @@ export type Database = {
           id: string
           ip_address: string | null
           lead_id: string
+          organization_id: string
           pdf_url: string | null
           seller_email: string | null
           seller_phone: string | null
@@ -385,6 +418,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           lead_id: string
+          organization_id?: string
           pdf_url?: string | null
           seller_email?: string | null
           seller_phone?: string | null
@@ -404,6 +438,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           lead_id?: string
+          organization_id?: string
           pdf_url?: string | null
           seller_email?: string | null
           seller_phone?: string | null
@@ -423,6 +458,13 @@ export type Database = {
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       deal_packages: {
@@ -432,6 +474,7 @@ export type Database = {
           id: string
           lead_id: string
           opened_at: string | null
+          organization_id: string
           response: string | null
           sent_at: string
         }
@@ -441,6 +484,7 @@ export type Database = {
           id?: string
           lead_id: string
           opened_at?: string | null
+          organization_id?: string
           response?: string | null
           sent_at?: string
         }
@@ -450,6 +494,7 @@ export type Database = {
           id?: string
           lead_id?: string
           opened_at?: string | null
+          organization_id?: string
           response?: string | null
           sent_at?: string
         }
@@ -468,6 +513,13 @@ export type Database = {
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "deal_packages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       drip_campaigns: {
@@ -478,6 +530,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          organization_id: string
           trigger_status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
         }
@@ -488,6 +541,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          organization_id?: string
           trigger_status: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -498,10 +552,19 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          organization_id?: string
           trigger_status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "drip_campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       interactions: {
         Row: {
@@ -512,6 +575,7 @@ export type Database = {
           id: string
           interaction_type: string
           lead_id: string
+          organization_id: string
           sentiment: string | null
         }
         Insert: {
@@ -522,6 +586,7 @@ export type Database = {
           id?: string
           interaction_type: string
           lead_id: string
+          organization_id?: string
           sentiment?: string | null
         }
         Update: {
@@ -532,6 +597,7 @@ export type Database = {
           id?: string
           interaction_type?: string
           lead_id?: string
+          organization_id?: string
           sentiment?: string | null
         }
         Relationships: [
@@ -549,6 +615,13 @@ export type Database = {
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "interactions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lead_cleanup_log: {
@@ -559,6 +632,7 @@ export type Database = {
           lead_data: Json | null
           lead_id: string | null
           notes: string | null
+          organization_id: string
           property_address: string | null
           property_city: string | null
           reason: string
@@ -571,6 +645,7 @@ export type Database = {
           lead_data?: Json | null
           lead_id?: string | null
           notes?: string | null
+          organization_id?: string
           property_address?: string | null
           property_city?: string | null
           reason: string
@@ -583,12 +658,21 @@ export type Database = {
           lead_data?: Json | null
           lead_id?: string | null
           notes?: string | null
+          organization_id?: string
           property_address?: string | null
           property_city?: string | null
           reason?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lead_cleanup_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_documents: {
         Row: {
@@ -599,6 +683,7 @@ export type Database = {
           file_type: string | null
           id: string
           lead_id: string
+          organization_id: string
           uploaded_by: string | null
         }
         Insert: {
@@ -609,6 +694,7 @@ export type Database = {
           file_type?: string | null
           id?: string
           lead_id: string
+          organization_id?: string
           uploaded_by?: string | null
         }
         Update: {
@@ -619,6 +705,7 @@ export type Database = {
           file_type?: string | null
           id?: string
           lead_id?: string
+          organization_id?: string
           uploaded_by?: string | null
         }
         Relationships: [
@@ -627,6 +714,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -646,6 +740,7 @@ export type Database = {
           listing_price: number | null
           next_follow_up_at: string | null
           offer_amount: number | null
+          organization_id: string
           piw_score: number | null
           piw_score_factors: Json | null
           property_id: string
@@ -669,6 +764,7 @@ export type Database = {
           listing_price?: number | null
           next_follow_up_at?: string | null
           offer_amount?: number | null
+          organization_id?: string
           piw_score?: number | null
           piw_score_factors?: Json | null
           property_id: string
@@ -692,6 +788,7 @@ export type Database = {
           listing_price?: number | null
           next_follow_up_at?: string | null
           offer_amount?: number | null
+          organization_id?: string
           piw_score?: number | null
           piw_score_factors?: Json | null
           property_id?: string
@@ -710,6 +807,13 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "leads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "leads_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
@@ -725,6 +829,92 @@ export type Database = {
           },
         ]
       }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          joined_at: string
+          organization_id: string
+          role: Database["public"]["Enums"]["org_member_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          organization_id: string
+          role?: Database["public"]["Enums"]["org_member_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["org_member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_klose_internal: boolean
+          logo_url: string | null
+          metadata: Json
+          name: string
+          primary_color: string | null
+          slug: string
+          tier: Database["public"]["Enums"]["organization_tier"]
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_klose_internal?: boolean
+          logo_url?: string | null
+          metadata?: Json
+          name: string
+          primary_color?: string | null
+          slug: string
+          tier?: Database["public"]["Enums"]["organization_tier"]
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_klose_internal?: boolean
+          logo_url?: string | null
+          metadata?: Json
+          name?: string
+          primary_color?: string | null
+          slug?: string
+          tier?: Database["public"]["Enums"]["organization_tier"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_links: {
         Row: {
           amount_cents: number
@@ -738,6 +928,7 @@ export type Database = {
           expires_at: string | null
           id: string
           notes: string | null
+          organization_id: string
           paddle_customer_id: string | null
           paddle_transaction_id: string | null
           paid_at: string | null
@@ -760,6 +951,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           notes?: string | null
+          organization_id?: string
           paddle_customer_id?: string | null
           paddle_transaction_id?: string | null
           paid_at?: string | null
@@ -782,6 +974,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           notes?: string | null
+          organization_id?: string
           paddle_customer_id?: string | null
           paddle_transaction_id?: string | null
           paid_at?: string | null
@@ -792,7 +985,15 @@ export type Database = {
           token?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payment_links_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -802,6 +1003,7 @@ export type Database = {
           id: string
           lead_id: string | null
           notes: string | null
+          organization_id: string
           payment_date: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           realtor_id: string | null
@@ -816,6 +1018,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           notes?: string | null
+          organization_id?: string
           payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           realtor_id?: string | null
@@ -830,6 +1033,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           notes?: string | null
+          organization_id?: string
           payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           realtor_id?: string | null
@@ -843,6 +1047,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -935,6 +1146,7 @@ export type Database = {
           mortgage_balance: number | null
           neighborhood_vacancy_rate: number | null
           notes: string | null
+          organization_id: string
           owner_2_name: string | null
           owner_email: string | null
           owner_email_2: string | null
@@ -1031,6 +1243,7 @@ export type Database = {
           mortgage_balance?: number | null
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
+          organization_id?: string
           owner_2_name?: string | null
           owner_email?: string | null
           owner_email_2?: string | null
@@ -1127,6 +1340,7 @@ export type Database = {
           mortgage_balance?: number | null
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
+          organization_id?: string
           owner_2_name?: string | null
           owner_email?: string | null
           owner_email_2?: string | null
@@ -1176,7 +1390,15 @@ export type Database = {
           year_built?: number | null
           zip_code?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "properties_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       property_analyses: {
         Row: {
@@ -1192,6 +1414,7 @@ export type Database = {
           offer_min: number | null
           offer_optimal: number | null
           opportunity_score: number | null
+          organization_id: string
           property_id: string
           risk_level: string | null
         }
@@ -1208,6 +1431,7 @@ export type Database = {
           offer_min?: number | null
           offer_optimal?: number | null
           opportunity_score?: number | null
+          organization_id?: string
           property_id: string
           risk_level?: string | null
         }
@@ -1224,6 +1448,7 @@ export type Database = {
           offer_min?: number | null
           offer_optimal?: number | null
           opportunity_score?: number | null
+          organization_id?: string
           property_id?: string
           risk_level?: string | null
         }
@@ -1233,6 +1458,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_analyses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -1254,6 +1486,7 @@ export type Database = {
           distance_miles: number | null
           id: string
           notes: string | null
+          organization_id: string
           price_per_sqft: number | null
           property_id: string
           sale_date: string | null
@@ -1270,6 +1503,7 @@ export type Database = {
           distance_miles?: number | null
           id?: string
           notes?: string | null
+          organization_id?: string
           price_per_sqft?: number | null
           property_id: string
           sale_date?: string | null
@@ -1286,6 +1520,7 @@ export type Database = {
           distance_miles?: number | null
           id?: string
           notes?: string | null
+          organization_id?: string
           price_per_sqft?: number | null
           property_id?: string
           sale_date?: string | null
@@ -1294,6 +1529,13 @@ export type Database = {
           sqft?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "property_comps_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "property_comps_property_id_fkey"
             columns: ["property_id"]
@@ -1311,6 +1553,7 @@ export type Database = {
           file_size: number | null
           id: string
           is_primary: boolean
+          organization_id: string
           property_id: string
           uploaded_by: string | null
         }
@@ -1321,6 +1564,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           is_primary?: boolean
+          organization_id?: string
           property_id: string
           uploaded_by?: string | null
         }
@@ -1331,10 +1575,18 @@ export type Database = {
           file_size?: number | null
           id?: string
           is_primary?: boolean
+          organization_id?: string
           property_id?: string
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "property_images_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "property_images_property_id_fkey"
             columns: ["property_id"]
@@ -1353,6 +1605,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           notes: string | null
+          organization_id: string
           phone: string | null
           updated_at: string
           user_id: string | null
@@ -1365,6 +1618,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           notes?: string | null
+          organization_id?: string
           phone?: string | null
           updated_at?: string
           user_id?: string | null
@@ -1377,11 +1631,20 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           notes?: string | null
+          organization_id?: string
           phone?: string | null
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "realtors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       seller_conversations: {
         Row: {
@@ -1395,6 +1658,7 @@ export type Database = {
           lead_id: string
           main_pain: string
           notes: string | null
+          organization_id: string
           our_offer_discussed: number | null
           previous_piw_score: number | null
           price_flexibility: Database["public"]["Enums"]["price_flexibility"]
@@ -1412,6 +1676,7 @@ export type Database = {
           lead_id: string
           main_pain: string
           notes?: string | null
+          organization_id?: string
           our_offer_discussed?: number | null
           previous_piw_score?: number | null
           price_flexibility: Database["public"]["Enums"]["price_flexibility"]
@@ -1429,6 +1694,7 @@ export type Database = {
           lead_id?: string
           main_pain?: string
           notes?: string | null
+          organization_id?: string
           our_offer_discussed?: number | null
           previous_piw_score?: number | null
           price_flexibility?: Database["public"]["Enums"]["price_flexibility"]
@@ -1441,6 +1707,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_conversations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1456,6 +1729,7 @@ export type Database = {
           elevenlabs_conversation_id: string | null
           final_offer: number | null
           id: string
+          organization_id: string
           outcome: string | null
           persona: string
           raw_result_tag: string | null
@@ -1476,6 +1750,7 @@ export type Database = {
           elevenlabs_conversation_id?: string | null
           final_offer?: number | null
           id?: string
+          organization_id?: string
           outcome?: string | null
           persona: string
           raw_result_tag?: string | null
@@ -1496,6 +1771,7 @@ export type Database = {
           elevenlabs_conversation_id?: string | null
           final_offer?: number | null
           id?: string
+          organization_id?: string
           outcome?: string | null
           persona?: string
           raw_result_tag?: string | null
@@ -1506,7 +1782,15 @@ export type Database = {
           weaknesses?: string[] | null
           would_close?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "training_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -1561,11 +1845,22 @@ export type Database = {
       }
     }
     Functions: {
+      get_default_org_id: { Args: never; Returns: string }
+      get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_klose_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      user_belongs_to_org: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_can_access_org: {
+        Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
     }
@@ -1589,6 +1884,8 @@ export type Database = {
         | "bajo_contrato"
         | "cesion"
         | "cerrado"
+      org_member_role: "owner" | "admin" | "agent" | "viewer"
+      organization_tier: "internal" | "free" | "pro" | "elite"
       payment_method: "cash" | "check" | "wire" | "zelle" | "venmo" | "other"
       payment_status: "pending" | "paid" | "cancelled"
       price_flexibility:
@@ -1752,6 +2049,8 @@ export const Constants = {
         "cesion",
         "cerrado",
       ],
+      org_member_role: ["owner", "admin", "agent", "viewer"],
+      organization_tier: ["internal", "free", "pro", "elite"],
       payment_method: ["cash", "check", "wire", "zelle", "venmo", "other"],
       payment_status: ["pending", "paid", "cancelled"],
       price_flexibility: [
