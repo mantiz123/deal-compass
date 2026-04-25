@@ -1,15 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export interface AppNotification {
   id: string;
-  type: 'cleanup_archived' | 'cleanup_deleted' | 'stale_warning' | 'info';
+  type: 'cleanup_archived' | 'cleanup_deleted' | 'stale_warning' | 'info' | 'kcfy_request';
   title: string;
   message: string;
   timestamp: string;
   read: boolean;
   meta?: Record<string, any>;
+  href?: string;
 }
 
 /**
@@ -18,9 +20,10 @@ export interface AppNotification {
  */
 export function useNotifications() {
   const { user } = useAuth();
+  const { isSuperAdmin } = useOrganization();
 
   return useQuery({
-    queryKey: ['app-notifications', user?.id],
+    queryKey: ['app-notifications', user?.id, isSuperAdmin],
     enabled: !!user,
     queryFn: async (): Promise<AppNotification[]> => {
       const notifications: AppNotification[] = [];
