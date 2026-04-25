@@ -21,11 +21,15 @@ import {
   Link2,
   BookOpen,
   GraduationCap,
+  Briefcase,
   Menu,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOrganization } from "@/contexts/OrganizationContext";
+import { useKCFYRequests } from "@/hooks/useKCFYRequests";
+import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import kloseLogo from "@/assets/klose-logo.png";
 
@@ -53,6 +57,9 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { signOut } = useAuth();
+  const { isSuperAdmin } = useOrganization();
+  const { data: kcfyRequests } = useKCFYRequests(isSuperAdmin ? { status: ['pending'] } : undefined);
+  const pendingKcfy = isSuperAdmin ? (kcfyRequests?.length ?? 0) : 0;
   const isMobile = useIsMobile();
 
   const handleNavClick = () => {
