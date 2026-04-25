@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type Property = Tables<'properties'>;
@@ -12,12 +13,15 @@ export function useProperties(options?: {
   from?: number;
   to?: number;
 }) {
+  const orgId = useCurrentOrgIdSafe();
   return useQuery({
-    queryKey: ['properties', options],
+    queryKey: ['properties', orgId, options],
+    enabled: !!orgId,
     queryFn: async (): Promise<{ data: Property[]; count: number }> => {
       let query = supabase
         .from('properties')
         .select('*', { count: 'exact' })
+        .eq('organization_id', orgId!)
         .order('created_at', { ascending: false });
 
       if (options?.propertyType && options.propertyType !== 'all') {
