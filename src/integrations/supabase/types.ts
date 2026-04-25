@@ -869,48 +869,66 @@ export type Database = {
       }
       organizations: {
         Row: {
+          agreement_signed_at: string | null
           city: string | null
+          commission_split_student: number
           country: string | null
           created_at: string
+          deals_closed_count: number
           id: string
           is_active: boolean
           is_klose_internal: boolean
           logo_url: string | null
           metadata: Json
           name: string
+          onboarding_completed_at: string | null
+          owner_user_id: string | null
           primary_color: string | null
           slug: string
           tier: Database["public"]["Enums"]["organization_tier"]
+          total_earned_student: number
           updated_at: string
         }
         Insert: {
+          agreement_signed_at?: string | null
           city?: string | null
+          commission_split_student?: number
           country?: string | null
           created_at?: string
+          deals_closed_count?: number
           id?: string
           is_active?: boolean
           is_klose_internal?: boolean
           logo_url?: string | null
           metadata?: Json
           name: string
+          onboarding_completed_at?: string | null
+          owner_user_id?: string | null
           primary_color?: string | null
           slug: string
           tier?: Database["public"]["Enums"]["organization_tier"]
+          total_earned_student?: number
           updated_at?: string
         }
         Update: {
+          agreement_signed_at?: string | null
           city?: string | null
+          commission_split_student?: number
           country?: string | null
           created_at?: string
+          deals_closed_count?: number
           id?: string
           is_active?: boolean
           is_klose_internal?: boolean
           logo_url?: string | null
           metadata?: Json
           name?: string
+          onboarding_completed_at?: string | null
+          owner_user_id?: string | null
           primary_color?: string | null
           slug?: string
           tier?: Database["public"]["Enums"]["organization_tier"]
+          total_earned_student?: number
           updated_at?: string
         }
         Relationships: []
