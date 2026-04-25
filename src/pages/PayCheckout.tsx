@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { initializePaddle, getPaddleEnvironment } from "@/lib/paddle";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
-import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import kloseLogo from "@/assets/klose-logo.png";
 
 type LinkData = {
@@ -27,6 +25,7 @@ function formatMoney(cents: number, currency: string) {
 
 export default function PayCheckout() {
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
   const [link, setLink] = useState<LinkData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,54 +44,34 @@ export default function PayCheckout() {
         setError("Este link de pago no existe o fue removido.");
       } else {
         setLink(data as LinkData);
-        if (data.status === "paid") setDone(true);
+        if (data.status === "paid" || searchParams.get("success") === "true") {
+          setDone(true);
+        }
       }
       setLoading(false);
     })();
-  }, [token]);
+  }, [token, searchParams]);
 
   const handlePay = async () => {
     if (!link || !token) return;
     setPaying(true);
     setError(null);
     try {
-      await initializePaddle();
-      const env = getPaddleEnvironment();
-
-      const { data, error } = await supabase.functions.invoke("create-payment-transaction", {
-        body: { token, environment: env },
+      const { data, error } = await supabase.functions.invoke("create-stripe-checkout", {
+        body: { token, returnUrl: window.location.origin },
       });
       if (error) throw error;
-      if (!data?.transactionId) throw new Error("No se pudo crear la transacción");
-
-      (window as any).Paddle.Checkout.open({
-        transactionId: data.transactionId,
-        settings: {
-          displayMode: "overlay",
-          successUrl: `${window.location.origin}/pay/${token}?success=1`,
-          allowLogout: false,
-          variant: "one-page",
-        },
-      });
+      if (!data?.url) throw new Error("No se pudo crear la sesión de pago");
+      window.location.href = data.url;
     } catch (e: any) {
       console.error(e);
       setError(e?.message || "No se pudo iniciar el pago");
-    } finally {
       setPaying(false);
     }
   };
 
-  // Re-check status if returning from successful checkout
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("success") === "1") {
-      setDone(true);
-    }
-  }, []);
-
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <PaymentTestModeBanner />
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <Card variant="glass" className="w-full max-w-md p-8 space-y-6">
           <div className="flex items-center gap-2">
@@ -118,7 +97,7 @@ export default function PayCheckout() {
               <CheckCircle className="h-12 w-12 text-success mx-auto" />
               <h2 className="text-xl font-bold">¡Pago recibido!</h2>
               <p className="text-muted-foreground text-sm">
-                Gracias. Recibirás un recibo por email de Paddle, nuestro procesador de pagos.
+                Gracias. Recibirás un recibo por email de Stripe, nuestro procesador de pagos.
               </p>
             </div>
           )}
@@ -155,7 +134,7 @@ export default function PayCheckout() {
               >
                 {paying ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Abriendo checkout...
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirigiendo a Stripe...
                   </>
                 ) : (
                   "Pagar ahora"
@@ -163,8 +142,8 @@ export default function PayCheckout() {
               </Button>
 
               <p className="text-xs text-center text-muted-foreground">
-                Procesado por <strong>Paddle.com</strong> (Merchant of Record). Aceptamos tarjetas
-                Visa, Mastercard, American Express, Apple Pay, Google Pay y PayPal.
+                Procesado por <strong>Stripe</strong>. Aceptamos tarjetas Visa, Mastercard, American
+                Express, Apple Pay y Google Pay.
               </p>
               <p className="text-xs text-center text-muted-foreground">
                 Al pagar, aceptas los{" "}
