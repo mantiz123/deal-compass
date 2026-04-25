@@ -52,6 +52,7 @@ const coreItems: NavItem[] = [
   { name: "Leads", href: "/leads", icon: Target },
   { name: "Pipeline", href: "/pipeline", icon: Zap },
   { name: "Properties", href: "/properties", icon: Building2 },
+  { name: "Academy", href: "/academy", icon: GraduationCap },
   { name: "Entrenamiento AI", href: "/training", icon: GraduationCap },
   { name: "Mis Ganancias", href: "/earnings", icon: Wallet },
 ];
