@@ -67,7 +67,7 @@ export function useTrainingSessions() {
         .order('created_at', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return (data || []) as TrainingSession[];
+      return (data || []) as unknown as TrainingSession[];
     },
   });
 }
@@ -110,7 +110,7 @@ export function useCreateTrainingSession() {
         .insert({
           user_id: user.id,
           ...input,
-        })
+        } as any)
         .select()
         .single();
       if (error) throw error;
