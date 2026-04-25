@@ -36,6 +36,7 @@ import PayCheckout from "./pages/PayCheckout";
 import Terms from "./pages/legal/Terms";
 import Refund from "./pages/legal/Refund";
 import Privacy from "./pages/legal/Privacy";
+import ContractorAgreement from "./pages/ContractorAgreement";
 import "@/styles/landing.css";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="/legal/terms" element={<Terms />} />
               <Route path="/legal/refund" element={<Refund />} />
               <Route path="/legal/privacy" element={<Privacy />} />
+              <Route path="/onboarding/contractor-agreement" element={<ContractorAgreement />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

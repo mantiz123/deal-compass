@@ -5,6 +5,7 @@ import { Header } from "./Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDealPackageNotifications } from "@/hooks/useDealPackageNotifications";
 import { CleanupLoginToast } from "./CleanupLoginToast";
+import { ContractorAgreementBanner } from "./ContractorAgreementBanner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2 } from "lucide-react";
 
@@ -48,6 +49,7 @@ export function Layout({ children }: LayoutProps) {
       <Sidebar />
       <div className={isMobile ? "pl-0" : "pl-64 transition-all duration-300"}>
         <Header />
+        <ContractorAgreementBanner />
         <main className="p-3 sm:p-6">{children}</main>
       </div>
     </div>
