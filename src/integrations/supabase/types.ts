@@ -235,6 +235,121 @@ export type Database = {
           },
         ]
       }
+      academy_state_packs: {
+        Row: {
+          content_markdown: string
+          created_at: string
+          estimated_minutes: number | null
+          id: string
+          is_published: boolean
+          lesson_order: number
+          pack_section: string
+          slug: string
+          state_id: string
+          summary: string | null
+          title: string
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          content_markdown: string
+          created_at?: string
+          estimated_minutes?: number | null
+          id?: string
+          is_published?: boolean
+          lesson_order: number
+          pack_section?: string
+          slug: string
+          state_id: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Update: {
+          content_markdown?: string
+          created_at?: string
+          estimated_minutes?: number | null
+          id?: string
+          is_published?: boolean
+          lesson_order?: number
+          pack_section?: string
+          slug?: string
+          state_id?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_state_packs_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "academy_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_states: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          display_order: number
+          flag_emoji: string | null
+          id: string
+          is_live: boolean
+          kcfy_available: boolean
+          name: string
+          partner_org_id: string | null
+          unlock_deals_required: number | null
+          unlock_method: string
+          unlock_price_cents: number | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          flag_emoji?: string | null
+          id?: string
+          is_live?: boolean
+          kcfy_available?: boolean
+          name: string
+          partner_org_id?: string | null
+          unlock_deals_required?: number | null
+          unlock_method?: string
+          unlock_price_cents?: number | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          flag_emoji?: string | null
+          id?: string
+          is_live?: boolean
+          kcfy_available?: boolean
+          name?: string
+          partner_org_id?: string | null
+          unlock_deals_required?: number | null
+          unlock_method?: string
+          unlock_price_cents?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_states_partner_org_id_fkey"
+            columns: ["partner_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_tracks: {
         Row: {
           color: string | null
@@ -899,6 +1014,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["kcfy_priority"]
           rejection_reason: string | null
           requested_by: string
+          state_code: string | null
           status: Database["public"]["Enums"]["kcfy_status"]
           updated_at: string
         }
@@ -916,6 +1032,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["kcfy_priority"]
           rejection_reason?: string | null
           requested_by: string
+          state_code?: string | null
           status?: Database["public"]["Enums"]["kcfy_status"]
           updated_at?: string
         }
@@ -933,6 +1050,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["kcfy_priority"]
           rejection_reason?: string | null
           requested_by?: string
+          state_code?: string | null
           status?: Database["public"]["Enums"]["kcfy_status"]
           updated_at?: string
         }
@@ -2058,6 +2176,41 @@ export type Database = {
           },
         ]
       }
+      state_waitlist: {
+        Row: {
+          id: string
+          notes: string | null
+          notified_at: string | null
+          signed_up_at: string
+          state_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notes?: string | null
+          notified_at?: string | null
+          signed_up_at?: string
+          state_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notes?: string | null
+          notified_at?: string | null
+          signed_up_at?: string
+          state_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "state_waitlist_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "academy_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_sessions: {
         Row: {
           agent_score: number | null
@@ -2153,6 +2306,53 @@ export type Database = {
         }
         Relationships: []
       }
+      user_state_specializations: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          notes: string | null
+          pack_completed_at: string | null
+          state_id: string
+          total_xp_earned: number
+          unlock_source: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          notes?: string | null
+          pack_completed_at?: string | null
+          state_id: string
+          total_xp_earned?: number
+          unlock_source?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          notes?: string | null
+          pack_completed_at?: string | null
+          state_id?: string
+          total_xp_earned?: number
+          unlock_source?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_state_specializations_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "academy_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       dead_leads_analytics: {
@@ -2185,6 +2385,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_state: {
+        Args: { _state_code: string; _user_id: string }
+        Returns: boolean
+      }
       get_default_org_id: { Args: never; Returns: string }
       get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
       has_completed_foundations: {
