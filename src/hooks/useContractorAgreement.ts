@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ICA_VERSION } from "@/lib/icaTemplate";
+import { ICA_VERSION, type TinType } from "@/lib/icaTemplate";
 import { Database } from "@/integrations/supabase/types";
 
 type TaxClassification = Database["public"]["Enums"]["tax_classification"];
@@ -10,7 +10,8 @@ export interface ICASignPayload {
   legalName: string;
   businessName?: string;
   taxClassification: TaxClassification;
-  taxIdFull: string; // SSN/EIN — sent to DB only at submit
+  tinType: TinType;
+  taxIdFull: string; // SSN/ITIN/EIN — sent to DB only at submit
   addressLine1: string;
   addressLine2?: string;
   city: string;
