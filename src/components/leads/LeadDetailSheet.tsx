@@ -37,6 +37,8 @@ import { SkipTraceInput } from './SkipTraceInput';
 import { OutreachEmailGenerator } from './OutreachEmailGenerator';
 import { ConversationHistory } from './ConversationHistory';
 import { VoiceAgentSheet } from './VoiceAgentSheet';
+import { RequestKCFYDialog } from './RequestKCFYDialog';
+import { useKCFYRequestForLead } from '@/hooks/useKCFYRequests';
 import { useInteractions } from '@/hooks/useInteractions';
 import { usePermanentlyDeleteLead } from '@/hooks/useArchiveLead';
 import { useUpdateProperty } from '@/hooks/useProperties';
@@ -68,6 +70,7 @@ import {
   Gavel,
   Trash2,
   UserSearch,
+  Handshake,
 } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -103,6 +106,8 @@ export function LeadDetailSheet({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSkipTrace, setShowSkipTrace] = useState(false);
   const [showVoiceAgent, setShowVoiceAgent] = useState(false);
+  const [showKCFY, setShowKCFY] = useState(false);
+  const { data: kcfyRequest } = useKCFYRequestForLead(lead?.id);
   const deleteLead = usePermanentlyDeleteLead();
   const { data: interactions, isLoading: loadingInteractions } = useInteractions(lead?.id || '');
   const { data: latestConversation } = useLatestConversation(lead?.id);
