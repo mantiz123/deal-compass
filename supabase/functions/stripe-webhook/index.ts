@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import Stripe from 'npm:stripe@17.5.0';
+import Stripe from 'npm:stripe@18';
 
 let _supabase: ReturnType<typeof createClient> | null = null;
 function getSupabase() {
