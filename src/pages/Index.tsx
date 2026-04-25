@@ -13,6 +13,7 @@ import { PipelineHygieneWidget } from "@/components/dashboard/PipelineHygieneWid
 import { PayoutScheduleWidget } from "@/components/dashboard/PayoutScheduleWidget";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOrganization } from "@/contexts/OrganizationContext";
 import { Target, Users, DollarSign, TrendingUp, Zap, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
