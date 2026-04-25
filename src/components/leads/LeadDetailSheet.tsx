@@ -276,6 +276,15 @@ export function LeadDetailSheet({
                   <FileText className="mr-2 h-4 w-4" />
                   📄 Contrato
                 </Button>
+                <Button
+                  variant={kcfyRequest ? 'outline' : 'default'}
+                  onClick={() => setShowKCFY(true)}
+                  size="sm"
+                  className={kcfyRequest ? 'border-primary/40 text-primary hover:bg-primary/10' : 'bg-gradient-to-r from-primary to-primary/80'}
+                >
+                  <Handshake className="mr-2 h-4 w-4" />
+                  {kcfyRequest ? `KCFY · ${kcfyRequest.status}` : 'Pedir KCFY'}
+                </Button>
               </div>
             </div>
 
@@ -967,6 +976,15 @@ export function LeadDetailSheet({
         lead={lead}
         open={showVoiceAgent}
         onOpenChange={setShowVoiceAgent}
+      />
+
+      {/* KCFY Request Dialog */}
+      <RequestKCFYDialog
+        open={showKCFY}
+        onOpenChange={setShowKCFY}
+        leadId={lead.id}
+        leadAddress={property ? `${property.address}, ${property.city}, ${property.state}` : undefined}
+        estimatedDealValue={lead.assignment_fee ? Number(lead.assignment_fee) : null}
       />
 
 
