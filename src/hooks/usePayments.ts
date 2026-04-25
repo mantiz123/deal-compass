@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 
 export type PaymentMethod = 'cash' | 'check' | 'wire' | 'zelle' | 'venmo' | 'other';
 export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
@@ -41,8 +42,10 @@ export interface PaymentStats {
 }
 
 export function usePayments() {
+  const orgId = useCurrentOrgIdSafe();
   return useQuery({
-    queryKey: ['payments'],
+    queryKey: ['payments', orgId],
+    enabled: !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payments')
@@ -54,6 +57,7 @@ export function usePayments() {
           ),
           realtor:realtors(id, name, company)
         `)
+        .eq('organization_id', orgId!)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -63,12 +67,15 @@ export function usePayments() {
 }
 
 export function usePaymentStats() {
+  const orgId = useCurrentOrgIdSafe();
   return useQuery({
-    queryKey: ['payment-stats'],
+    queryKey: ['payment-stats', orgId],
+    enabled: !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payments')
-        .select('amount, status');
+        .select('amount, status')
+        .eq('organization_id', orgId!);
 
       if (error) throw error;
 

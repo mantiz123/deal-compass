@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 
 export interface Realtor {
   id: string;
@@ -16,12 +17,15 @@ export interface Realtor {
 }
 
 export function useRealtors() {
+  const orgId = useCurrentOrgIdSafe();
   return useQuery({
-    queryKey: ['realtors'],
+    queryKey: ['realtors', orgId],
+    enabled: !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('realtors')
         .select('*')
+        .eq('organization_id', orgId!)
         .eq('is_active', true)
         .order('name');
 

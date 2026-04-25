@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 
 export type ContractType = 'AB' | 'BC' | 'AMENDMENT';
 export type ContractStatus = 'draft' | 'sent' | 'viewed' | 'signed' | 'completed';
@@ -55,12 +56,15 @@ export function useContracts(filters?: {
   contract_type?: string;
   search?: string;
 }) {
+  const orgId = useCurrentOrgIdSafe();
   return useQuery({
-    queryKey: ['contracts', filters],
+    queryKey: ['contracts', orgId, filters],
+    enabled: !!orgId,
     queryFn: async () => {
       let query = supabase
         .from('contracts')
         .select('*, lead:leads(id, status, property:properties(address, city, state, county, owner_name, owner_phone, owner_email, mao))')
+        .eq('organization_id', orgId!)
         .order('created_at', { ascending: false });
 
       if (filters?.status && filters.status !== 'all') {

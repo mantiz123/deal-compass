@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type Lead = Tables<'leads'> & {
@@ -51,8 +52,10 @@ export function useLeads(options?: {
   from?: number;
   to?: number;
 }) {
+  const orgId = useCurrentOrgIdSafe();
   return useQuery({
-    queryKey: ['leads', options?.filters, options?.from, options?.to],
+    queryKey: ['leads', orgId, options?.filters, options?.from, options?.to],
+    enabled: !!orgId,
     queryFn: async (): Promise<{ data: Lead[]; count: number }> => {
       const hasSearch = !!options?.filters?.search;
       
@@ -64,6 +67,7 @@ export function useLeads(options?: {
       let query = supabase
         .from('leads')
         .select(selectStr, { count: 'exact' })
+        .eq('organization_id', orgId!)
         .order('piw_score', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
 

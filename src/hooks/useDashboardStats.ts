@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 
 export interface DashboardStats {
   totalLeads: number;
@@ -11,13 +12,16 @@ export interface DashboardStats {
 }
 
 export function useDashboardStats() {
+  const orgId = useCurrentOrgIdSafe();
   return useQuery({
-    queryKey: ['dashboard-stats'],
+    queryKey: ['dashboard-stats', orgId],
+    enabled: !!orgId,
     queryFn: async (): Promise<DashboardStats> => {
       // Fetch leads count and status breakdown
       const { data: leads, error: leadsError } = await supabase
         .from('leads')
-        .select('id, status, piw_score, assignment_fee');
+        .select('id, status, piw_score, assignment_fee')
+        .eq('organization_id', orgId!);
 
       if (leadsError) throw leadsError;
 
@@ -25,6 +29,7 @@ export function useDashboardStats() {
       const { count: buyersCount, error: buyersError } = await supabase
         .from('buyers')
         .select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId!)
         .eq('is_active', true);
 
       if (buyersError) throw buyersError;
