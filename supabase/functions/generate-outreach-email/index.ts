@@ -198,7 +198,16 @@ ${lowestSourcePrice ? `- Lowest Source Price (Zillow/Redfin/PropStream): ${lowes
     }
 
     const aiData = await aiResponse.json();
-    const emailContent = aiData.choices?.[0]?.message?.content || "";
+    let emailContent = aiData.choices?.[0]?.message?.content || "";
+
+    // SAFETY NET: ensure mandatory legal disclaimer is always present.
+    // If the model omitted or shortened it, inject the canonical block at the end.
+    const REQUIRED_DISCLAIMER =
+      "I am an Independent Contractor of KLOSE LLC, a Wyoming registered real estate investment firm (EIN 41-4409334). I am NOT a licensed real estate agent and do not represent you in any real estate transaction. KLOSE LLC purchases properties as a principal buyer or assigns purchase contracts to end buyers.";
+
+    if (!emailContent.includes("Independent Contractor of KLOSE LLC")) {
+      emailContent = emailContent.trimEnd() + "\n\nLEGAL DISCLAIMER\n" + REQUIRED_DISCLAIMER;
+    }
 
     // Generate suggested subject line
     const subjectLine = templateType === "initial_outreach"
