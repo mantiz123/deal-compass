@@ -76,10 +76,17 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { signOut } = useAuth();
-  const { isSuperAdmin } = useOrganization();
+  const { isSuperAdmin, currentOrg } = useOrganization();
   const { data: kcfyRequests } = useKCFYRequests(isSuperAdmin ? { status: ['pending'] } : undefined);
   const pendingKcfy = isSuperAdmin ? (kcfyRequests?.length ?? 0) : 0;
   const isMobile = useIsMobile();
+
+  // Build navigation list dynamically based on org tier (Modelo A: free students see less)
+  const tier = currentOrg?.tier ?? 'free';
+  const visibleProItems = proItems.filter(item =>
+    !item.tiers || item.tiers.includes(tier as 'free' | 'pro' | 'elite' | 'internal')
+  );
+  const navigation: NavItem[] = [...coreItems, ...visibleProItems, settingsItem];
 
   const handleNavClick = () => {
     if (isMobile) setMobileOpen(false);
