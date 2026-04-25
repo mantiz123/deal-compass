@@ -27,7 +27,7 @@ const formatMoney = (n: number | null | undefined) =>
 export default function Earnings() {
   const orgId = useCurrentOrgIdSafe();
   const { user } = useAuth();
-  const { hasSigned, isLoading: icaLoading, isBlocked } = useICAGuard();
+  const { isLoading: icaLoading, isBlocked } = useICAGuard();
   const navigate = useNavigate();
 
   const { data: requests, isLoading } = useQuery({
