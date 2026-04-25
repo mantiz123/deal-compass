@@ -30,6 +30,7 @@ import NotFound from "./pages/NotFound";
 import Cobros from "./pages/Cobros";
 import Training from "./pages/Training";
 import AdminKCFY from "./pages/AdminKCFY";
+import Earnings from "./pages/Earnings";
 import PayCheckout from "./pages/PayCheckout";
 import Terms from "./pages/legal/Terms";
 import Refund from "./pages/legal/Refund";
