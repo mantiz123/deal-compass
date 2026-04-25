@@ -10,6 +10,7 @@ import { HotLeadsWidget } from "@/components/dashboard/HotLeadsWidget";
 import { CriticalActionsWidget } from "@/components/dashboard/CriticalActionsWidget";
 import { StaleLeadsAlert } from "@/components/dashboard/StaleLeadsAlert";
 import { PipelineHygieneWidget } from "@/components/dashboard/PipelineHygieneWidget";
+import { PayoutScheduleWidget } from "@/components/dashboard/PayoutScheduleWidget";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useAuth } from "@/contexts/AuthContext";
 import { Target, Users, DollarSign, TrendingUp, Zap, Plus } from "lucide-react";
@@ -126,6 +127,7 @@ const Index = () => {
 
         {/* Right Column - Hygiene, Buyers & Dead Leads */}
         <div className="space-y-6">
+          <PayoutScheduleWidget />
           <PipelineHygieneWidget />
           <BuyerLiquidityWidget />
           <DeadLeadsAnalytics />
