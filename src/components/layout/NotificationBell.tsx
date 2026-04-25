@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Bell, Archive, Trash2, AlertTriangle, X, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Archive, Trash2, AlertTriangle, X, ChevronRight, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,6 +14,7 @@ const iconMap = {
   cleanup_deleted: <Trash2 className="h-4 w-4 text-destructive shrink-0" />,
   stale_warning: <AlertTriangle className="h-4 w-4 text-accent shrink-0" />,
   info: <Bell className="h-4 w-4 text-primary shrink-0" />,
+  kcfy_request: <Briefcase className="h-4 w-4 text-primary shrink-0" />,
 };
 
 const typeLabels: Record<string, string> = {
@@ -20,10 +22,12 @@ const typeLabels: Record<string, string> = {
   cleanup_deleted: 'Eliminado',
   stale_warning: 'En riesgo',
   info: 'Info',
+  kcfy_request: 'KCFY',
 };
 
 export function NotificationBell() {
   const { data: notifications, isLoading } = useNotifications();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -76,7 +80,14 @@ export function NotificationBell() {
                   <div
                     key={notif.id}
                     className="px-4 py-3 hover:bg-secondary/50 transition-colors group cursor-pointer"
-                    onClick={() => setExpandedId(isExpanded ? null : notif.id)}
+                    onClick={() => {
+                      if (notif.href) {
+                        setOpen(false);
+                        navigate(notif.href);
+                      } else {
+                        setExpandedId(isExpanded ? null : notif.id);
+                      }
+                    }}
                   >
                     <div className="flex items-start gap-2.5">
                       <div className="mt-0.5">{iconMap[notif.type]}</div>
