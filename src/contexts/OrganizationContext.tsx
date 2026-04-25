@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 
@@ -27,6 +28,8 @@ export interface OrgMembership {
 interface OrganizationContextType {
   currentOrg: Organization | null;
   memberships: OrgMembership[];
+  /** Para super admins: TODAS las orgs activas del sistema. Para usuarios normales: solo sus memberships. */
+  visibleOrgs: Organization[];
   isSuperAdmin: boolean;
   loading: boolean;
   switchOrganization: (orgId: string) => void;
@@ -39,19 +42,25 @@ const STORAGE_KEY = 'klose:current_org_id';
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [memberships, setMemberships] = useState<OrgMembership[]>([]);
+  const [allOrgs, setAllOrgs] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchMemberships = useCallback(async () => {
     if (!user) {
       setMemberships([]);
+      setAllOrgs([]);
       setCurrentOrg(null);
+      setIsSuperAdmin(false);
       setLoading(false);
       return;
     }
 
-    const { data, error } = await supabase
+    // 1. Fetch user memberships
+    const { data: membershipData, error } = await supabase
       .from('organization_members')
       .select(`
         role,
@@ -68,7 +77,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const mapped: OrgMembership[] = (data || [])
+    const mapped: OrgMembership[] = (membershipData || [])
       .filter((row: any) => row.organization?.is_active)
       .map((row: any) => ({
         organization: row.organization as Organization,
@@ -77,12 +86,31 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
     setMemberships(mapped);
 
-    // Restore previously selected org or pick the first one
+    const userIsSuperAdmin = mapped.some(m => m.organization.is_klose_internal);
+    setIsSuperAdmin(userIsSuperAdmin);
+
+    // 2. Para super admins: traer TODAS las orgs activas
+    let visibleOrgs: Organization[] = mapped.map(m => m.organization);
+    if (userIsSuperAdmin) {
+      const { data: allOrgsData } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('is_active', true)
+        .order('is_klose_internal', { ascending: false })
+        .order('created_at', { ascending: true });
+      
+      if (allOrgsData) {
+        visibleOrgs = allOrgsData as Organization[];
+      }
+    }
+    setAllOrgs(visibleOrgs);
+
+    // 3. Restaurar org seleccionada
     const storedId = localStorage.getItem(STORAGE_KEY);
-    const found = mapped.find(m => m.organization.id === storedId);
-    const initial = found?.organization 
-      || mapped.find(m => m.organization.is_klose_internal)?.organization
-      || mapped[0]?.organization
+    const found = visibleOrgs.find(o => o.id === storedId);
+    const initial = found
+      || visibleOrgs.find(o => o.is_klose_internal)
+      || visibleOrgs[0]
       || null;
 
     setCurrentOrg(initial);
@@ -96,21 +124,20 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   }, [authLoading, fetchMemberships]);
 
   const switchOrganization = useCallback((orgId: string) => {
-    const target = memberships.find(m => m.organization.id === orgId);
+    const target = allOrgs.find(o => o.id === orgId);
     if (target) {
-      setCurrentOrg(target.organization);
+      setCurrentOrg(target);
       localStorage.setItem(STORAGE_KEY, orgId);
-      // Trigger refetch in app
-      window.location.reload();
+      // Invalidar todas las queries para que se refetcheen con la nueva org activa
+      queryClient.invalidateQueries();
     }
-  }, [memberships]);
-
-  const isSuperAdmin = memberships.some(m => m.organization.is_klose_internal);
+  }, [allOrgs, queryClient]);
 
   return (
     <OrganizationContext.Provider value={{
       currentOrg,
       memberships,
+      visibleOrgs: allOrgs,
       isSuperAdmin,
       loading,
       switchOrganization,
@@ -137,4 +164,12 @@ export function useCurrentOrgId(): string {
     throw new Error('No organization selected. User must belong to at least one org.');
   }
   return currentOrg.id;
+}
+
+/**
+ * Safe variant: returns null if no org selected (use in queries that should be disabled when no org).
+ */
+export function useCurrentOrgIdSafe(): string | null {
+  const { currentOrg } = useOrganization();
+  return currentOrg?.id ?? null;
 }
