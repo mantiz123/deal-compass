@@ -606,12 +606,28 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
             <TrainingResultsPanel
               persona={trainingResult.persona}
               outcome={trainingResult.outcome}
-              agent_score={trainingResult.agent_score}
+              agent_score={deepAnalysis?.overall_score ?? trainingResult.agent_score}
               strengths={trainingResult.strengths}
               weaknesses={trainingResult.weaknesses}
               final_offer={trainingResult.final_offer}
               would_close={trainingResult.would_close}
               avgScore={trainingStats?.avgScore}
+            />
+          )}
+
+          {/* Deep Skill Analysis (post-call) */}
+          {isAnalyzingDeep && !isConnected && (
+            <Card variant="glass" className="p-3">
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Analizando skills con IA...
+              </p>
+            </Card>
+          )}
+          {deepAnalysis && !isConnected && (
+            <SkillBreakdown
+              skills={deepAnalysis.skill_scores}
+              coachingSummary={deepAnalysis.coaching_summary}
             />
           )}
 
