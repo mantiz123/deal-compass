@@ -764,6 +764,105 @@ export type Database = {
           },
         ]
       }
+      contractor_agreements: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          agreement_language: string
+          agreement_version: string
+          business_name: string | null
+          city: string
+          commission_split_student: number
+          country: string
+          created_at: string
+          email: string
+          id: string
+          ip_address: string | null
+          is_active: boolean
+          legal_name: string
+          organization_id: string
+          phone: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          signature_image: string
+          signed_at: string
+          signed_pdf_path: string | null
+          signed_pdf_url: string | null
+          state: string
+          tax_classification: Database["public"]["Enums"]["tax_classification"]
+          tax_id_full: string
+          tax_id_last4: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+          zip_code: string
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          agreement_language?: string
+          agreement_version?: string
+          business_name?: string | null
+          city: string
+          commission_split_student?: number
+          country?: string
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          legal_name: string
+          organization_id?: string
+          phone?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          signature_image: string
+          signed_at?: string
+          signed_pdf_path?: string | null
+          signed_pdf_url?: string | null
+          state: string
+          tax_classification?: Database["public"]["Enums"]["tax_classification"]
+          tax_id_full: string
+          tax_id_last4: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+          zip_code: string
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          agreement_language?: string
+          agreement_version?: string
+          business_name?: string | null
+          city?: string
+          commission_split_student?: number
+          country?: string
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          legal_name?: string
+          organization_id?: string
+          phone?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          signature_image?: string
+          signed_at?: string
+          signed_pdf_path?: string | null
+          signed_pdf_url?: string | null
+          state?: string
+          tax_classification?: Database["public"]["Enums"]["tax_classification"]
+          tax_id_full?: string
+          tax_id_last4?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+          zip_code?: string
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           contract_data: Json | null
@@ -2402,6 +2501,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_signed_contractor_agreement: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_klose_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_org_admin_or_owner: {
         Args: { _org_id: string; _user_id: string }
@@ -2465,6 +2568,18 @@ export type Database = {
         | "land"
         | "commercial"
       seller_urgency_level: "desperate" | "high" | "moderate" | "low" | "none"
+      tax_classification:
+        | "individual"
+        | "sole_proprietor"
+        | "single_member_llc"
+        | "c_corporation"
+        | "s_corporation"
+        | "partnership"
+        | "trust_estate"
+        | "llc_c"
+        | "llc_s"
+        | "llc_p"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2641,6 +2756,19 @@ export const Constants = {
         "commercial",
       ],
       seller_urgency_level: ["desperate", "high", "moderate", "low", "none"],
+      tax_classification: [
+        "individual",
+        "sole_proprietor",
+        "single_member_llc",
+        "c_corporation",
+        "s_corporation",
+        "partnership",
+        "trust_estate",
+        "llc_c",
+        "llc_s",
+        "llc_p",
+        "other",
+      ],
     },
   },
 } as const
