@@ -41,6 +41,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { generateCSV, downloadCSV, todayDateString } from "@/lib/csvExport";
+import { Checkbox } from "@/components/ui/checkbox";
+import { BulkActionsBar } from "@/components/leads/BulkActionsBar";
 
 const statusConfig: Record<string, { label: string; variant: "accent" | "warning" | "secondary" | "glow" }> = {
   captacion: { label: "Captación", variant: "secondary" },
@@ -72,6 +74,7 @@ const Leads = () => {
   const [archiveLeadId, setArchiveLeadId] = useState<string | null>(null);
   const [archiveAddress, setArchiveAddress] = useState<string>('');
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const pagination = useServerPagination(25);
   const { data: filterOptions } = useLeadFilterOptions();
@@ -153,6 +156,27 @@ const Leads = () => {
       (lead.piw_score || 0) >= 80 ? 'hot' : 
       (lead.piw_score || 0) >= 50 ? 'warm' : 'cold'
     );
+  };
+
+  const visibleIds = leads.map(l => l.id);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
+  const someVisibleSelected = visibleIds.some(id => selectedIds.includes(id));
+  const headerCheckState: boolean | "indeterminate" = allVisibleSelected
+    ? true
+    : someVisibleSelected
+      ? "indeterminate"
+      : false;
+
+  const toggleAllVisible = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => Array.from(new Set([...prev, ...visibleIds])));
+    } else {
+      setSelectedIds(prev => prev.filter(id => !visibleIds.includes(id)));
+    }
+  };
+
+  const toggleOne = (id: string, checked: boolean) => {
+    setSelectedIds(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
   };
 
   return (
@@ -432,6 +456,9 @@ const Leads = () => {
         </Card>
       )}
 
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar selectedIds={selectedIds} onClear={() => setSelectedIds([])} />
+
       {/* Leads Table */}
       {!isLoading && !error && leads.length > 0 && (
         <Card variant="glass">
@@ -441,6 +468,13 @@ const Leads = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border text-left text-sm text-muted-foreground">
+                    <th className="p-4 w-10">
+                      <Checkbox
+                        checked={headerCheckState}
+                        onCheckedChange={(c) => toggleAllVisible(c === true)}
+                        aria-label="Seleccionar todos los leads visibles"
+                      />
+                    </th>
                     <th className="p-4 font-medium">Propiedad</th>
                     <th className="p-4 font-medium">Propietario</th>
                     <th className="p-4 font-medium">
@@ -590,6 +624,13 @@ const Leads = () => {
                         style={{ animationDelay: `${index * 50}ms` }}
                         onClick={() => setSelectedLead(lead)}
                       >
+                        <td className="p-4 w-10" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.includes(lead.id)}
+                            onCheckedChange={(c) => toggleOne(lead.id, c === true)}
+                            aria-label="Seleccionar lead"
+                          />
+                        </td>
                         <td className="p-4">
                           <div className="flex items-start gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
