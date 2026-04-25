@@ -25,7 +25,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Plus, Copy, ExternalLink, Link2, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Plus, Copy, ExternalLink, Link2, CheckCircle, Clock, XCircle, Trash2, Ban } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const PUBLIC_BASE_URL = "https://goklose.com";
 
@@ -63,6 +74,20 @@ function StatusBadge({ status }: { status: string }) {
     return (
       <Badge variant="destructive">
         <XCircle className="h-3 w-3 mr-1" /> Falló
+      </Badge>
+    );
+  }
+  if (status === "cancelled") {
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        <Ban className="h-3 w-3 mr-1" /> Cancelado
+      </Badge>
+    );
+  }
+  if (status === "expired") {
+    return (
+      <Badge variant="outline" className="text-muted-foreground">
+        <Clock className="h-3 w-3 mr-1" /> Expirado
       </Badge>
     );
   }
@@ -139,6 +164,34 @@ export default function Cobros() {
     navigator.clipboard.writeText(url);
     toast.success("Link copiado");
   };
+
+  const cancel = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("payment_links")
+        .update({ status: "cancelled" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payment_links"] });
+      toast.success("Cobro cancelado", { description: "Ya no aparece como pendiente" });
+    },
+    onError: (e: any) => toast.error(e.message || "No se pudo cancelar"),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("payment_links").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payment_links"] });
+      toast.success("Cobro eliminado");
+    },
+    onError: (e: any) =>
+      toast.error(e.message || "No se pudo eliminar (requiere permisos de admin)"),
+  });
 
   const totals = (links || []).reduce(
     (acc, l) => {
