@@ -97,6 +97,22 @@ export default function ContractorAgreement() {
     return <Navigate to="/auth" replace />;
   }
   if (!isLoading && hasSigned && agreement) {
+    const handleDownload = async () => {
+      if (!agreement.signed_pdf_path) {
+        toast.info("PDF aún se está generando, intenta en unos segundos.");
+        return;
+      }
+      const { data, error } = await import("@/integrations/supabase/client").then(({ supabase }) =>
+        supabase.storage
+          .from("contractor-agreements")
+          .createSignedUrl(agreement.signed_pdf_path!, 60)
+      );
+      if (error || !data?.signedUrl) {
+        toast.error("No se pudo generar el enlace de descarga.");
+        return;
+      }
+      window.open(data.signedUrl, "_blank");
+    };
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-lg w-full">
@@ -114,9 +130,19 @@ export default function ContractorAgreement() {
             <p className="text-sm text-muted-foreground">
               Versión {agreement.agreement_version} · TIN: XXX-XX-{agreement.tax_id_last4}
             </p>
-            <Button className="w-full" onClick={() => navigate("/dashboard")}>
-              Ir al Dashboard
-            </Button>
+            {agreement.signed_pdf_hash && (
+              <p className="text-[10px] text-muted-foreground font-mono break-all">
+                SHA-256: {agreement.signed_pdf_hash}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={handleDownload}>
+                <FileText className="h-4 w-4 mr-1" /> Descargar PDF
+              </Button>
+              <Button className="flex-1" onClick={() => navigate("/dashboard")}>
+                Ir al Dashboard
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
