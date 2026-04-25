@@ -158,6 +158,27 @@ const Leads = () => {
     );
   };
 
+  const visibleIds = leads.map(l => l.id);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
+  const someVisibleSelected = visibleIds.some(id => selectedIds.includes(id));
+  const headerCheckState: boolean | "indeterminate" = allVisibleSelected
+    ? true
+    : someVisibleSelected
+      ? "indeterminate"
+      : false;
+
+  const toggleAllVisible = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => Array.from(new Set([...prev, ...visibleIds])));
+    } else {
+      setSelectedIds(prev => prev.filter(id => !visibleIds.includes(id)));
+    }
+  };
+
+  const toggleOne = (id: string, checked: boolean) => {
+    setSelectedIds(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
+  };
+
   return (
     <Layout>
       {/* Header */}
