@@ -229,17 +229,17 @@ export function AdminUsersPanel() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              User Management
+              Klose Closers Program
             </CardTitle>
             <CardDescription>
-              Approve, revoke access, and assign roles to registered users
+              Activa, revoca acceso y asigna roles a estudiantes inscritos en el programa
             </CardDescription>
           </div>
           <div className="flex items-center gap-3">
             {pendingUsers.length > 0 && (
               <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10">
                 <Clock className="h-3 w-3 mr-1" />
-                {pendingUsers.length} pending
+                {pendingUsers.length} aplicación{pendingUsers.length !== 1 ? 'es' : ''}
               </Badge>
             )}
             <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10">
