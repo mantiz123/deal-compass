@@ -1397,7 +1397,10 @@ export type Database = {
       training_sessions: {
         Row: {
           agent_score: number | null
+          audio_url: string | null
+          coaching_summary: string | null
           created_at: string
+          difficulty: string | null
           duration_seconds: number | null
           elevenlabs_conversation_id: string | null
           final_offer: number | null
@@ -1405,6 +1408,7 @@ export type Database = {
           outcome: string | null
           persona: string
           raw_result_tag: string | null
+          skill_scores: Json | null
           strengths: string[] | null
           transcript: Json | null
           user_id: string
@@ -1413,7 +1417,10 @@ export type Database = {
         }
         Insert: {
           agent_score?: number | null
+          audio_url?: string | null
+          coaching_summary?: string | null
           created_at?: string
+          difficulty?: string | null
           duration_seconds?: number | null
           elevenlabs_conversation_id?: string | null
           final_offer?: number | null
@@ -1421,6 +1428,7 @@ export type Database = {
           outcome?: string | null
           persona: string
           raw_result_tag?: string | null
+          skill_scores?: Json | null
           strengths?: string[] | null
           transcript?: Json | null
           user_id: string
@@ -1429,7 +1437,10 @@ export type Database = {
         }
         Update: {
           agent_score?: number | null
+          audio_url?: string | null
+          coaching_summary?: string | null
           created_at?: string
+          difficulty?: string | null
           duration_seconds?: number | null
           elevenlabs_conversation_id?: string | null
           final_offer?: number | null
@@ -1437,6 +1448,7 @@ export type Database = {
           outcome?: string | null
           persona?: string
           raw_result_tag?: string | null
+          skill_scores?: Json | null
           strengths?: string[] | null
           transcript?: Json | null
           user_id?: string
