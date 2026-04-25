@@ -263,11 +263,11 @@ export function AdminUsersPanel() {
           <TabsList className="bg-secondary/50 border border-border/50">
             <TabsTrigger value="pending" className="gap-1.5 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300">
               <Clock className="h-3.5 w-3.5" />
-              Pending ({pendingUsers.length})
+              Aplicaciones ({pendingUsers.length})
             </TabsTrigger>
             <TabsTrigger value="approved" className="gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <CheckCircle className="h-3.5 w-3.5" />
-              Approved ({approvedUsers.length})
+              Closers activos ({approvedUsers.length})
             </TabsTrigger>
           </TabsList>
 
@@ -275,7 +275,7 @@ export function AdminUsersPanel() {
             {filterUsers(pendingUsers).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <UserCheck className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No pending users</p>
+                <p className="text-sm">No hay aplicaciones pendientes</p>
               </div>
             ) : (
               filterUsers(pendingUsers).map(user => (
@@ -288,7 +288,7 @@ export function AdminUsersPanel() {
             {filterUsers(approvedUsers).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No approved users</p>
+                <p className="text-sm">Aún no hay Closers activos</p>
               </div>
             ) : (
               filterUsers(approvedUsers).map(user => (
