@@ -691,6 +691,8 @@ export type Database = {
           paddle_transaction_id: string | null
           paid_at: string | null
           status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
           title: string
           token: string
           updated_at: string
@@ -711,6 +713,8 @@ export type Database = {
           paddle_transaction_id?: string | null
           paid_at?: string | null
           status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           title: string
           token?: string
           updated_at?: string
@@ -731,6 +735,8 @@ export type Database = {
           paddle_transaction_id?: string | null
           paid_at?: string | null
           status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           title?: string
           token?: string
           updated_at?: string
