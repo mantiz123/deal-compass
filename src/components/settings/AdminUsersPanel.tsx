@@ -151,7 +151,7 @@ export function AdminUsersPanel() {
             {!user.is_approved && (
               <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10 text-[10px]">
                 <Clock className="h-3 w-3 mr-1" />
-                Pending
+                Aplicación pendiente
               </Badge>
             )}
           </div>
