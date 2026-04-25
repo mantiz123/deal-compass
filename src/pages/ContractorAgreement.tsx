@@ -125,7 +125,7 @@ export default function ContractorAgreement() {
 
   const infoComplete =
     form.legalName.trim().length >= 3 &&
-    form.taxIdFull.replace(/\D/g, "").length >= 4 &&
+    tinValid &&
     form.addressLine1.trim().length > 0 &&
     form.city.trim().length > 0 &&
     form.state.trim().length === 2 &&
@@ -137,11 +137,16 @@ export default function ContractorAgreement() {
       toast.error("Debes firmar antes de enviar.");
       return;
     }
+    if (!tinValid) {
+      toast.error("Tu TIN no tiene un formato válido para el tipo seleccionado.");
+      return;
+    }
     try {
       await sign({
         legalName: form.legalName.trim(),
         businessName: form.businessName.trim() || undefined,
         taxClassification: form.taxClassification,
+        tinType: form.tinType,
         taxIdFull: form.taxIdFull.replace(/\D/g, ""),
         addressLine1: form.addressLine1.trim(),
         addressLine2: form.addressLine2.trim() || undefined,
