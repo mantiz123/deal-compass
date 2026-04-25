@@ -42,7 +42,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           language?: string
-          organization_id: string
+          organization_id?: string
           scenario_summary?: string | null
           seller_persona: string
           status?: string
@@ -129,7 +129,7 @@ export type Database = {
           max_repair_level?: string | null
           min_arv?: number | null
           notes?: string | null
-          organization_id: string
+          organization_id?: string
           phone?: string | null
           preferred_cities?: string[] | null
           preferred_discount_percent?: number | null
@@ -354,7 +354,7 @@ export type Database = {
           contract_id: string
           id?: string
           ip_address?: string | null
-          organization_id: string
+          organization_id?: string
           signature_image?: string | null
           signed_at?: string
           signer_email?: string | null
@@ -418,7 +418,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           lead_id: string
-          organization_id: string
+          organization_id?: string
           pdf_url?: string | null
           seller_email?: string | null
           seller_phone?: string | null
@@ -484,7 +484,7 @@ export type Database = {
           id?: string
           lead_id: string
           opened_at?: string | null
-          organization_id: string
+          organization_id?: string
           response?: string | null
           sent_at?: string
         }
@@ -541,7 +541,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
-          organization_id: string
+          organization_id?: string
           trigger_status: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -586,7 +586,7 @@ export type Database = {
           id?: string
           interaction_type: string
           lead_id: string
-          organization_id: string
+          organization_id?: string
           sentiment?: string | null
         }
         Update: {
@@ -645,7 +645,7 @@ export type Database = {
           lead_data?: Json | null
           lead_id?: string | null
           notes?: string | null
-          organization_id: string
+          organization_id?: string
           property_address?: string | null
           property_city?: string | null
           reason: string
@@ -694,7 +694,7 @@ export type Database = {
           file_type?: string | null
           id?: string
           lead_id: string
-          organization_id: string
+          organization_id?: string
           uploaded_by?: string | null
         }
         Update: {
@@ -764,7 +764,7 @@ export type Database = {
           listing_price?: number | null
           next_follow_up_at?: string | null
           offer_amount?: number | null
-          organization_id: string
+          organization_id?: string
           piw_score?: number | null
           piw_score_factors?: Json | null
           property_id: string
@@ -951,7 +951,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           notes?: string | null
-          organization_id: string
+          organization_id?: string
           paddle_customer_id?: string | null
           paddle_transaction_id?: string | null
           paid_at?: string | null
@@ -1018,7 +1018,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           notes?: string | null
-          organization_id: string
+          organization_id?: string
           payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           realtor_id?: string | null
@@ -1243,7 +1243,7 @@ export type Database = {
           mortgage_balance?: number | null
           neighborhood_vacancy_rate?: number | null
           notes?: string | null
-          organization_id: string
+          organization_id?: string
           owner_2_name?: string | null
           owner_email?: string | null
           owner_email_2?: string | null
@@ -1431,7 +1431,7 @@ export type Database = {
           offer_min?: number | null
           offer_optimal?: number | null
           opportunity_score?: number | null
-          organization_id: string
+          organization_id?: string
           property_id: string
           risk_level?: string | null
         }
@@ -1503,7 +1503,7 @@ export type Database = {
           distance_miles?: number | null
           id?: string
           notes?: string | null
-          organization_id: string
+          organization_id?: string
           price_per_sqft?: number | null
           property_id: string
           sale_date?: string | null
@@ -1564,7 +1564,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           is_primary?: boolean
-          organization_id: string
+          organization_id?: string
           property_id: string
           uploaded_by?: string | null
         }
@@ -1618,7 +1618,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           notes?: string | null
-          organization_id: string
+          organization_id?: string
           phone?: string | null
           updated_at?: string
           user_id?: string | null
@@ -1676,7 +1676,7 @@ export type Database = {
           lead_id: string
           main_pain: string
           notes?: string | null
-          organization_id: string
+          organization_id?: string
           our_offer_discussed?: number | null
           previous_piw_score?: number | null
           price_flexibility: Database["public"]["Enums"]["price_flexibility"]
@@ -1750,7 +1750,7 @@ export type Database = {
           elevenlabs_conversation_id?: string | null
           final_offer?: number | null
           id?: string
-          organization_id: string
+          organization_id?: string
           outcome?: string | null
           persona: string
           raw_result_tag?: string | null
@@ -1845,6 +1845,7 @@ export type Database = {
       }
     }
     Functions: {
+      get_default_org_id: { Args: never; Returns: string }
       get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
       has_role: {
         Args: {
