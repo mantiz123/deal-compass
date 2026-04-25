@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertErr || !demoRow) throw new Error(`Failed to create demo row: ${insertErr?.message}`);
-    demoId = demoRow.id;
+    demoId = demoRow.id as string;
 
     // 1. Generar diálogo con Gemini
     console.log(`[demo ${demoId}] Generating dialogue...`);
@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
         duration_seconds: estimatedDuration,
         status: "ready",
       })
-      .eq("id", demoId);
+      .eq("id", demoId as string);
     if (updateErr) throw new Error(`Update failed: ${updateErr.message}`);
 
     console.log(`[demo ${demoId}] ✅ Ready`);
