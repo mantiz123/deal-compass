@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Lock, PlayCircle, Sparkles, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';

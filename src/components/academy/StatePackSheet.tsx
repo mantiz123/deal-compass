@@ -1,19 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, Lock, PlayCircle, Clock, Sparkles, MapPin } from 'lucide-react';
-import { useStatePackLessons, useUserProgress } from '@/hooks/useAcademy';
+import { PlayCircle, Clock, Sparkles, MapPin } from 'lucide-react';
+import { useStatePackLessons } from '@/hooks/useAcademy';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useLesson, useLessonQuiz, useStartLesson, useSubmitQuiz } from '@/hooks/useAcademy';
 import ReactMarkdown from 'react-markdown';
-import { Separator } from '@/components/ui/separator';
-import { Target } from 'lucide-react';
-import { QuizRunner } from './QuizRunner';
-import { cn } from '@/lib/utils';
 
 interface StatePackSheetProps {
   state: {
