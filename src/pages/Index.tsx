@@ -83,14 +83,29 @@ const Index = () => {
               icon={Target}
               iconColor="text-primary"
             />
-            <StatsCard
-              title="Buyers Activos"
-              value={stats?.buyersInNetwork.toString() || "0"}
-              change="En la red de compradores"
-              changeType="neutral"
-              icon={Users}
-              iconColor="text-info"
-            />
+            {showInternalWidgets ? (
+              <StatsCard
+                title="Buyers Activos"
+                value={stats?.buyersInNetwork.toString() || "0"}
+                change="En la red de compradores"
+                changeType="neutral"
+                icon={Users}
+                iconColor="text-info"
+              />
+            ) : (
+              <StatsCard
+                title="En Pipeline"
+                value={(
+                  (stats?.leadsByStatus?.contacto || 0) +
+                  (stats?.leadsByStatus?.bajo_contrato || 0) +
+                  (stats?.leadsByStatus?.cesion || 0)
+                ).toString()}
+                change="Leads activos en seguimiento"
+                changeType="neutral"
+                icon={Users}
+                iconColor="text-info"
+              />
+            )}
             <StatsCard
               title="Deals Activos"
               value={stats?.activeDeals.toString() || "0"}
