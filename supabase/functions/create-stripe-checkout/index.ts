@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { gatewayFetch, type PaddleEnv } from '../_shared/paddle.ts';
+import Stripe from 'npm:stripe@17.5.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,15 +12,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token, environment } = await req.json();
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeKey) throw new Error('STRIPE_SECRET_KEY not configured');
+
+    const { token, returnUrl } = await req.json();
     if (!token) {
       return new Response(JSON.stringify({ error: 'token required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const env: PaddleEnv = environment === 'live' ? 'live' : 'sandbox';
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -47,65 +48,56 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create an ad-hoc transaction with a non-catalog price (custom amount)
-    const body = {
-      items: [
+    const stripe = new Stripe(stripeKey, { apiVersion: '2024-11-20.acacia' });
+    const isTest = stripeKey.startsWith('sk_test_');
+
+    const baseUrl = returnUrl || 'https://goklose.com';
+    const successUrl = `${baseUrl}/pay/${token}?success=true`;
+    const cancelUrl = `${baseUrl}/pay/${token}?canceled=true`;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
         {
-          quantity: 1,
-          price: {
-            description: link.title,
-            name: link.title,
-            tax_mode: 'account_setting',
-            unit_price: {
-              amount: String(link.amount_cents),
-              currency_code: link.currency || 'USD',
-            },
-            quantity: { minimum: 1, maximum: 1 },
-            product: {
+          price_data: {
+            currency: (link.currency || 'USD').toLowerCase(),
+            product_data: {
               name: link.title,
-              description: link.description || link.title,
-              tax_category: 'standard',
+              description: link.description || undefined,
             },
+            unit_amount: link.amount_cents,
           },
+          quantity: 1,
         },
       ],
-      collection_mode: 'automatic',
-      custom_data: {
+      customer_email: link.customer_email || undefined,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
         payment_link_id: link.id,
         payment_link_token: link.token,
       },
-      ...(link.customer_email
-        ? { customer: { email: link.customer_email } }
-        : {}),
-    };
-
-    const resp = await gatewayFetch(env, '/transactions', {
-      method: 'POST',
-      body: JSON.stringify(body),
+      payment_intent_data: {
+        metadata: {
+          payment_link_id: link.id,
+          payment_link_token: link.token,
+        },
+      },
     });
 
-    const data = await resp.json();
-
-    if (!resp.ok) {
-      console.error('Paddle transaction error:', JSON.stringify(data));
-      return new Response(JSON.stringify({ error: 'Paddle error', details: data }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const txnId = data.data?.id;
-    if (txnId) {
-      await supabase
-        .from('payment_links')
-        .update({ paddle_transaction_id: txnId, environment: env })
-        .eq('id', link.id);
-    }
+    await supabase
+      .from('payment_links')
+      .update({
+        stripe_session_id: session.id,
+        environment: isTest ? 'sandbox' : 'live',
+      })
+      .eq('id', link.id);
 
     return new Response(
       JSON.stringify({
-        transactionId: txnId,
-        environment: env,
+        url: session.url,
+        sessionId: session.id,
+        environment: isTest ? 'sandbox' : 'live',
         link: {
           title: link.title,
           description: link.description,
@@ -116,7 +108,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (e) {
-    console.error('create-payment-transaction error:', e);
+    console.error('create-stripe-checkout error:', e);
     return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
