@@ -41,6 +41,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { generateCSV, downloadCSV, todayDateString } from "@/lib/csvExport";
+import { Checkbox } from "@/components/ui/checkbox";
+import { BulkActionsBar } from "@/components/leads/BulkActionsBar";
 
 const statusConfig: Record<string, { label: string; variant: "accent" | "warning" | "secondary" | "glow" }> = {
   captacion: { label: "Captación", variant: "secondary" },
@@ -72,6 +74,7 @@ const Leads = () => {
   const [archiveLeadId, setArchiveLeadId] = useState<string | null>(null);
   const [archiveAddress, setArchiveAddress] = useState<string>('');
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const pagination = useServerPagination(25);
   const { data: filterOptions } = useLeadFilterOptions();
