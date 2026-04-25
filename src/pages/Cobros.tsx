@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Plus, Copy, ExternalLink, Link2, CheckCircle, Clock, XCircle } from "lucide-react";
 
+const PUBLIC_BASE_URL = "https://goklose.com";
 
 type PaymentLink = {
   id: string;
