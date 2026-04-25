@@ -31,6 +31,8 @@ import {
   type TrainingSession,
 } from '@/hooks/useTrainingSessions';
 import { TrainingResultsPanel } from '@/components/leads/TrainingResultsPanel';
+import { SkillBreakdown } from '@/components/leads/SkillBreakdown';
+import { TrainingAudioPlayer } from '@/components/leads/TrainingAudioPlayer';
 import { VoiceAgentSheet } from '@/components/leads/VoiceAgentSheet';
 
 function formatDuration(seconds: number) {
@@ -256,6 +258,15 @@ export default function Training() {
                 would_close={selected.would_close}
                 avgScore={avgScore}
               />
+
+              {selected.skill_scores && (
+                <SkillBreakdown
+                  skills={selected.skill_scores}
+                  coachingSummary={selected.coaching_summary}
+                />
+              )}
+
+              <TrainingAudioPlayer conversationId={selected.elevenlabs_conversation_id} />
 
               <Card>
                 <div className="p-3 border-b">

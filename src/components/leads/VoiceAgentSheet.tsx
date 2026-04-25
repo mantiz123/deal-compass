@@ -18,8 +18,12 @@ import {
   useTrainingStats,
   parseTrainingResult,
   analyzeTrainingCallWithAI,
+  deepAnalyzeTraining,
+  type TrainingDifficulty,
+  type DeepAnalysisResult,
 } from '@/hooks/useTrainingSessions';
 import { TrainingResultsPanel } from './TrainingResultsPanel';
+import { SkillBreakdown } from './SkillBreakdown';
 
 interface VoiceAgentSheetProps {
   lead: Lead | null;
@@ -51,11 +55,14 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
   const { toast } = useToast();
   const [personality, setPersonality] = useState<Personality>('sarah');
   const [trainingMode, setTrainingMode] = useState(false);
+  const [difficulty, setDifficulty] = useState<TrainingDifficulty>('medium');
   const [isStarting, setIsStarting] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
   const [negotiationCtx, setNegotiationCtx] = useState<{ mao: number; min_offer: number; arv: number } | null>(null);
   const [trainingResult, setTrainingResult] = useState<ReturnType<typeof parseTrainingResult> | null>(null);
+  const [deepAnalysis, setDeepAnalysis] = useState<DeepAnalysisResult | null>(null);
+  const [isAnalyzingDeep, setIsAnalyzingDeep] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const createTrainingSession = useCreateTrainingSession();
@@ -66,6 +73,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
   const callStartRef = useRef<number | null>(null);
   const personalityRef = useRef<Personality>('sarah');
   const trainingModeRef = useRef<boolean>(false);
+  const difficultyRef = useRef<TrainingDifficulty>('medium');
   const escalationsRef = useRef<{ approvals: number; rejections: number; dnc: boolean }>({ approvals: 0, rejections: 0, dnc: false });
   const leadRef = useRef<Lead | null>(null);
   const conversationIdRef = useRef<string | null>(null);
@@ -73,6 +81,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
   useEffect(() => { personalityRef.current = personality; }, [personality]);
   useEffect(() => { trainingModeRef.current = trainingMode; }, [trainingMode]);
+  useEffect(() => { difficultyRef.current = difficulty; }, [difficulty]);
   useEffect(() => { leadRef.current = lead; }, [lead]);
 
   const persistCallToTimeline = useCallback(async () => {
@@ -156,12 +165,27 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
 
     // ElevenLabs conversation ID was captured on connect
     const elevenLabsConvId = conversationIdRef.current;
+    const currentDifficulty = difficultyRef.current;
+
+    // 3. Run deep skill analysis in parallel (non-blocking for the basic save)
+    let deep: DeepAnalysisResult | null = null;
+    if (entries.length >= 4) {
+      setIsAnalyzingDeep(true);
+      try {
+        deep = await deepAnalyzeTraining(fullText, result.persona, currentDifficulty);
+        if (deep) setDeepAnalysis(deep);
+      } catch (e) {
+        console.error('Deep analysis error:', e);
+      } finally {
+        setIsAnalyzingDeep(false);
+      }
+    }
 
     try {
       await createTrainingSession.mutateAsync({
         persona: result.persona,
         outcome: result.outcome,
-        agent_score: result.agent_score,
+        agent_score: deep?.overall_score ?? result.agent_score,
         strengths: result.strengths,
         weaknesses: result.weaknesses,
         final_offer: result.final_offer,
@@ -170,11 +194,15 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
         transcript: entries,
         elevenlabs_conversation_id: elevenLabsConvId,
         raw_result_tag: result.raw_tag,
+        difficulty: currentDifficulty,
+        skill_scores: deep?.skill_scores ?? null,
+        coaching_summary: deep?.coaching_summary ?? null,
       });
 
-      if (result.agent_score !== null) {
+      const finalScore = deep?.overall_score ?? result.agent_score;
+      if (finalScore !== null && finalScore !== undefined) {
         toast({
-          title: `🎓 Score: ${result.agent_score}/100${usedFallback ? ' (IA)' : ''}`,
+          title: `🎓 Score: ${finalScore}/100${usedFallback ? ' (IA)' : ''}`,
           description: result.would_close ? '¡Cerraste el deal!' : 'Sigue practicando',
         });
       } else {
@@ -195,6 +223,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
       escalationsRef.current = { approvals: 0, rejections: 0, dnc: false };
       conversationIdRef.current = null;
       setTrainingResult(null);
+      setDeepAnalysis(null);
       // Try to capture conversation ID right after connect
       setTimeout(() => {
         try {
@@ -281,6 +310,8 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
       setPendingApproval(null);
       setNegotiationCtx(null);
       setTrainingResult(null);
+      setDeepAnalysis(null);
+      setIsAnalyzingDeep(false);
     }
   }, [open]);
 
@@ -289,11 +320,12 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     if (!trainingMode && !lead) return;
     setIsStarting(true);
     setTrainingResult(null);
+    setDeepAnalysis(null);
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
       const invokeBody = trainingMode
-        ? { mode: 'training' }
+        ? { mode: 'training', difficulty }
         : { mode: 'live', lead_id: lead!.id, personality };
 
       const { data, error } = await supabase.functions.invoke('elevenlabs-conversation-token', {
@@ -341,7 +373,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     } finally {
       setIsStarting(false);
     }
-  }, [lead, personality, trainingMode, conversation, toast]);
+  }, [lead, personality, trainingMode, difficulty, conversation, toast]);
 
   const endCall = useCallback(async () => {
     await conversation.endSession();
@@ -413,6 +445,36 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
                   onCheckedChange={setTrainingMode}
                 />
               </div>
+            </Card>
+          )}
+
+          {/* Difficulty selector (training mode, before call) */}
+          {!isConnected && trainingMode && (
+            <Card variant="glass" className="p-3">
+              <Label className="text-sm font-medium mb-2 block">Dificultad</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['easy', 'medium', 'hard'] as TrainingDifficulty[]).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDifficulty(d)}
+                    className={`px-3 py-2 rounded-md border text-xs font-medium capitalize transition-colors ${
+                      difficulty === d
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:bg-muted'
+                    }`}
+                  >
+                    {d === 'easy' && '😊 Fácil'}
+                    {d === 'medium' && '😐 Medio'}
+                    {d === 'hard' && '🔥 Difícil'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {difficulty === 'easy' && 'Seller cooperativo, pocas objeciones.'}
+                {difficulty === 'medium' && 'Seller realista, objeciones estándar.'}
+                {difficulty === 'hard' && 'Seller agresivo, múltiples objeciones, precio alto.'}
+              </p>
             </Card>
           )}
 
@@ -544,12 +606,28 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
             <TrainingResultsPanel
               persona={trainingResult.persona}
               outcome={trainingResult.outcome}
-              agent_score={trainingResult.agent_score}
+              agent_score={deepAnalysis?.overall_score ?? trainingResult.agent_score}
               strengths={trainingResult.strengths}
               weaknesses={trainingResult.weaknesses}
               final_offer={trainingResult.final_offer}
               would_close={trainingResult.would_close}
               avgScore={trainingStats?.avgScore}
+            />
+          )}
+
+          {/* Deep Skill Analysis (post-call) */}
+          {isAnalyzingDeep && !isConnected && (
+            <Card variant="glass" className="p-3">
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Analizando skills con IA...
+              </p>
+            </Card>
+          )}
+          {deepAnalysis && !isConnected && (
+            <SkillBreakdown
+              skills={deepAnalysis.skill_scores}
+              coachingSummary={deepAnalysis.coaching_summary}
             />
           )}
 

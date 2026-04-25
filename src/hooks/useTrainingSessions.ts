@@ -9,6 +9,16 @@ export type TrainingPersona =
   | 'CONFUSED_ELDERLY'
   | 'UNKNOWN';
 
+export type TrainingDifficulty = 'easy' | 'medium' | 'hard';
+
+export interface SkillScores {
+  rapport: number;
+  discovery: number;
+  objection_handling: number;
+  pricing_discipline: number;
+  closing: number;
+}
+
 export interface TrainingSession {
   id: string;
   user_id: string;
@@ -24,6 +34,10 @@ export interface TrainingSession {
   elevenlabs_conversation_id: string | null;
   raw_result_tag: string | null;
   created_at: string;
+  difficulty?: TrainingDifficulty | null;
+  skill_scores?: SkillScores | null;
+  coaching_summary?: string | null;
+  audio_url?: string | null;
 }
 
 export interface CreateTrainingSessionInput {
@@ -38,6 +52,9 @@ export interface CreateTrainingSessionInput {
   transcript: any;
   elevenlabs_conversation_id?: string | null;
   raw_result_tag?: string | null;
+  difficulty?: TrainingDifficulty | null;
+  skill_scores?: SkillScores | null;
+  coaching_summary?: string | null;
 }
 
 export function useTrainingSessions() {
@@ -50,7 +67,7 @@ export function useTrainingSessions() {
         .order('created_at', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return (data || []) as TrainingSession[];
+      return (data || []) as unknown as TrainingSession[];
     },
   });
 }
@@ -93,7 +110,7 @@ export function useCreateTrainingSession() {
         .insert({
           user_id: user.id,
           ...input,
-        })
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -198,6 +215,67 @@ export async function analyzeTrainingCallWithAI(transcriptText: string): Promise
     console.error('AI fallback exception:', e);
     return null;
   }
+}
+
+/**
+ * Deep skill-level analysis using Lovable AI. Called automatically after a training
+ * session ends, to populate skill_scores + coaching_summary.
+ */
+export interface DeepAnalysisResult {
+  skill_scores: SkillScores;
+  overall_score: number;
+  coaching_summary: string;
+  best_moment: string;
+  worst_moment: string;
+  next_drill: string;
+}
+
+export async function deepAnalyzeTraining(
+  transcriptText: string,
+  persona: TrainingPersona,
+  difficulty: TrainingDifficulty,
+): Promise<DeepAnalysisResult | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('deep-analyze-training', {
+      body: { transcript: transcriptText, persona, difficulty },
+    });
+    if (error || !data || data.error) {
+      console.error('Deep analysis failed:', error || data?.error);
+      return null;
+    }
+    return data as DeepAnalysisResult;
+  } catch (e) {
+    console.error('Deep analysis exception:', e);
+    return null;
+  }
+}
+
+/**
+ * Hook that fetches the audio MP3 (as a blob URL) for a given conversation_id.
+ * Returns null while loading or if audio is not yet ready.
+ */
+export function useTrainingAudio(conversationId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['training_audio', conversationId],
+    queryFn: async (): Promise<string | null> => {
+      if (!conversationId) return null;
+      const { data, error } = await supabase.functions.invoke('get-training-audio', {
+        body: { conversation_id: conversationId },
+      });
+      if (error) {
+        console.error('Audio fetch error:', error);
+        return null;
+      }
+      // The function returns audio/mpeg bytes; supabase-js wraps it as Blob
+      if (data instanceof Blob) {
+        return URL.createObjectURL(data);
+      }
+      return null;
+    },
+    enabled: !!conversationId,
+    staleTime: 1000 * 60 * 30, // 30 min
+    retry: 1,
+  });
 }
 
 export const PERSONA_LABELS: Record<TrainingPersona, { name: string; emoji: string; color: string }> = {
