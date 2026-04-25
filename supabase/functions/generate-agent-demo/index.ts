@@ -297,17 +297,54 @@ Deno.serve(async (req) => {
     const agentPersona = body.agent_persona as keyof typeof VOICES.agent;
     const sellerPersona = body.seller_persona as keyof typeof VOICES.seller;
     const language = (body.language || "en") as "en" | "es";
+    const requestedOrgId = body.organization_id as string | undefined;
 
     if (!VOICES.agent[agentPersona]) throw new Error("Invalid agent_persona");
     if (!VOICES.seller[sellerPersona]) throw new Error("Invalid seller_persona");
 
     supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Crear registro en estado 'generating'
+    // CRITICAL multi-tenant: resolve organization_id
+    // 1. If client passed organization_id, validate user is a member of it
+    // 2. Otherwise pick the user's first active org (preferring Klose Internal for super admins)
+    let organizationId: string | null = null;
+
+    if (requestedOrgId) {
+      const { data: membership } = await supabaseAdmin
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .eq("organization_id", requestedOrgId)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!membership) {
+        // Allow super admins to operate on any org
+        const { data: isSuper } = await supabaseAdmin
+          .rpc("is_klose_super_admin", { _user_id: user.id });
+        if (!isSuper) throw new Error("User does not belong to requested organization");
+      }
+      organizationId = requestedOrgId;
+    } else {
+      const { data: firstMembership } = await supabaseAdmin
+        .from("organization_members")
+        .select("organization_id, organizations!inner(is_klose_internal)")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .order("joined_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      organizationId = (firstMembership as any)?.organization_id ?? null;
+    }
+
+    if (!organizationId) throw new Error("No organization found for user");
+
+    // Crear registro en estado 'generating' con org explícita
     const { data: demoRow, error: insertErr } = await supabaseAdmin
       .from("agent_demos")
       .insert({
         created_by: user.id,
+        organization_id: organizationId,
         agent_persona: agentPersona,
         seller_persona: sellerPersona,
         language,

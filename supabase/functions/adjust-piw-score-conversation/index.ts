@@ -144,11 +144,25 @@ Responde EXACTAMENTE en este formato JSON:
       userId = user?.id;
     }
 
-    // Save the conversation record
+    // CRITICAL multi-tenant: derive organization_id from the lead
+    // (each lead belongs to exactly one org via RLS)
+    const { data: leadRow, error: leadFetchErr } = await supabase
+      .from('leads')
+      .select('organization_id')
+      .eq('id', leadId)
+      .single();
+
+    if (leadFetchErr || !leadRow?.organization_id) {
+      console.error('Could not resolve organization_id from lead:', leadFetchErr);
+      throw new Error('Lead not found or missing organization');
+    }
+
+    // Save the conversation record with explicit org_id
     const { data: conversationRecord, error: insertError } = await supabase
       .from('seller_conversations')
       .insert({
         lead_id: leadId,
+        organization_id: leadRow.organization_id,
         urgency_level: urgencyLevel,
         main_pain: mainPain,
         key_objection: keyObjection,
