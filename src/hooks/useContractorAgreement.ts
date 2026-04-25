@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ICA_VERSION } from "@/lib/icaTemplate";
+import { ICA_VERSION, type TinType } from "@/lib/icaTemplate";
 import { Database } from "@/integrations/supabase/types";
 
 type TaxClassification = Database["public"]["Enums"]["tax_classification"];
@@ -10,7 +10,8 @@ export interface ICASignPayload {
   legalName: string;
   businessName?: string;
   taxClassification: TaxClassification;
-  taxIdFull: string; // SSN/EIN — sent to DB only at submit
+  tinType: TinType;
+  taxIdFull: string; // SSN/ITIN/EIN — sent to DB only at submit
   addressLine1: string;
   addressLine2?: string;
   city: string;
@@ -58,6 +59,7 @@ export function useContractorAgreement() {
           legal_name: payload.legalName,
           business_name: payload.businessName || null,
           tax_classification: payload.taxClassification,
+          tin_type: payload.tinType,
           tax_id_full: payload.taxIdFull,
           tax_id_last4: taxIdLast4,
           address_line1: payload.addressLine1,
@@ -76,6 +78,16 @@ export function useContractorAgreement() {
         .single();
 
       if (error) throw error;
+
+      // Fire-and-await PDF generation (non-blocking on failure)
+      try {
+        await supabase.functions.invoke("generate-ica-pdf", {
+          body: { agreement_id: data.id },
+        });
+      } catch (pdfErr) {
+        console.error("[ICA] PDF generation failed (non-blocking):", pdfErr);
+      }
+
       return data;
     },
     onSuccess: () => {

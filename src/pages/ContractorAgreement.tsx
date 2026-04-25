@@ -2,7 +2,14 @@ import { useState, useMemo } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContractorAgreement } from "@/hooks/useContractorAgreement";
-import { buildICASections, TAX_CLASSIFICATION_LABELS } from "@/lib/icaTemplate";
+import {
+  buildICASections,
+  TAX_CLASSIFICATION_LABELS,
+  TIN_TYPE_LABELS,
+  validateTinFormat,
+  formatTinDisplay,
+  type TinType,
+} from "@/lib/icaTemplate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +32,7 @@ interface FormState {
   legalName: string;
   businessName: string;
   taxClassification: TaxClassification;
+  tinType: TinType;
   taxIdFull: string;
   addressLine1: string;
   addressLine2: string;
@@ -39,6 +47,7 @@ const initialForm = (defaultEmail = ""): FormState => ({
   legalName: "",
   businessName: "",
   taxClassification: "individual",
+  tinType: "ssn",
   taxIdFull: "",
   addressLine1: "",
   addressLine2: "",
@@ -64,6 +73,7 @@ export default function ContractorAgreement() {
         legalName: form.legalName || "[Nombre Legal]",
         businessName: form.businessName || undefined,
         taxClassification: form.taxClassification,
+        tinType: form.tinType,
         taxIdLast4: form.taxIdFull.replace(/\D/g, "").slice(-4) || "XXXX",
         addressLine1: form.addressLine1 || "[Dirección]",
         addressLine2: form.addressLine2 || undefined,
@@ -78,11 +88,31 @@ export default function ContractorAgreement() {
     [form]
   );
 
+  const tinDigits = form.taxIdFull.replace(/\D/g, "");
+  const tinValid = tinDigits.length === 9 && validateTinFormat(tinDigits, form.tinType);
+  const tinTouched = tinDigits.length >= 9;
+
   // Early returns AFTER hooks
   if (!authLoading && !user) {
     return <Navigate to="/auth" replace />;
   }
   if (!isLoading && hasSigned && agreement) {
+    const handleDownload = async () => {
+      if (!agreement.signed_pdf_path) {
+        toast.info("PDF aún se está generando, intenta en unos segundos.");
+        return;
+      }
+      const { data, error } = await import("@/integrations/supabase/client").then(({ supabase }) =>
+        supabase.storage
+          .from("contractor-agreements")
+          .createSignedUrl(agreement.signed_pdf_path!, 60)
+      );
+      if (error || !data?.signedUrl) {
+        toast.error("No se pudo generar el enlace de descarga.");
+        return;
+      }
+      window.open(data.signedUrl, "_blank");
+    };
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-lg w-full">
@@ -100,9 +130,19 @@ export default function ContractorAgreement() {
             <p className="text-sm text-muted-foreground">
               Versión {agreement.agreement_version} · TIN: XXX-XX-{agreement.tax_id_last4}
             </p>
-            <Button className="w-full" onClick={() => navigate("/dashboard")}>
-              Ir al Dashboard
-            </Button>
+            {agreement.signed_pdf_hash && (
+              <p className="text-[10px] text-muted-foreground font-mono break-all">
+                SHA-256: {agreement.signed_pdf_hash}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={handleDownload}>
+                <FileText className="h-4 w-4 mr-1" /> Descargar PDF
+              </Button>
+              <Button className="flex-1" onClick={() => navigate("/dashboard")}>
+                Ir al Dashboard
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -111,7 +151,7 @@ export default function ContractorAgreement() {
 
   const infoComplete =
     form.legalName.trim().length >= 3 &&
-    form.taxIdFull.replace(/\D/g, "").length >= 4 &&
+    tinValid &&
     form.addressLine1.trim().length > 0 &&
     form.city.trim().length > 0 &&
     form.state.trim().length === 2 &&
@@ -123,11 +163,16 @@ export default function ContractorAgreement() {
       toast.error("Debes firmar antes de enviar.");
       return;
     }
+    if (!tinValid) {
+      toast.error("Tu TIN no tiene un formato válido para el tipo seleccionado.");
+      return;
+    }
     try {
       await sign({
         legalName: form.legalName.trim(),
         businessName: form.businessName.trim() || undefined,
         taxClassification: form.taxClassification,
+        tinType: form.tinType,
         taxIdFull: form.taxIdFull.replace(/\D/g, ""),
         addressLine1: form.addressLine1.trim(),
         addressLine2: form.addressLine2.trim() || undefined,
@@ -221,15 +266,57 @@ export default function ContractorAgreement() {
                 </div>
 
                 <div>
-                  <Label htmlFor="taxIdFull">TIN / SSN / EIN *</Label>
+                  <Label htmlFor="tinType">Tipo de identificación fiscal *</Label>
+                  <Select
+                    value={form.tinType}
+                    onValueChange={(v) =>
+                      setForm({ ...form, tinType: v as TinType, taxIdFull: "" })
+                    }
+                  >
+                    <SelectTrigger id="tinType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TIN_TYPE_LABELS).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="taxIdFull">
+                    {form.tinType === "ein" ? "EIN" : form.tinType.toUpperCase()} *
+                  </Label>
                   <Input
                     id="taxIdFull"
-                    value={form.taxIdFull}
+                    value={formatTinDisplay(form.taxIdFull, form.tinType)}
                     onChange={(e) => setForm({ ...form, taxIdFull: e.target.value })}
-                    placeholder="123-45-6789 o 12-3456789"
+                    placeholder={form.tinType === "ein" ? "12-3456789" : "123-45-6789"}
                     maxLength={11}
+                    aria-invalid={tinTouched && !tinValid}
+                    className={tinTouched && !tinValid ? "border-destructive" : ""}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Solo se mostrarán los últimos 4 dígitos.</p>
+                  {tinTouched && !tinValid ? (
+                    <p className="text-xs text-destructive mt-1">
+                      Formato inválido para {form.tinType.toUpperCase()}.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Solo se mostrarán los últimos 4 dígitos. Tu data está cifrada.
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <Alert className="border-primary/30 bg-primary/5">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs leading-relaxed">
+                      <strong className="text-foreground">Aceptamos SSN, ITIN o EIN.</strong> Si no tienes SSN, puedes obtener un{" "}
+                      <strong className="text-foreground">ITIN</strong> gratis con el IRS llenando el formulario W-7. Tu status migratorio es{" "}
+                      <strong className="text-foreground">irrelevante</strong> mientras tengas un TIN válido — operas como contratista independiente, no empleado.
+                    </AlertDescription>
+                  </Alert>
                 </div>
 
                 <div className="md:col-span-2">
