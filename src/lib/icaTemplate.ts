@@ -11,10 +11,57 @@
 
 export const ICA_VERSION = "v1.0";
 
+export type TinType = "ssn" | "itin" | "ein";
+
+export const TIN_TYPE_LABELS: Record<TinType, string> = {
+  ssn: "SSN — Social Security Number",
+  itin: "ITIN — Individual Taxpayer ID (W-7)",
+  ein: "EIN — Employer ID Number",
+};
+
+/**
+ * Validación de formato (solo formato, no validez fiscal):
+ * - SSN: 9 dígitos, no puede empezar por 9 (los que empiezan por 9 son ITIN)
+ * - ITIN: 9 dígitos, empieza por 9, dígito 4 entre 50-65, 70-88, 90-92, 94-99
+ * - EIN: 9 dígitos, primeros 2 son prefijo IRS válido (no validamos prefijo, solo longitud)
+ */
+export function validateTinFormat(value: string, type: TinType): boolean {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length !== 9) return false;
+  if (type === "ssn") {
+    return digits[0] !== "9" && digits.slice(0, 3) !== "000" && digits.slice(3, 5) !== "00" && digits.slice(5) !== "0000";
+  }
+  if (type === "itin") {
+    if (digits[0] !== "9") return false;
+    const fourth = parseInt(digits.slice(3, 5), 10);
+    return (
+      (fourth >= 50 && fourth <= 65) ||
+      (fourth >= 70 && fourth <= 88) ||
+      (fourth >= 90 && fourth <= 92) ||
+      (fourth >= 94 && fourth <= 99)
+    );
+  }
+  // EIN: 9 dígitos, no todos ceros
+  return digits !== "000000000";
+}
+
+export function formatTinDisplay(value: string, type: TinType): string {
+  const d = value.replace(/\D/g, "").slice(0, 9);
+  if (type === "ein") {
+    // XX-XXXXXXX
+    return d.length > 2 ? `${d.slice(0, 2)}-${d.slice(2)}` : d;
+  }
+  // SSN/ITIN: XXX-XX-XXXX
+  if (d.length <= 3) return d;
+  if (d.length <= 5) return `${d.slice(0, 3)}-${d.slice(3)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
+}
+
 export interface ICATemplateData {
   legalName: string;
   businessName?: string;
   taxClassification: string;
+  tinType: TinType;
   taxIdLast4: string;
   addressLine1: string;
   addressLine2?: string;
