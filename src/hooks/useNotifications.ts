@@ -1,15 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export interface AppNotification {
   id: string;
-  type: 'cleanup_archived' | 'cleanup_deleted' | 'stale_warning' | 'info';
+  type: 'cleanup_archived' | 'cleanup_deleted' | 'stale_warning' | 'info' | 'kcfy_request';
   title: string;
   message: string;
   timestamp: string;
   read: boolean;
   meta?: Record<string, any>;
+  href?: string;
 }
 
 /**
@@ -18,9 +20,10 @@ export interface AppNotification {
  */
 export function useNotifications() {
   const { user } = useAuth();
+  const { isSuperAdmin } = useOrganization();
 
   return useQuery({
-    queryKey: ['app-notifications', user?.id],
+    queryKey: ['app-notifications', user?.id, isSuperAdmin],
     enabled: !!user,
     queryFn: async (): Promise<AppNotification[]> => {
       const notifications: AppNotification[] = [];
@@ -90,6 +93,49 @@ export function useNotifications() {
           },
         });
       }
+
+      // 3. KCFY requests — solo super admins
+      if (isSuperAdmin) {
+        const kcfySince = new Date();
+        kcfySince.setDate(kcfySince.getDate() - 14);
+
+        const { data: kcfyReqs } = await supabase
+          .from('kcfy_requests')
+          .select(`
+            id, status, priority, notes, deal_value_estimate, created_at,
+            lead:leads!inner(
+              id, piw_score,
+              property:properties!inner(address, city, state)
+            )
+          `)
+          .in('status', ['pending'])
+          .gte('created_at', kcfySince.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(15);
+
+        for (const req of (kcfyReqs || []) as any[]) {
+          const prop = req.lead?.property;
+          const priorityIcon = req.priority === 'urgent' ? '🚨' : req.priority === 'high' ? '⚡' : '📩';
+          notifications.push({
+            id: `kcfy-${req.id}`,
+            type: 'kcfy_request',
+            title: `${priorityIcon} Nueva solicitud KCFY (${req.priority.toUpperCase()})`,
+            message: `${prop?.address || 'Propiedad'}, ${prop?.city || ''} — K-Score ${req.lead?.piw_score ?? '—'}${req.deal_value_estimate ? ` · ~$${Math.round(req.deal_value_estimate).toLocaleString()}` : ''}`,
+            timestamp: req.created_at,
+            read: false,
+            href: '/admin/kcfy',
+            meta: {
+              priority: req.priority,
+              piw_score: req.lead?.piw_score,
+              deal_value: req.deal_value_estimate,
+              notes: req.notes,
+            },
+          });
+        }
+      }
+
+      // Sort by timestamp desc
+      notifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       return notifications;
     },

@@ -21,11 +21,15 @@ import {
   Link2,
   BookOpen,
   GraduationCap,
+  Briefcase,
   Menu,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOrganization } from "@/contexts/OrganizationContext";
+import { useKCFYRequests } from "@/hooks/useKCFYRequests";
+import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import kloseLogo from "@/assets/klose-logo.png";
 
@@ -53,6 +57,9 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { signOut } = useAuth();
+  const { isSuperAdmin } = useOrganization();
+  const { data: kcfyRequests } = useKCFYRequests(isSuperAdmin ? { status: ['pending'] } : undefined);
+  const pendingKcfy = isSuperAdmin ? (kcfyRequests?.length ?? 0) : 0;
   const isMobile = useIsMobile();
 
   const handleNavClick = () => {
@@ -102,6 +109,40 @@ export function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Super admin only: KCFY panel */}
+        {isSuperAdmin && (
+          <>
+            <div className={cn("mt-4 mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70", collapsed && !isMobile && "text-center")}>
+              {(!collapsed || isMobile) ? 'Klose Admin' : '•'}
+            </div>
+            <Link
+              to="/admin/kcfy"
+              onClick={handleNavClick}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 relative",
+                location.pathname === '/admin/kcfy'
+                  ? "bg-primary/10 text-primary shadow-[inset_0_0_20px_hsl(187_85%_53%_/_0.1)]"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              <Briefcase className={cn("h-5 w-5 flex-shrink-0", location.pathname === '/admin/kcfy' && "text-primary")} />
+              {(!collapsed || isMobile) && (
+                <>
+                  <span className="flex-1">KCFY Requests</span>
+                  {pendingKcfy > 0 && (
+                    <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
+                      {pendingKcfy}
+                    </Badge>
+                  )}
+                </>
+              )}
+              {collapsed && !isMobile && pendingKcfy > 0 && (
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
+              )}
+            </Link>
+          </>
+        )}
       </nav>
 
       {/* Bottom section */}
