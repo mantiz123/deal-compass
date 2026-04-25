@@ -786,12 +786,14 @@ export type Database = {
           revoked_reason: string | null
           signature_image: string
           signed_at: string
+          signed_pdf_hash: string | null
           signed_pdf_path: string | null
           signed_pdf_url: string | null
           state: string
           tax_classification: Database["public"]["Enums"]["tax_classification"]
           tax_id_full: string
           tax_id_last4: string
+          tin_type: Database["public"]["Enums"]["tin_type"]
           updated_at: string
           user_agent: string | null
           user_id: string
@@ -818,12 +820,14 @@ export type Database = {
           revoked_reason?: string | null
           signature_image: string
           signed_at?: string
+          signed_pdf_hash?: string | null
           signed_pdf_path?: string | null
           signed_pdf_url?: string | null
           state: string
           tax_classification?: Database["public"]["Enums"]["tax_classification"]
           tax_id_full: string
           tax_id_last4: string
+          tin_type?: Database["public"]["Enums"]["tin_type"]
           updated_at?: string
           user_agent?: string | null
           user_id: string
@@ -850,12 +854,14 @@ export type Database = {
           revoked_reason?: string | null
           signature_image?: string
           signed_at?: string
+          signed_pdf_hash?: string | null
           signed_pdf_path?: string | null
           signed_pdf_url?: string | null
           state?: string
           tax_classification?: Database["public"]["Enums"]["tax_classification"]
           tax_id_full?: string
           tax_id_last4?: string
+          tin_type?: Database["public"]["Enums"]["tin_type"]
           updated_at?: string
           user_agent?: string | null
           user_id?: string
@@ -2580,6 +2586,7 @@ export type Database = {
         | "llc_s"
         | "llc_p"
         | "other"
+      tin_type: "ssn" | "itin" | "ein"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2769,6 +2776,7 @@ export const Constants = {
         "llc_p",
         "other",
       ],
+      tin_type: ["ssn", "itin", "ein"],
     },
   },
 } as const
