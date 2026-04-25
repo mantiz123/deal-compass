@@ -14,6 +14,266 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_enrollments: {
+        Row: {
+          completed_at: string | null
+          current_lesson_id: string | null
+          enrolled_at: string
+          id: string
+          total_xp_earned: number
+          track_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          current_lesson_id?: string | null
+          enrolled_at?: string
+          id?: string
+          total_xp_earned?: number
+          track_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          current_lesson_id?: string | null
+          enrolled_at?: string
+          id?: string
+          total_xp_earned?: number
+          track_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_enrollments_current_lesson_id_fkey"
+            columns: ["current_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "academy_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_enrollments_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "academy_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_lesson_progress: {
+        Row: {
+          completed_at: string | null
+          id: string
+          lesson_id: string
+          started_at: string
+          status: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          lesson_id: string
+          started_at?: string
+          status?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          lesson_id?: string
+          started_at?: string
+          status?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "academy_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_lessons: {
+        Row: {
+          content_markdown: string
+          created_at: string
+          estimated_minutes: number | null
+          id: string
+          is_published: boolean
+          lesson_order: number
+          slug: string
+          summary: string | null
+          title: string
+          track_id: string
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          content_markdown: string
+          created_at?: string
+          estimated_minutes?: number | null
+          id?: string
+          is_published?: boolean
+          lesson_order: number
+          slug: string
+          summary?: string | null
+          title: string
+          track_id: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Update: {
+          content_markdown?: string
+          created_at?: string
+          estimated_minutes?: number | null
+          id?: string
+          is_published?: boolean
+          lesson_order?: number
+          slug?: string
+          summary?: string | null
+          title?: string
+          track_id?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_lessons_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "academy_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_quiz_attempts: {
+        Row: {
+          answers: Json
+          attempted_at: string
+          correct_count: number
+          id: string
+          lesson_id: string
+          passed: boolean
+          score_percent: number
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          attempted_at?: string
+          correct_count: number
+          id?: string
+          lesson_id: string
+          passed: boolean
+          score_percent: number
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          attempted_at?: string
+          correct_count?: number
+          id?: string
+          lesson_id?: string
+          passed?: boolean
+          score_percent?: number
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_quiz_attempts_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "academy_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_quiz_questions: {
+        Row: {
+          correct_index: number
+          created_at: string
+          explanation: string | null
+          id: string
+          lesson_id: string
+          options: Json
+          question: string
+          question_order: number
+        }
+        Insert: {
+          correct_index: number
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          lesson_id: string
+          options: Json
+          question: string
+          question_order?: number
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          lesson_id?: string
+          options?: Json
+          question?: string
+          question_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_quiz_questions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "academy_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_tracks: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_published: boolean
+          level_order: number
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_published?: boolean
+          level_order: number
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_published?: boolean
+          level_order?: number
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agent_demos: {
         Row: {
           agent_persona: string
@@ -1927,6 +2187,10 @@ export type Database = {
     Functions: {
       get_default_org_id: { Args: never; Returns: string }
       get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
+      has_completed_foundations: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
