@@ -27,6 +27,7 @@ import ContractNew from "./pages/ContractNew";
 import ContractSign from "./pages/ContractSign";
 import NotFound from "./pages/NotFound";
 import Cobros from "./pages/Cobros";
+import Training from "./pages/Training";
 import PayCheckout from "./pages/PayCheckout";
 import Terms from "./pages/legal/Terms";
 import Refund from "./pages/legal/Refund";
@@ -64,6 +65,7 @@ const App = () => (
               <Route path="/contracts/new" element={<ContractNew />} />
               <Route path="/sign/:token" element={<ContractSign />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/training" element={<Training />} />
               <Route path="/cobros" element={<Cobros />} />
               <Route path="/pay/:token" element={<PayCheckout />} />
               <Route path="/legal/terms" element={<Terms />} />

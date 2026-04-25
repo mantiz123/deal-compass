@@ -20,6 +20,7 @@ import {
   DollarSign,
   Link2,
   BookOpen,
+  GraduationCap,
   Menu,
   X,
 } from "lucide-react";
@@ -43,6 +44,7 @@ const navigation = [
   { name: "Deals", href: "/deals", icon: FileText },
   { name: "Contratos", href: "/contracts", icon: FileSignature },
   { name: "Properties", href: "/properties", icon: Building2 },
+  { name: "Entrenamiento AI", href: "/training", icon: GraduationCap },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
