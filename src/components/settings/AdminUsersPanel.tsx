@@ -69,7 +69,7 @@ export function AdminUsersPanel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('User approved successfully');
+      toast.success('Closer activado — ya puede acceder a la plataforma');
     },
     onError: (e) => toast.error('Error: ' + e.message),
   });
@@ -84,7 +84,7 @@ export function AdminUsersPanel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('User access revoked');
+      toast.success('Acceso revocado');
     },
     onError: (e) => toast.error('Error: ' + e.message),
   });
