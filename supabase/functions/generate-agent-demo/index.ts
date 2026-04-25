@@ -3,7 +3,6 @@
 // Sintetiza cada turno con ElevenLabs TTS, concatena en un MP3 y lo guarda en Storage.
 // Body: { agent_persona, seller_persona, language }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -135,11 +134,77 @@ Also provide a 1-sentence scenario summary describing the situation.`;
   return { turns: args.turns, scenarioSummary: args.scenario_summary };
 }
 
+// Frame MP3 silencioso (~26ms, MPEG1 Layer3, 44.1kHz, 128kbps, stereo).
+// Repetir N veces produce silencio limpio sin artefactos de header.
+const SILENT_MP3_FRAME_B64 =
+  "//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCA" +
+  "gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA" +
+  "gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA" +
+  "gICAgICAgICAgICAgP////////////////////////////////8A" +
+  "AAA5TEFNRTMuMTAwAc0AAAAAAAAAABSAJAJAQgAAgAAAAnGMHkkk" +
+  "AAAAAAAAAAAAAAAAAAAA";
+
+let SILENT_FRAME: Uint8Array | null = null;
+function getSilentFrame(): Uint8Array {
+  if (SILENT_FRAME) return SILENT_FRAME;
+  const bin = atob(SILENT_MP3_FRAME_B64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  SILENT_FRAME = arr;
+  return arr;
+}
+
+// Genera ~ms de silencio repitiendo el frame base (cada frame ≈ 26ms).
+function generateSilence(ms: number): Uint8Array {
+  const frame = getSilentFrame();
+  const frameMs = 26;
+  const count = Math.max(1, Math.round(ms / frameMs));
+  const out = new Uint8Array(frame.length * count);
+  for (let i = 0; i < count; i++) {
+    out.set(frame, i * frame.length);
+  }
+  return out;
+}
+
+// Velocidad dinámica según persona y emoción (rango ElevenLabs: 0.7-1.2)
+function getSpeedFor(
+  speaker: "agent" | "seller",
+  agentPersona: string,
+  sellerPersona: string
+): number {
+  if (speaker === "agent") {
+    if (agentPersona === "sarah") return 0.96;          // empática, pausada
+    if (agentPersona === "mike") return 1.05;           // directo, enérgico
+    return 1.0;                                         // alex neutral
+  }
+  // Seller varía por nivel de estrés
+  switch (sellerPersona) {
+    case "foreclosure": return 1.08;  // estresado, habla rápido
+    case "motivated":   return 1.02;  // ansioso por vender
+    case "hostile":     return 1.06;  // tono agresivo, rápido
+    case "undecided":   return 0.94;  // duda, pausado
+    case "absentee":    return 0.98;  // pragmático, calmado
+    default:            return 1.0;
+  }
+}
+
+// Pausa entre turnos: más larga tras pregunta del agente (seller piensa)
+function getPauseMs(prevText: string, prevSpeaker: "agent" | "seller"): number {
+  const endsWithQuestion = /\?\s*$/.test(prevText);
+  if (prevSpeaker === "agent" && endsWithQuestion) return 750; // seller piensa
+  if (prevSpeaker === "agent") return 500;
+  if (endsWithQuestion) return 450;
+  return 380;
+}
+
 async function synthesizeTurn(
   text: string,
   voiceId: string,
   apiKey: string,
-  language: "en" | "es"
+  language: "en" | "es",
+  speed: number,
+  prevTurnText?: string,
+  nextTurnText?: string
 ): Promise<Uint8Array> {
   // Inglés → turbo_v2_5 (más natural y expresivo en EN-US)
   // Español → multilingual_v2 (único que soporta ES bien)
@@ -147,8 +212,17 @@ async function synthesizeTurn(
 
   // Ajustes más expresivos para sonar humano
   const voiceSettings = language === "en"
-    ? { stability: 0.35, similarity_boost: 0.8, style: 0.65, use_speaker_boost: true, speed: 1.0 }
-    : { stability: 0.5, similarity_boost: 0.75, style: 0.4, use_speaker_boost: true, speed: 1.0 };
+    ? { stability: 0.35, similarity_boost: 0.8, style: 0.65, use_speaker_boost: true, speed }
+    : { stability: 0.5, similarity_boost: 0.75, style: 0.4, use_speaker_boost: true, speed };
+
+  // Request stitching: contexto previo y siguiente para prosodia continua
+  const body: Record<string, unknown> = {
+    text,
+    model_id: modelId,
+    voice_settings: voiceSettings,
+  };
+  if (prevTurnText) body.previous_text = prevTurnText.slice(-300);
+  if (nextTurnText) body.next_text = nextTurnText.slice(0, 300);
 
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
@@ -158,11 +232,7 @@ async function synthesizeTurn(
         "xi-api-key": apiKey,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        text,
-        model_id: modelId,
-        voice_settings: voiceSettings,
-      }),
+      body: JSON.stringify(body),
     }
   );
 
@@ -257,15 +327,26 @@ Deno.serve(async (req) => {
     );
     console.log(`[demo ${demoId}] Generated ${turns.length} turns`);
 
-    // 2. Sintetizar cada turno con la voz correspondiente (secuencial para evitar rate limits)
+    // 2. Sintetizar cada turno con voz, velocidad dinámica y request stitching.
+    //    Insertar silencios MP3 reales entre turnos para simular respiración/pensamiento.
     const audioChunks: Uint8Array[] = [];
     for (let i = 0; i < turns.length; i++) {
       const turn = turns[i];
       const voiceId = turn.speaker === "agent"
         ? VOICES.agent[agentPersona]
         : VOICES.seller[sellerPersona];
-      console.log(`[demo ${demoId}] Synthesizing turn ${i + 1}/${turns.length} (${turn.speaker})`);
-      const chunk = await synthesizeTurn(turn.text, voiceId, ELEVENLABS_API_KEY, language);
+      const speed = getSpeedFor(turn.speaker, agentPersona, sellerPersona);
+      const prevText = i > 0 ? turns[i - 1].text : undefined;
+      const nextText = i < turns.length - 1 ? turns[i + 1].text : undefined;
+      console.log(`[demo ${demoId}] Synthesizing turn ${i + 1}/${turns.length} (${turn.speaker}, speed=${speed})`);
+      const chunk = await synthesizeTurn(
+        turn.text, voiceId, ELEVENLABS_API_KEY, language, speed, prevText, nextText
+      );
+      // Pausa ANTES del turno actual (excepto el primero) — silencio MP3 real
+      if (i > 0) {
+        const pauseMs = getPauseMs(turns[i - 1].text, turns[i - 1].speaker);
+        audioChunks.push(generateSilence(pauseMs));
+      }
       audioChunks.push(chunk);
     }
 
