@@ -27,3 +27,6 @@ verify_jwt = false
 [functions.analyze-training-call]
 verify_jwt = true
 
+[functions.generate-agent-demo]
+verify_jwt = true
+
