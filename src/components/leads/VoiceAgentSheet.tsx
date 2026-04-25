@@ -373,7 +373,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     } finally {
       setIsStarting(false);
     }
-  }, [lead, personality, trainingMode, conversation, toast]);
+  }, [lead, personality, trainingMode, difficulty, conversation, toast]);
 
   const endCall = useCallback(async () => {
     await conversation.endSession();
