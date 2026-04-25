@@ -448,6 +448,36 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
             </Card>
           )}
 
+          {/* Difficulty selector (training mode, before call) */}
+          {!isConnected && trainingMode && (
+            <Card variant="glass" className="p-3">
+              <Label className="text-sm font-medium mb-2 block">Dificultad</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['easy', 'medium', 'hard'] as TrainingDifficulty[]).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDifficulty(d)}
+                    className={`px-3 py-2 rounded-md border text-xs font-medium capitalize transition-colors ${
+                      difficulty === d
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:bg-muted'
+                    }`}
+                  >
+                    {d === 'easy' && '😊 Fácil'}
+                    {d === 'medium' && '😐 Medio'}
+                    {d === 'hard' && '🔥 Difícil'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {difficulty === 'easy' && 'Seller cooperativo, pocas objeciones.'}
+                {difficulty === 'medium' && 'Seller realista, objeciones estándar.'}
+                {difficulty === 'hard' && 'Seller agresivo, múltiples objeciones, precio alto.'}
+              </p>
+            </Card>
+          )}
+
           {/* Training Mode Banner (during call) */}
           {isConnected && trainingMode && (
             <Card className="p-3 border-2 border-primary bg-primary/10">
