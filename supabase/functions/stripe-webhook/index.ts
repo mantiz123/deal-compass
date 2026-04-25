@@ -1,8 +1,8 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
-import Stripe from 'npm:stripe@18';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
+import Stripe from 'https://esm.sh/stripe@18.5.0?target=denonext';
 
-let _supabase: ReturnType<typeof createClient> | null = null;
-function getSupabase() {
+let _supabase: any = null;
+function getSupabase(): any {
   if (!_supabase) {
     _supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -41,16 +41,18 @@ Deno.serve(async (req) => {
     return new Response('Invalid signature', { status: 400 });
   }
 
+  console.log(`[stripe-webhook] event=${event.type} id=${event.id} env=${env}`);
+
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const linkId = session.metadata?.payment_link_id;
         if (!linkId) {
-          console.warn('checkout.session.completed without payment_link_id');
+          console.warn('checkout.session.completed without payment_link_id', session.id);
           break;
         }
-        await getSupabase()
+        const { error } = await getSupabase()
           .from('payment_links')
           .update({
             status: 'paid',
@@ -62,6 +64,8 @@ Deno.serve(async (req) => {
             environment: env,
           })
           .eq('id', linkId);
+        if (error) console.error('Failed to mark paid:', error);
+        else console.log(`[stripe-webhook] payment_link ${linkId} -> paid`);
         break;
       }
       case 'checkout.session.expired':
@@ -69,14 +73,27 @@ Deno.serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         const linkId = session.metadata?.payment_link_id;
         if (!linkId) break;
-        await getSupabase()
+        // Idempotency: don't downgrade an already-paid link
+        const { data: existing } = await getSupabase()
           .from('payment_links')
-          .update({ status: 'failed', environment: env })
+          .select('status')
+          .eq('id', linkId)
+          .maybeSingle();
+        if (existing?.status === 'paid') {
+          console.log(`[stripe-webhook] ignore ${event.type} for already-paid link ${linkId}`);
+          break;
+        }
+        const newStatus = event.type === 'checkout.session.expired' ? 'expired' : 'failed';
+        const { error } = await getSupabase()
+          .from('payment_links')
+          .update({ status: newStatus, environment: env })
           .eq('id', linkId);
+        if (error) console.error(`Failed to mark ${newStatus}:`, error);
+        else console.log(`[stripe-webhook] payment_link ${linkId} -> ${newStatus}`);
         break;
       }
       default:
-        console.log('Unhandled Stripe event:', event.type);
+        console.log('[stripe-webhook] unhandled event:', event.type);
     }
 
     return new Response(JSON.stringify({ received: true }), {
@@ -84,7 +101,7 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (e) {
-    console.error('Stripe webhook handler error:', e);
+    console.error('[stripe-webhook] handler error:', e);
     return new Response('Webhook handler error', { status: 500 });
   }
 });
