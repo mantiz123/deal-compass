@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type Buyer = Tables<'buyers'>;
@@ -12,12 +13,15 @@ export function useBuyers(options?: {
   from?: number;
   to?: number;
 }) {
+  const orgId = useCurrentOrgIdSafe();
   return useQuery({
-    queryKey: ['buyers', options?.search, options?.tier, options?.from, options?.to],
+    queryKey: ['buyers', orgId, options?.search, options?.tier, options?.from, options?.to],
+    enabled: !!orgId,
     queryFn: async (): Promise<{ data: Buyer[]; count: number }> => {
       let query = supabase
         .from('buyers')
         .select('*', { count: 'exact' })
+        .eq('organization_id', orgId!)
         .order('liquidity_score', { ascending: false, nullsFirst: false })
         .order('deals_closed', { ascending: false });
 
@@ -41,12 +45,15 @@ export function useBuyers(options?: {
 }
 
 export function useActiveBuyers() {
+  const orgId = useCurrentOrgIdSafe();
   return useQuery({
-    queryKey: ['buyers', 'active'],
+    queryKey: ['buyers', orgId, 'active'],
+    enabled: !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('buyers')
         .select('*')
+        .eq('organization_id', orgId!)
         .eq('is_active', true)
         .order('ai_match_score', { ascending: false });
 
