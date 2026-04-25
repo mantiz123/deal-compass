@@ -17,6 +17,7 @@ import {
   useCreateTrainingSession,
   useTrainingStats,
   parseTrainingResult,
+  analyzeTrainingCallWithAI,
 } from '@/hooks/useTrainingSessions';
 import { TrainingResultsPanel } from './TrainingResultsPanel';
 
@@ -132,9 +133,33 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
 
     const durationSec = Math.round((Date.now() - callStartRef.current) / 1000);
     const fullText = entries.map((e) => `[${e.role}] ${e.text}`).join('\n');
-    const result = parseTrainingResult(fullText);
+
+    // 1. Try parsing the [TRAINING_RESULT] tag first
+    let result = parseTrainingResult(fullText);
+    let usedFallback = false;
+
+    // 2. If no tag (raw_tag is null) AND we have enough conversation, fall back to AI analysis
+    if (!result.raw_tag && entries.length >= 4) {
+      toast({
+        title: '🧠 Analizando con IA...',
+        description: 'El simulador no devolvió score, usando Gemini para evaluar',
+      });
+      const aiResult = await analyzeTrainingCallWithAI(fullText);
+      if (aiResult) {
+        result = { ...aiResult, raw_tag: null };
+        usedFallback = true;
+      }
+    }
 
     setTrainingResult(result);
+
+    // Try to capture ElevenLabs conversation ID (available after session ends)
+    let elevenLabsConvId: string | null = null;
+    try {
+      elevenLabsConvId = conversation.getId?.() || null;
+    } catch {
+      elevenLabsConvId = null;
+    }
 
     try {
       await createTrainingSession.mutateAsync({
@@ -147,25 +172,26 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
         would_close: result.would_close,
         duration_seconds: durationSec,
         transcript: entries,
+        elevenlabs_conversation_id: elevenLabsConvId,
         raw_result_tag: result.raw_tag,
       });
 
       if (result.agent_score !== null) {
         toast({
-          title: `🎓 Score: ${result.agent_score}/100`,
+          title: `🎓 Score: ${result.agent_score}/100${usedFallback ? ' (IA)' : ''}`,
           description: result.would_close ? '¡Cerraste el deal!' : 'Sigue practicando',
         });
       } else {
         toast({
           variant: 'destructive',
           title: 'Sin score válido',
-          description: 'El simulador no devolvió el tag [TRAINING_RESULT]. Revisa el transcript.',
+          description: 'No se pudo evaluar la sesión. Conversación demasiado corta o error de IA.',
         });
       }
     } catch (err: any) {
       console.error('Failed to persist training session:', err);
     }
-  }, [createTrainingSession, toast]);
+  }, [createTrainingSession, toast, conversation]);
 
   const conversation = useConversation({
     onConnect: () => {
