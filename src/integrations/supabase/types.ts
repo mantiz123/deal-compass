@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_demos: {
+        Row: {
+          agent_persona: string
+          audio_path: string | null
+          audio_url: string | null
+          created_at: string
+          created_by: string | null
+          duration_seconds: number | null
+          error_message: string | null
+          id: string
+          language: string
+          scenario_summary: string | null
+          seller_persona: string
+          status: string
+          transcript: Json
+          updated_at: string
+        }
+        Insert: {
+          agent_persona: string
+          audio_path?: string | null
+          audio_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          error_message?: string | null
+          id?: string
+          language?: string
+          scenario_summary?: string | null
+          seller_persona: string
+          status?: string
+          transcript: Json
+          updated_at?: string
+        }
+        Update: {
+          agent_persona?: string
+          audio_path?: string | null
+          audio_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          error_message?: string | null
+          id?: string
+          language?: string
+          scenario_summary?: string | null
+          seller_persona?: string
+          status?: string
+          transcript?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       buyers: {
         Row: {
           ai_match_score: number | null
