@@ -78,6 +78,37 @@ export default function ContractorAgreement() {
     [form]
   );
 
+  // Early returns AFTER hooks
+  if (!authLoading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
+  if (!isLoading && hasSigned && agreement) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-lg w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            </div>
+            <CardTitle>Acuerdo ya firmado</CardTitle>
+            <CardDescription>
+              Firmaste tu Independent Contractor Agreement el{" "}
+              {new Date(agreement.signed_at).toLocaleDateString("es-US")}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-center">
+            <p className="text-sm text-muted-foreground">
+              Versión {agreement.agreement_version} · TIN: XXX-XX-{agreement.tax_id_last4}
+            </p>
+            <Button className="w-full" onClick={() => navigate("/dashboard")}>
+              Ir al Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const infoComplete =
     form.legalName.trim().length >= 3 &&
     form.taxIdFull.replace(/\D/g, "").length >= 4 &&
