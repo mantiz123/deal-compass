@@ -143,9 +143,9 @@ const Index = () => {
       </div>
 
       {/* Secondary Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className={`grid gap-6 ${showInternalWidgets ? 'lg:grid-cols-3' : 'lg:grid-cols-1'}`}>
         {/* Left Column - Pipeline + Activity */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`${showInternalWidgets ? 'lg:col-span-2' : ''} space-y-6`}>
           <PipelinePreview />
           <ActivityFeed />
         </div>
