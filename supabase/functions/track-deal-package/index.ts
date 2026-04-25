@@ -80,9 +80,28 @@ Deno.serve(async (req) => {
         console.log(`[Track] Marked package ${packageId} as clicked`)
       }
 
-      // Redirect to the actual deal page or provided URL
-      const destination = redirectUrl || `${supabaseUrl}/deal/${packageId}`
-      
+      // Validate redirect URL against allowlist to prevent open-redirect phishing
+      const ALLOWED_HOSTS = [
+        'goklose.com',
+        'www.goklose.com',
+        'goklose.lovable.app',
+        'id-preview--72c7025f-5366-4b54-a6ad-75683ba377d5.lovable.app',
+      ]
+      const defaultDestination = `https://goklose.com/deal/${packageId}`
+      let destination = defaultDestination
+      if (redirectUrl) {
+        try {
+          const parsed = new URL(redirectUrl)
+          if ((parsed.protocol === 'https:' || parsed.protocol === 'http:') && ALLOWED_HOSTS.includes(parsed.hostname)) {
+            destination = parsed.toString()
+          } else {
+            console.warn('[Track] Rejected redirect to disallowed host:', parsed.hostname)
+          }
+        } catch {
+          console.warn('[Track] Rejected malformed redirect URL')
+        }
+      }
+
       return new Response(null, {
         status: 302,
         headers: {
