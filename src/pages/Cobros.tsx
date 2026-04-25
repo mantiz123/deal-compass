@@ -231,7 +231,7 @@ export default function Cobros() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => window.open(`/pay/${l.token}`, "_blank")}
+                      onClick={() => window.open(`${PUBLIC_BASE_URL}/pay/${l.token}`, "_blank")}
                       title="Abrir checkout"
                     >
                       <ExternalLink className="h-4 w-4" />
