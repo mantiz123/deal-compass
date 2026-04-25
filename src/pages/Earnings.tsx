@@ -3,9 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Wallet, TrendingUp, HandshakeIcon, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Wallet, TrendingUp, HandshakeIcon, Clock, CheckCircle2, XCircle, Loader2, FileWarning } from 'lucide-react';
 import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useICAGuard } from '@/hooks/useICAGuard';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -24,6 +27,8 @@ const formatMoney = (n: number | null | undefined) =>
 export default function Earnings() {
   const orgId = useCurrentOrgIdSafe();
   const { user } = useAuth();
+  const { isLoading: icaLoading, isBlocked } = useICAGuard();
+  const navigate = useNavigate();
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['my-earnings', orgId, user?.id],
@@ -60,6 +65,43 @@ export default function Earnings() {
     const split = Number(r.agreed_split_student || 60) / 100;
     return sum + dealValue * split;
   }, 0);
+
+  // Bloqueo escalonado: sin ICA firmado no se ven ganancias
+  if (icaLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isBlocked) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto py-12">
+          <Card variant="glass" className="border-amber-500/40">
+            <CardHeader>
+              <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center mb-3">
+                <FileWarning className="h-6 w-6 text-amber-500" />
+              </div>
+              <CardTitle>Firma tu ICA para ver tus ganancias</CardTitle>
+              <CardDescription>
+                Para cobrar el 60% de cada deal cerrado vía KCFY necesitas tener firmado tu Independent Contractor Agreement (1099).
+                Es un requisito legal del IRS para emisión del 1099-NEC al final de año.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate('/onboarding/contractor-agreement')}>
+                Firmar Independent Contractor Agreement
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

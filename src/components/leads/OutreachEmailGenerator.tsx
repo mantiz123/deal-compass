@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useICAGuard } from '@/hooks/useICAGuard';
 import { Mail, Sparkles, Copy, Check, Loader2, Send, DollarSign, Info } from 'lucide-react';
 import type { Lead } from '@/hooks/useLeads';
 
@@ -18,6 +19,7 @@ interface OutreachEmailGeneratorProps {
 
 export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
   const { toast } = useToast();
+  const { requireICA } = useICAGuard();
   const [templateType, setTemplateType] = useState<string>('initial_outreach');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState('');
@@ -35,6 +37,7 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
   const isForeclosure = property?.is_foreclosure;
 
   const handleGenerate = async () => {
+    if (!requireICA("enviar outreach a sellers")) return;
     setIsGenerating(true);
     setGeneratedEmail('');
     try {

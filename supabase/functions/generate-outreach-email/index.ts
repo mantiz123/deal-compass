@@ -86,13 +86,15 @@ serve(async (req) => {
 5. Ask if they're open to a formal purchase proposal
 6. One-line opt-out option
 7. Signature: Sergio Mantilla, Managing Director | Klose LLC
-8. One-line legal disclaimer
+8. Mandatory legal disclaimer block (REQUIRED — do not omit or shorten):
+   "I am an Independent Contractor of KLOSE LLC, a Wyoming registered real estate investment firm (EIN 41-4409334). I am NOT a licensed real estate agent and do not represent you in any real estate transaction. KLOSE LLC purchases properties as a principal buyer or assigns purchase contracts to end buyers."
 
 CRITICAL FORMATTING RULES:
 - Output ONLY plain text. Do NOT use markdown formatting.
 - Do NOT use asterisks (**) for bold or any other markdown syntax.
 - Use ALL CAPS for section headers instead of bold formatting.
-- Keep the entire email under 250 words.`;
+- The legal disclaimer block above MUST appear verbatim at the bottom, after the signature, under the header "LEGAL DISCLAIMER".
+- Keep the entire email under 280 words (excluding the disclaimer).`;
 
       userPrompt = `Generate an initial outreach email for:
 - Owner Name: ${ownerName}
@@ -126,13 +128,15 @@ ${p.tax_delinquent ? "- Tax delinquent status" : ""}`;
 7. 4 short CONFIRM questions (price, occupied, systems, HOA/liens)
 8. 3-step HOW IT WORKS (Agreement, Title, Closing)
 9. Signature: Sergio Mantilla, Managing Director | Klose LLC
-10. One-line disclaimer
+10. Mandatory legal disclaimer block (REQUIRED — do not omit or shorten):
+    "I am an Independent Contractor of KLOSE LLC, a Wyoming registered real estate investment firm (EIN 41-4409334). I am NOT a licensed real estate agent and do not represent you in any real estate transaction. KLOSE LLC purchases properties as a principal buyer or assigns purchase contracts to end buyers."
 
 CRITICAL FORMATTING RULES:
 - Output ONLY plain text. Do NOT use markdown formatting.
 - Do NOT use asterisks (**) for bold or any other markdown syntax.
 - Use ALL CAPS for section headers instead of bold formatting.
-- Keep the entire email under 350 words.`;
+- The legal disclaimer block above MUST appear verbatim at the bottom, after the signature, under the header "LEGAL DISCLAIMER".
+- Keep the entire email under 380 words (excluding the disclaimer).`;
 
       userPrompt = `Generate a foreclosure offer email for:
 - Owner Name: ${ownerName}
@@ -194,7 +198,16 @@ ${lowestSourcePrice ? `- Lowest Source Price (Zillow/Redfin/PropStream): ${lowes
     }
 
     const aiData = await aiResponse.json();
-    const emailContent = aiData.choices?.[0]?.message?.content || "";
+    let emailContent = aiData.choices?.[0]?.message?.content || "";
+
+    // SAFETY NET: ensure mandatory legal disclaimer is always present.
+    // If the model omitted or shortened it, inject the canonical block at the end.
+    const REQUIRED_DISCLAIMER =
+      "I am an Independent Contractor of KLOSE LLC, a Wyoming registered real estate investment firm (EIN 41-4409334). I am NOT a licensed real estate agent and do not represent you in any real estate transaction. KLOSE LLC purchases properties as a principal buyer or assigns purchase contracts to end buyers.";
+
+    if (!emailContent.includes("Independent Contractor of KLOSE LLC")) {
+      emailContent = emailContent.trimEnd() + "\n\nLEGAL DISCLAIMER\n" + REQUIRED_DISCLAIMER;
+    }
 
     // Generate suggested subject line
     const subjectLine = templateType === "initial_outreach"
