@@ -18,9 +18,9 @@ verify_jwt = true
 [functions.adjust-piw-score-conversation]
 verify_jwt = true
 
-[functions.payments-webhook]
+[functions.stripe-webhook]
 verify_jwt = false
 
-[functions.create-payment-transaction]
+[functions.create-stripe-checkout]
 verify_jwt = false
 

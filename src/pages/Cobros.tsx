@@ -26,7 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Plus, Copy, ExternalLink, Link2, CheckCircle, Clock, XCircle } from "lucide-react";
-import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+
 
 type PaymentLink = {
   id: string;
@@ -150,7 +150,6 @@ export default function Cobros() {
 
   return (
     <Layout>
-      <PaymentTestModeBanner />
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
