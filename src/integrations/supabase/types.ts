@@ -624,6 +624,68 @@ export type Database = {
           },
         ]
       }
+      kcfy_requests: {
+        Row: {
+          accepted_at: string | null
+          agreed_split_student: number | null
+          closed_at: string | null
+          created_at: string
+          deal_value_estimate: number | null
+          id: string
+          klose_assignee_id: string | null
+          lead_id: string
+          notes: string | null
+          organization_id: string
+          priority: Database["public"]["Enums"]["kcfy_priority"]
+          rejection_reason: string | null
+          requested_by: string
+          status: Database["public"]["Enums"]["kcfy_status"]
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          agreed_split_student?: number | null
+          closed_at?: string | null
+          created_at?: string
+          deal_value_estimate?: number | null
+          id?: string
+          klose_assignee_id?: string | null
+          lead_id: string
+          notes?: string | null
+          organization_id?: string
+          priority?: Database["public"]["Enums"]["kcfy_priority"]
+          rejection_reason?: string | null
+          requested_by: string
+          status?: Database["public"]["Enums"]["kcfy_status"]
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          agreed_split_student?: number | null
+          closed_at?: string | null
+          created_at?: string
+          deal_value_estimate?: number | null
+          id?: string
+          klose_assignee_id?: string | null
+          lead_id?: string
+          notes?: string | null
+          organization_id?: string
+          priority?: Database["public"]["Enums"]["kcfy_priority"]
+          rejection_reason?: string | null
+          requested_by?: string
+          status?: Database["public"]["Enums"]["kcfy_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kcfy_requests_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_cleanup_log: {
         Row: {
           action: string
@@ -1904,6 +1966,14 @@ export type Database = {
       buyer_tier: "platinum" | "gold" | "silver" | "bronze"
       contract_status: "draft" | "sent" | "viewed" | "signed" | "completed"
       contract_type: "AB" | "BC" | "AMENDMENT"
+      kcfy_priority: "low" | "normal" | "high" | "urgent"
+      kcfy_status:
+        | "pending"
+        | "accepted"
+        | "in_progress"
+        | "closed"
+        | "rejected"
+        | "cancelled"
       lead_status:
         | "captacion"
         | "contacto"
@@ -2068,6 +2138,15 @@ export const Constants = {
       buyer_tier: ["platinum", "gold", "silver", "bronze"],
       contract_status: ["draft", "sent", "viewed", "signed", "completed"],
       contract_type: ["AB", "BC", "AMENDMENT"],
+      kcfy_priority: ["low", "normal", "high", "urgent"],
+      kcfy_status: [
+        "pending",
+        "accepted",
+        "in_progress",
+        "closed",
+        "rejected",
+        "cancelled",
+      ],
       lead_status: [
         "captacion",
         "contacto",
