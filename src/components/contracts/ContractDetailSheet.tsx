@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useContractSignatures, type Contract } from '@/hooks/useContracts';
-import { Download, Eye, Send, FileText, Clock, MapPin, Loader2, ExternalLink, Maximize2 } from 'lucide-react';
+import { Download, Eye, Send, FileText, Clock, MapPin, Loader2, ExternalLink, Maximize2, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { KloseSignDialog } from './KloseSignDialog';
 
 interface ContractDetailSheetProps {
   contract: Contract | null;
@@ -21,6 +22,7 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
   const { data: signatures = [] } = useContractSignatures(contract?.id);
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
+  const [kloseSignOpen, setKloseSignOpen] = useState(false);
 
   const handleDownloadPdf = async (url: string, filename: string) => {
     setDownloading(true);
@@ -294,14 +296,23 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
 
           {/* Actions */}
           <div className="flex flex-col gap-2">
+            {(() => {
+              const kloseSigsCount = signatures.filter(s => s.user_agent?.includes('Klose Rep')).length;
+              const kloseAlreadySigned = kloseSigsCount > 0;
+              return (
+                <Button
+                  variant={kloseAlreadySigned ? 'outline' : 'default'}
+                  onClick={() => setKloseSignOpen(true)}
+                  className={kloseAlreadySigned ? '' : 'bg-primary hover:bg-primary/90'}
+                >
+                  <Building2 className="h-4 w-4 mr-2" />
+                  {kloseAlreadySigned ? 'Re-firmar como Klose' : 'Firmar como Klose'}
+                </Button>
+              );
+            })()}
             {preferredPdfUrl && (
               <Button variant="outline" className="lg:hidden" onClick={() => handleOpenPdf(preferredPdfUrl)}>
                 <Eye className="h-4 w-4 mr-2" /> {contract.signed_pdf_url ? 'Ver PDF Firmado' : 'Ver PDF Original'}
-              </Button>
-            )}
-            {preferredPdfUrl && (
-              <Button variant="outline" disabled={downloading} onClick={() => handleDownloadPdf(preferredPdfUrl, preferredPdfName)}>
-                {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />} {contract.signed_pdf_url ? 'Descargar PDF Firmado' : 'Descargar PDF Original'}
               </Button>
             )}
             {preferredPdfUrl && (
@@ -325,6 +336,7 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
           </div>
         </div>
       </SheetContent>
+      <KloseSignDialog contract={contract} open={kloseSignOpen} onOpenChange={setKloseSignOpen} />
     </Sheet>
   );
 }
