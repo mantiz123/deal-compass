@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { KScoreGauge } from '@/components/dashboard/KScoreGauge';
 import { LeadTimeline } from './LeadTimeline';
+import { StrategyBattleCard } from './StrategyBattleCard';
 import { LeadDocuments } from './LeadDocuments';
 import { NewInteractionDialog } from './NewInteractionDialog';
 import { AIPropertyInsights } from './AIPropertyInsights';
@@ -326,6 +327,17 @@ export function LeadDetailSheet({
               </div>
             )}
           </Card>
+
+          {/* Strategy Battle Card */}
+          <StrategyBattleCard
+            recommended={lead.recommended_strategy as any}
+            confidence={lead.strategy_confidence}
+            mao={lead.strategy_mao ? Number(lead.strategy_mao) : null}
+            reasons={(lead.strategy_reasons as string[]) || []}
+            disqualifiers={(lead.strategy_disqualifiers as string[]) || []}
+            alternatives={(lead.alternative_strategies as any) || []}
+            calculatedAt={lead.strategy_calculated_at}
+          />
 
           {/* Tabs */}
           <Tabs defaultValue="conversations" className="w-full">
