@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Lock, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
+import { GraduationCap, Lock, CheckCircle2, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TrackCardProps {
@@ -25,17 +25,24 @@ interface TrackCardProps {
   isLocked: boolean;
   lockReason?: string;
   onOpen: () => void;
+  paywall?: {
+    priceCents: number;
+    onPurchase: () => void;
+    isPurchasing?: boolean;
+  };
 }
 
-export function TrackCard({ track, progress, isLocked, lockReason, onOpen }: TrackCardProps) {
+export function TrackCard({ track, progress, isLocked, lockReason, onOpen, paywall }: TrackCardProps) {
   const isComplete = progress.isComplete ?? (progress.total > 0 && progress.completed === progress.total);
+  const showPaywall = !!paywall && isLocked;
+  const formattedPrice = paywall ? `$${(paywall.priceCents / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '';
 
   return (
     <Card
       className={cn(
         'relative overflow-hidden transition-all duration-300 hover:shadow-lg',
         isComplete && 'border-success/50 bg-success/5',
-        isLocked && 'opacity-60'
+        isLocked && !showPaywall && 'opacity-60'
       )}
     >
       <div
@@ -93,7 +100,31 @@ export function TrackCard({ track, progress, isLocked, lockReason, onOpen }: Tra
           )}
         </div>
 
-        {isLocked ? (
+        {showPaywall ? (
+          <div className="space-y-2">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Precio único</span>
+              <span className="text-2xl font-bold text-foreground">{formattedPrice}</span>
+            </div>
+            <Button
+              onClick={paywall!.onPurchase}
+              variant="default"
+              className="w-full"
+              disabled={paywall!.isPurchasing}
+            >
+              {paywall!.isPurchasing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirigiendo...
+                </>
+              ) : (
+                <>
+                  <Lock className="h-4 w-4 mr-2" />
+                  Desbloquear acceso
+                </>
+              )}
+            </Button>
+          </div>
+        ) : isLocked ? (
           <p className="text-xs text-muted-foreground italic">{lockReason}</p>
         ) : (
           <Button onClick={onOpen} variant="default" className="w-full">
