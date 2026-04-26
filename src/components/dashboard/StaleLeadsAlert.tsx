@@ -66,42 +66,42 @@ export function StaleLeadsAlert() {
           {displayLeads.map((lead) => (
             <div
               key={lead.id}
-              className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-secondary/30 transition-colors"
+              className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5 sm:p-3 hover:bg-secondary/30 transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 text-warning">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-1 text-warning flex-shrink-0">
                   <Clock className="h-4 w-4" />
                   <span className="text-xs font-medium">
                     {lead.days_without_activity || 0}d
                   </span>
                 </div>
-                <div>
-                  <p className="text-sm font-medium truncate max-w-[200px]">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">
                     {lead.property?.address || 'Sin dirección'}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground truncate">
                     {lead.property?.city}, {lead.property?.state}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-warning hover:text-warning hover:bg-warning/10"
+                  className="text-warning hover:text-warning hover:bg-warning/10 px-2 sm:px-3"
                   onClick={() => {
                     setArchiveLeadId(lead.id);
                     setArchiveAddress(lead.property?.address || '');
                   }}
                   title="Archivar con razón (Kill)"
                 >
-                  <Archive className="h-4 w-4 mr-1" />
-                  Kill
+                  <Archive className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Kill</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2 sm:px-3"
                   onClick={() => {
                     setDeleteLeadId(lead.id);
                     setDeleteAddress(lead.property?.address || '');
