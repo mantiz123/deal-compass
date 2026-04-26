@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
           const userId = meta.user_id;
           const productKey = meta.product_key;
           const productKind = meta.product_kind;
-          const tracks = (meta.tracks ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+          const tracks = (meta.tracks ?? '').split(',').map((s: string) => s.trim()).filter(Boolean);
           if (!userId || tracks.length === 0) {
             console.warn('academy checkout missing user_id or tracks', session.id);
             break;
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
 
           const bundlePurchaseId = productKind === 'bundle' ? crypto.randomUUID() : null;
 
-          const rows = tracks.map((slug) => ({
+          const rows = tracks.map((slug: string) => ({
             user_id: userId,
             track_slug: slug,
             source: productKind === 'bundle' ? 'bundle' : 'individual',
