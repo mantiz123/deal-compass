@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useTrackLessons, useUserProgress, calculateTrackProgress } from '@/hooks/useAcademy';
 import { LessonList } from './LessonList';
 import { LessonViewer } from './LessonViewer';
