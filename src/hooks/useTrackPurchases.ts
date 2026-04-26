@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export type PaidTrackSlug = 'closer' | 'scaler' | 'creative_finance';
 export type AcademyProductKey = PaidTrackSlug | 'bundle_creative';
@@ -33,6 +34,8 @@ const PAID_TRACKS: PaidTrackSlug[] = ['closer', 'scaler', 'creative_finance'];
  * Trae las compras del usuario y expone helpers de acceso.
  */
 export function useTrackPurchases() {
+  const { isSuperAdmin } = useOrganization();
+
   const query = useQuery({
     queryKey: ['academy-track-purchases'],
     queryFn: async () => {
@@ -51,6 +54,7 @@ export function useTrackPurchases() {
 
   const hasAccess = (slug: string) => {
     if (slug === 'foundations') return true;
+    if (isSuperAdmin) return true;
     return ownedSlugs.has(slug as PaidTrackSlug);
   };
 
@@ -60,6 +64,7 @@ export function useTrackPurchases() {
     ownedSlugs,
     ownsBundle,
     hasAccess,
+    isSuperAdmin,
   };
 }
 
