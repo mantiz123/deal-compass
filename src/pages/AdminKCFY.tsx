@@ -74,6 +74,9 @@ export default function AdminKCFY() {
   const [stageNote, setStageNote] = useState('');
   const addEvent = useAddKCFYStatusEvent();
 
+  // Executive sheet
+  const [executiveReq, setExecutiveReq] = useState<{ id: string; leadId: string; address: string } | null>(null);
+
   const counts = useMemo(() => {
     const map = { pending: 0, accepted: 0, in_progress: 0, closed: 0, rejected: 0 };
     (requests || []).forEach((r) => {
