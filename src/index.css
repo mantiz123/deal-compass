@@ -136,9 +136,10 @@
     @apply border-border;
   }
 
-  body {
+  html, body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Geist', system-ui, sans-serif;
+    overflow-x: hidden;
   }
 
   /* Custom scrollbar */
