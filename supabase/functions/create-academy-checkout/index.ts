@@ -7,41 +7,41 @@ const corsHeaders = {
 };
 
 // Catálogo cerrado (server-side, no se acepta amount del cliente)
-// Los lookup_keys se resuelven a price IDs reales en Stripe (test/live) para atribución.
+// Usa price IDs reales de Stripe para atribución completa de producto en el dashboard.
 const CATALOG: Record<string, {
   name: string;
   amount_cents: number;
   kind: 'track' | 'bundle';
   tracks: string[];
-  price_lookup_key: string;
+  stripe_price_id: string;
 }> = {
   closer: {
     name: 'KLOSE Academy — Closer Track',
     amount_cents: 29700,
     kind: 'track',
     tracks: ['closer'],
-    price_lookup_key: 'academy_closer_onetime',
+    stripe_price_id: 'price_1TQY815Be8qCgMV2rIh6LoO4',
   },
   scaler: {
     name: 'KLOSE Academy — Scaler Track',
     amount_cents: 49700,
     kind: 'track',
     tracks: ['scaler'],
-    price_lookup_key: 'academy_scaler_onetime',
+    stripe_price_id: 'price_1TQY905Be8qCgMV2CLGFvYlS',
   },
   creative_finance: {
     name: 'KLOSE Academy — Creative Finance Track',
     amount_cents: 99700,
     kind: 'track',
     tracks: ['creative_finance'],
-    price_lookup_key: 'academy_creative_finance_onetime',
+    stripe_price_id: 'price_1TQY9T5Be8qCgMV2TJRval34',
   },
   bundle_creative: {
     name: 'KLOSE Academy — Bundle Creative (3 tracks)',
     amount_cents: 149700,
     kind: 'bundle',
     tracks: ['closer', 'scaler', 'creative_finance'],
-    price_lookup_key: 'academy_bundle_creative_onetime',
+    stripe_price_id: 'price_1TQY9s5Be8qCgMV2eVmkVN4W',
   },
 };
 
@@ -112,23 +112,12 @@ Deno.serve(async (req) => {
     const successUrl = `${baseUrl}/academy?purchase=success&product=${product_key}`;
     const cancelUrl = `${baseUrl}/academy?purchase=canceled`;
 
-    // Resolver lookup_key -> price ID real (atribución completa en Stripe Dashboard)
-    const prices = await stripe.prices.list({
-      lookup_keys: [item.price_lookup_key],
-      active: true,
-      limit: 1,
-    });
-    const price = prices.data[0];
-    if (!price) {
-      throw new Error(`Price with lookup_key "${item.price_lookup_key}" not found in Stripe. Verify the product is created.`);
-    }
-
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       customer_email: user.email ?? undefined,
       line_items: [
         {
-          price: price.id,
+          price: item.stripe_price_id,
           quantity: 1,
         },
       ],
