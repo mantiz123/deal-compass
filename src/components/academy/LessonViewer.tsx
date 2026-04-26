@@ -80,8 +80,8 @@ export function LessonViewer({ lessonId, open, onOpenChange, onCompleted }: Less
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
-        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border space-y-3">
+      <SheetContent side="right" className="w-full max-w-full sm:max-w-2xl p-0 flex flex-col">
+        <SheetHeader className="px-4 sm:px-6 pt-6 pb-4 border-b border-border space-y-3">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
               <BookOpen className="h-3 w-3 mr-1" />
@@ -107,7 +107,7 @@ export function LessonViewer({ lessonId, open, onOpenChange, onCompleted }: Less
         </SheetHeader>
 
         <ScrollArea className="flex-1">
-          <div className="px-6 py-6">
+          <div className="px-4 sm:px-6 py-6">
             {!showQuiz ? (
               <>
                 <article className="prose prose-invert prose-sm max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-li:text-muted-foreground prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-blockquote:border-primary prose-blockquote:text-foreground prose-table:border prose-table:border-border prose-table:rounded-lg prose-table:overflow-hidden prose-thead:bg-muted prose-th:text-foreground prose-th:font-semibold prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:border-b prose-th:border-border prose-td:px-3 prose-td:py-2 prose-td:border-b prose-td:border-border/50 prose-td:text-muted-foreground prose-tr:hover:bg-muted/30 prose-hr:border-border">
