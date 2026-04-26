@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useContractSignatures, type Contract } from '@/hooks/useContracts';
-import { Download, Eye, Send, FileText, Clock, MapPin, Loader2, ExternalLink, Maximize2 } from 'lucide-react';
+import { Download, Eye, Send, FileText, Clock, MapPin, Loader2, ExternalLink, Maximize2, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { KloseSignDialog } from './KloseSignDialog';
 
 interface ContractDetailSheetProps {
   contract: Contract | null;
