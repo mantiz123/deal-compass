@@ -104,22 +104,22 @@ export function KCFYReadyBanner() {
     setDismissedAt(now);
   };
 
-  // Build dialog lead shape (matches RequestKCFYDialog props)
-  const dialogLead = useMemo(() => {
-    if (!selectedLead) return null;
-    return {
-      id: selectedLead.id,
-      piw_score: selectedLead.piw_score ?? undefined,
-      property: selectedLead.property
-        ? {
-            address: selectedLead.property.address ?? "",
-            city: selectedLead.property.city ?? "",
-            state: selectedLead.property.state ?? "",
-            arv: selectedLead.property.arv ?? null,
-            mao: selectedLead.property.mao ?? null,
-          }
-        : null,
-    };
+  // Estimated deal value (MAO if exists, otherwise ARV)
+  const estimatedDealValue = useMemo(() => {
+    if (!selectedLead?.property) return null;
+    const mao = selectedLead.property.mao ? Number(selectedLead.property.mao) : null;
+    const arv = selectedLead.property.arv ? Number(selectedLead.property.arv) : null;
+    return mao || arv || null;
+  }, [selectedLead]);
+
+  const leadAddress = useMemo(() => {
+    if (!selectedLead?.property) return "";
+    const parts = [
+      selectedLead.property.address,
+      selectedLead.property.city,
+      selectedLead.property.state,
+    ].filter(Boolean);
+    return parts.join(", ");
   }, [selectedLead]);
 
   if (isLoading || !data || isDismissed || !hasSigned) return null;
