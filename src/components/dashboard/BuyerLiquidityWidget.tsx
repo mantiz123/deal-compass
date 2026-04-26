@@ -113,15 +113,15 @@ export function BuyerLiquidityWidget() {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium truncate">
                         {buyer.company_name || buyer.contact_name}
                       </span>
-                      <Badge className={cn('text-xs', liquidityBadge.color)}>
+                      <Badge className={cn('text-[10px] sm:text-xs', liquidityBadge.color)}>
                         {liquidityBadge.label}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mt-1 text-[10px] sm:text-xs text-muted-foreground">
                       {buyer.close_ratio !== null && (
                         <span className="flex items-center gap-1">
                           <TrendingUp className="h-3 w-3" />
