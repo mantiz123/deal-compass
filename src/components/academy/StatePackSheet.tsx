@@ -77,9 +77,9 @@ export function StatePackSheet({ state, open, onOpenChange }: StatePackSheetProp
                 </Badge>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground text-left">
+            <SheetDescription className="text-sm text-muted-foreground text-left">
               Especialización legal, contratos y operativa específica de {state.name}.
-            </p>
+            </SheetDescription>
           </SheetHeader>
 
           <ScrollArea className="flex-1">
@@ -172,6 +172,11 @@ function StatePackLessonViewer({
             </Badge>
           </div>
           <SheetTitle className="text-2xl text-left">{lesson.title}</SheetTitle>
+          {lesson.summary ? (
+            <SheetDescription className="text-sm text-muted-foreground text-left">{lesson.summary}</SheetDescription>
+          ) : (
+            <SheetDescription className="sr-only">Lección de State Pack</SheetDescription>
+          )}
         </SheetHeader>
         <ScrollArea className="flex-1">
           <div className="px-6 py-6">
