@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,46 @@ import { useLesson, useLessonQuiz, useStartLesson } from '@/hooks/useAcademy';
 import { QuizRunner } from './QuizRunner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { SubToCalculator } from '@/components/tools/SubToCalculator';
+
+/** Splits markdown content into segments separated by tool embed markers like ::tool[subto-calculator]:: */
+function parseLessonContent(markdown: string): Array<
+  { type: 'markdown'; content: string } | { type: 'tool'; toolId: string }
+> {
+  const TOOL_REGEX = /^::tool\[([\w-]+)\]::\s*$/gm;
+  const segments: Array<
+    { type: 'markdown'; content: string } | { type: 'tool'; toolId: string }
+  > = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = TOOL_REGEX.exec(markdown)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: 'markdown', content: markdown.slice(lastIndex, match.index) });
+    }
+    segments.push({ type: 'tool', toolId: match[1] });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < markdown.length) {
+    segments.push({ type: 'markdown', content: markdown.slice(lastIndex) });
+  }
+  return segments.length > 0 ? segments : [{ type: 'markdown', content: markdown }];
+}
+
+function ToolEmbed({ toolId }: { toolId: string }) {
+  if (toolId === 'subto-calculator') {
+    return (
+      <div className="my-6 not-prose">
+        <SubToCalculator compact />
+      </div>
+    );
+  }
+  return (
+    <div className="my-4 p-3 rounded border border-dashed border-border text-xs text-muted-foreground">
+      Herramienta no reconocida: <code>{toolId}</code>
+    </div>
+  );
+}
 
 interface LessonViewerProps {
   lessonId: string | null;
