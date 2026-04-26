@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 interface Props {
   children: ReactNode;
   fallbackTitle?: string;
+  /** Arbitrary debug context (ids, payload snapshots) logged on error */
+  context?: Record<string, unknown>;
 }
 
 interface State {
@@ -22,6 +24,16 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Surface to console so we can debug from logs
     console.error("[ErrorBoundary] Caught:", error);
+    if (this.props.context) {
+      try {
+        console.error(
+          "[ErrorBoundary] Context:",
+          JSON.parse(JSON.stringify(this.props.context))
+        );
+      } catch {
+        console.error("[ErrorBoundary] Context (raw):", this.props.context);
+      }
+    }
     console.error("[ErrorBoundary] Component stack:", errorInfo.componentStack);
   }
 
