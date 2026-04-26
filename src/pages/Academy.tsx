@@ -171,7 +171,7 @@ export default function Academy() {
                           <Badge variant="outline" className="text-xs border-primary/40 text-primary">Ahorra $294</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Closer + Scaler + Creative Finance. Acceso de por vida.
+                          Closer + Scaler + Creative Finance. Acceso de por vida a la plataforma.
                         </p>
                       </div>
                     </div>

@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useContractorAgreement } from "@/hooks/useContractorAgreement";
+import { useOrganization } from "@/contexts/OrganizationContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FileWarning } from "lucide-react";
@@ -8,10 +9,13 @@ const HIDE_ON_PATHS = ["/onboarding/contractor-agreement", "/pending-approval", 
 
 export function ContractorAgreementBanner() {
   const { hasSigned, isLoading } = useContractorAgreement();
+  const { currentOrg } = useOrganization();
   const navigate = useNavigate();
   const location = useLocation();
 
   if (isLoading || hasSigned) return null;
+  // Klose internal team no necesita firmar ICA (no son contratistas 1099 — son la empresa)
+  if (currentOrg?.is_klose_internal) return null;
   if (HIDE_ON_PATHS.some((p) => location.pathname.startsWith(p))) return null;
 
   return (
