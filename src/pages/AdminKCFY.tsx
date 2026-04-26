@@ -206,12 +206,22 @@ export default function AdminKCFY() {
                         const prop = lead?.property;
                         const statusInfo = STATUS_BADGE[req.status];
                         return (
-                          <TableRow key={req.id}>
+                          <TableRow
+                            key={req.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() =>
+                              setExecutiveReq({
+                                id: req.id,
+                                leadId: req.lead_id,
+                                address: prop?.address ? `${prop.address}, ${prop.city}, ${prop.state}` : '',
+                              })
+                            }
+                          >
                             <TableCell>
                               <div className="flex items-start gap-2">
                                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                                 <div>
-                                  <div className="font-medium text-sm">{prop?.address || '—'}</div>
+                                  <div className="font-medium text-sm hover:text-primary">{prop?.address || '—'}</div>
                                   <div className="text-xs text-muted-foreground">
                                     {prop?.city}, {prop?.state} {prop?.zip_code}
                                   </div>
