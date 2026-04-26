@@ -102,16 +102,42 @@ export default function ContractorAgreement() {
         toast.info("PDF aún se está generando, intenta en unos segundos.");
         return;
       }
-      const { data, error } = await import("@/integrations/supabase/client").then(({ supabase }) =>
-        supabase.storage
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: signed, error: signErr } = await supabase.storage
           .from("contractor-agreements")
-          .createSignedUrl(agreement.signed_pdf_path!, 60)
-      );
-      if (error || !data?.signedUrl) {
-        toast.error("No se pudo generar el enlace de descarga.");
-        return;
+          .createSignedUrl(agreement.signed_pdf_path!, 60);
+
+        if (signErr || !signed?.signedUrl) {
+          toast.error("No se pudo generar el enlace de descarga.");
+          return;
+        }
+
+        // Fetch como blob para evitar exponer URL de Supabase y bypassear ad-blockers
+        const response = await fetch(signed.signedUrl);
+        if (!response.ok) throw new Error("Fetch failed");
+        const blob = await response.blob();
+
+        const blobUrl = URL.createObjectURL(blob);
+        const fileName = `KLOSE_ICA_${agreement.legal_name.replace(/\s+/g, "_")}_${new Date(
+          agreement.signed_at
+        )
+          .toISOString()
+          .slice(0, 10)}.pdf`;
+
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Liberar memoria después de un momento
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      } catch (err) {
+        console.error("[ICA] Download failed:", err);
+        toast.error("No se pudo descargar el PDF. Intenta de nuevo.");
       }
-      window.open(data.signedUrl, "_blank");
     };
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
