@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useContractorAgreement } from "./useContractorAgreement";
 import { useToast } from "./use-toast";
+import { useOrganization } from "@/contexts/OrganizationContext";
 
 /**
  * Bloqueo escalonado: gate para acciones críticas que requieren ICA firmado.
@@ -16,8 +17,12 @@ import { useToast } from "./use-toast";
  */
 export function useICAGuard() {
   const { hasSigned, isLoading } = useContractorAgreement();
+  const { currentOrg } = useOrganization();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Klose internal team no son contratistas 1099 — son la empresa, no necesitan firmar ICA
+  const isKloseInternal = !!currentOrg?.is_klose_internal;
 
   /**
    * Devuelve `true` si el usuario puede proceder, `false` si está bloqueado.
@@ -25,6 +30,7 @@ export function useICAGuard() {
    */
   const requireICA = (actionLabel?: string): boolean => {
     if (isLoading) return false; // Esperar a que cargue
+    if (isKloseInternal) return true; // Bypass para equipo Klose
     if (hasSigned) return true;
 
     toast({
@@ -39,9 +45,9 @@ export function useICAGuard() {
   };
 
   return {
-    hasSigned,
+    hasSigned: hasSigned || isKloseInternal,
     isLoading,
-    isBlocked: !isLoading && !hasSigned,
+    isBlocked: !isLoading && !isKloseInternal && !hasSigned,
     requireICA,
   };
 }
