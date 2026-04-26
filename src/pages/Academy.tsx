@@ -4,11 +4,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GraduationCap, MapPin, Sparkles, Trophy, Flame } from 'lucide-react';
+import { GraduationCap, MapPin, Sparkles, Trophy, Flame, Award } from 'lucide-react';
 import { TrackCard } from '@/components/academy/TrackCard';
 import { TrackDetailSheet } from '@/components/academy/TrackDetailSheet';
 import { StateCard } from '@/components/academy/StateCard';
 import { StatePackSheet } from '@/components/academy/StatePackSheet';
+import { CertificatesTab } from '@/components/academy/CertificatesTab';
 import {
   useAcademyTracks,
   useAcademyStates,
@@ -98,7 +99,7 @@ export default function Academy() {
         </div>
 
         <Tabs defaultValue="tracks" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-xl grid-cols-3">
             <TabsTrigger value="tracks">
               <GraduationCap className="h-4 w-4 mr-2" />
               Tracks
@@ -106,6 +107,10 @@ export default function Academy() {
             <TabsTrigger value="states">
               <MapPin className="h-4 w-4 mr-2" />
               Estados
+            </TabsTrigger>
+            <TabsTrigger value="certificates">
+              <Award className="h-4 w-4 mr-2" />
+              Certificados
             </TabsTrigger>
           </TabsList>
 
@@ -212,6 +217,12 @@ export default function Academy() {
                 })}
               </div>
             )}
+          </TabsContent>
+        </Tabs>
+
+          {/* CERTIFICATES TAB */}
+          <TabsContent value="certificates">
+            <CertificatesTab />
           </TabsContent>
         </Tabs>
 
