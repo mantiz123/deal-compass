@@ -413,18 +413,6 @@ export default function AdminKCFY() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
 
       {/* Reject dialog */}
       <Dialog open={!!rejectingId} onOpenChange={(open) => !open && setRejectingId(null)}>
