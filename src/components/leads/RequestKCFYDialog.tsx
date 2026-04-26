@@ -73,47 +73,43 @@ export function RequestKCFYDialog({ open, onOpenChange, leadId, leadAddress, est
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : existingRequest ? (
-          <Card variant="glass" className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Estado actual</span>
-              <Badge variant={STATUS_LABELS[existingRequest.status]?.variant || 'secondary'}>
-                {STATUS_LABELS[existingRequest.status]?.label || existingRequest.status}
-              </Badge>
-            </div>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>Solicitada el {format(new Date(existingRequest.created_at), "d MMM yyyy 'a las' HH:mm", { locale: es })}</p>
-              <p>Prioridad: <span className="font-medium capitalize">{existingRequest.priority}</span></p>
-              {existingRequest.deal_value_estimate && (
-                <p>Valor estimado: <span className="font-medium">${Number(existingRequest.deal_value_estimate).toLocaleString()}</span></p>
-              )}
-            </div>
-            {existingRequest.notes && (
-              <div className="pt-2 border-t border-border">
-                <p className="text-xs text-muted-foreground mb-1">Tus notas:</p>
-                <p className="text-sm">{existingRequest.notes}</p>
+          <div className="space-y-4">
+            <Card variant="glass" className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Estado actual</span>
+                <Badge variant={STATUS_LABELS[existingRequest.status]?.variant || 'secondary'}>
+                  {STATUS_LABELS[existingRequest.status]?.label || existingRequest.status}
+                </Badge>
               </div>
-            )}
-            <div className="flex items-start gap-2 pt-2 border-t border-border text-xs text-muted-foreground">
-              <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-              <p>El equipo de Klose te contactará pronto. Mientras tanto puedes seguir trabajando el lead.</p>
-            </div>
-          </Card>
-        )}
-
-        {existingRequest && (
-          <div className="space-y-2 pt-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Progreso del deal</h3>
-              <span className="text-xs text-muted-foreground">7 etapas</span>
-            </div>
-            <Card variant="glass" className="p-4">
-              <KCFYTimeline kcfyRequestId={existingRequest.id} />
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>Solicitada el {format(new Date(existingRequest.created_at), "d MMM yyyy 'a las' HH:mm", { locale: es })}</p>
+                <p>Prioridad: <span className="font-medium capitalize">{existingRequest.priority}</span></p>
+                {existingRequest.deal_value_estimate && (
+                  <p>Valor estimado: <span className="font-medium">${Number(existingRequest.deal_value_estimate).toLocaleString()}</span></p>
+                )}
+              </div>
+              {existingRequest.notes && (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Tus notas:</p>
+                  <p className="text-sm">{existingRequest.notes}</p>
+                </div>
+              )}
+              <div className="flex items-start gap-2 pt-2 border-t border-border text-xs text-muted-foreground">
+                <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <p>El equipo de Klose te contactará pronto. Mientras tanto puedes seguir trabajando el lead.</p>
+              </div>
             </Card>
-          </div>
-        )}
 
-        {!existingRequest && (
-          <>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Progreso del deal</h3>
+                <span className="text-xs text-muted-foreground">7 etapas</span>
+              </div>
+              <Card variant="glass" className="p-4">
+                <KCFYTimeline kcfyRequestId={existingRequest.id} />
+              </Card>
+            </div>
+          </div>
         ) : (
           <div className="space-y-4">
             {leadAddress && (
