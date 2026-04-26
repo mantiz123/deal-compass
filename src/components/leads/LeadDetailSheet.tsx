@@ -331,15 +331,36 @@ export function LeadDetailSheet({
           </Card>
 
           {/* Strategy Battle Card */}
-          <StrategyBattleCard
-            recommended={lead.recommended_strategy as any}
-            confidence={lead.strategy_confidence}
-            mao={lead.strategy_mao ? Number(lead.strategy_mao) : null}
-            reasons={(lead.strategy_reasons as string[]) || []}
-            disqualifiers={(lead.strategy_disqualifiers as string[]) || []}
-            alternatives={(lead.alternative_strategies as any) || []}
-            calculatedAt={lead.strategy_calculated_at}
-          />
+          {(() => {
+            // Normalize: items can be strings OR { code, reasons: string[] }
+            const normalizeList = (raw: any): string[] => {
+              if (!Array.isArray(raw)) return [];
+              return raw.flatMap((item) => {
+                if (typeof item === 'string') return [item];
+                if (item && typeof item === 'object') {
+                  if (Array.isArray(item.reasons)) {
+                    const prefix = item.code ? `[${String(item.code).toUpperCase()}] ` : '';
+                    return item.reasons.map((r: any) =>
+                      typeof r === 'string' ? `${prefix}${r}` : `${prefix}${JSON.stringify(r)}`
+                    );
+                  }
+                  return [JSON.stringify(item)];
+                }
+                return [String(item)];
+              });
+            };
+            return (
+              <StrategyBattleCard
+                recommended={lead.recommended_strategy as any}
+                confidence={lead.strategy_confidence}
+                mao={lead.strategy_mao ? Number(lead.strategy_mao) : null}
+                reasons={normalizeList(lead.strategy_reasons)}
+                disqualifiers={normalizeList(lead.strategy_disqualifiers)}
+                alternatives={(lead.alternative_strategies as any) || []}
+                calculatedAt={lead.strategy_calculated_at}
+              />
+            );
+          })()}
 
           {/* Tabs */}
           <Tabs defaultValue="conversations" className="w-full">
