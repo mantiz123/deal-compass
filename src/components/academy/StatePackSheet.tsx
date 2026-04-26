@@ -7,6 +7,7 @@ import { useStatePackLessons } from '@/hooks/useAcademy';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface StatePackSheetProps {
   state: {
