@@ -64,10 +64,33 @@ export default function Contracts() {
   const { toast } = useToast();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  // Apply "pending Klose signature" filter
+  const contracts = useMemo(() => {
+    if (!onlyPendingKlose) return allContracts;
+    return allContracts.filter(c => !kloseSignatures[c.id] && c.status !== 'draft');
+  }, [allContracts, onlyPendingKlose, kloseSignatures]);
+
   // Split contracts by type
   const abContracts = useMemo(() => contracts.filter(c => c.contract_type === 'AB'), [contracts]);
   const bcContracts = useMemo(() => contracts.filter(c => c.contract_type === 'BC'), [contracts]);
   const amdContracts = useMemo(() => contracts.filter(c => c.contract_type === 'AMENDMENT'), [contracts]);
+
+  // KPIs calculated on ALL contracts (not filtered) for true overview
+  const kpis = useMemo(() => {
+    const total = allContracts.length;
+    const signed = allContracts.filter(c => c.status === 'signed' || c.status === 'completed').length;
+    const pendingKloseSign = allContracts.filter(c => !kloseSignatures[c.id] && c.status !== 'draft').length;
+    const inFlight = allContracts.filter(c => c.status === 'sent' || c.status === 'viewed').length;
+    // Estimated commission at risk: sum option_fee from contract_data of in-flight contracts
+    const commissionInFlight = allContracts
+      .filter(c => c.status === 'sent' || c.status === 'viewed' || c.status === 'signed')
+      .reduce((sum, c) => {
+        const cd = (c as any).contract_data || {};
+        const fee = parseFloat(cd.option_fee || cd.assignment_fee || '0');
+        return sum + (isNaN(fee) ? 0 : fee);
+      }, 0);
+    return { total, signed, pendingKloseSign, inFlight, commissionInFlight };
+  }, [allContracts, kloseSignatures]);
 
   const handleOpenPdf = (url: string | null) => {
     if (!url) return;
