@@ -154,32 +154,17 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
 
           {/* Metadata (right) */}
           <div className="overflow-y-auto p-6 space-y-6">
-          {/* Property & Status */}
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="font-semibold text-foreground flex items-center gap-1">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                {property?.address || 'N/A'}
-              </p>
-              <p className="text-sm text-muted-foreground">{property?.city}, {property?.state}</p>
-            </div>
-            <div className="flex gap-2">
-              <Badge className={contract.contract_type === 'AB' ? 'bg-blue-500/20 text-blue-400' : contract.contract_type === 'BC' ? 'bg-purple-500/20 text-purple-400' : 'bg-orange-500/20 text-orange-400'}>
-                {contract.contract_type}
-              </Badge>
-              <Badge className={
-                contract.status === 'signed' ? 'bg-green-500/20 text-green-400' :
-                contract.status === 'sent' ? 'bg-blue-500/20 text-blue-400' :
-                contract.status === 'viewed' ? 'bg-yellow-500/20 text-yellow-400' :
-                contract.status === 'completed' ? 'bg-primary/20 text-primary' :
-                'bg-muted text-muted-foreground'
-              }>
-                {contract.status}
-              </Badge>
-            </div>
+          {/* Property */}
+          <div>
+            <p className="font-semibold text-foreground flex items-center gap-1">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              {property?.address || 'N/A'}
+            </p>
+            <p className="text-sm text-muted-foreground">{property?.city}, {property?.state}</p>
           </div>
 
           <Separator />
+
 
           {/* Audit Trail */}
           <div>
@@ -310,8 +295,13 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
           {/* Actions */}
           <div className="flex flex-col gap-2">
             {preferredPdfUrl && (
-              <Button variant="outline" onClick={() => handleOpenPdf(preferredPdfUrl)}>
+              <Button variant="outline" className="lg:hidden" onClick={() => handleOpenPdf(preferredPdfUrl)}>
                 <Eye className="h-4 w-4 mr-2" /> {contract.signed_pdf_url ? 'Ver PDF Firmado' : 'Ver PDF Original'}
+              </Button>
+            )}
+            {preferredPdfUrl && (
+              <Button variant="outline" disabled={downloading} onClick={() => handleDownloadPdf(preferredPdfUrl, preferredPdfName)}>
+                {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />} {contract.signed_pdf_url ? 'Descargar PDF Firmado' : 'Descargar PDF Original'}
               </Button>
             )}
             {preferredPdfUrl && (
@@ -332,8 +322,10 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
               </>
             )}
           </div>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
   );
 }
+
