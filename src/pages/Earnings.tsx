@@ -128,7 +128,7 @@ export default function Earnings() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-emerald-400">{formatMoney(totalEarned)}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-emerald-400 break-all">{formatMoney(totalEarned)}</div>
               <p className="text-xs text-muted-foreground mt-1">{closed.length} deal{closed.length !== 1 ? 's' : ''} cerrado{closed.length !== 1 ? 's' : ''}</p>
             </CardContent>
           </Card>
@@ -140,7 +140,7 @@ export default function Earnings() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-primary">{formatMoney(projectedFromInflight)}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-primary break-all">{formatMoney(projectedFromInflight)}</div>
               <p className="text-xs text-muted-foreground mt-1">{inFlight.length} solicitud{inFlight.length !== 1 ? 'es' : ''} activa{inFlight.length !== 1 ? 's' : ''}</p>
             </CardContent>
           </Card>
@@ -152,7 +152,7 @@ export default function Earnings() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{requests?.length ?? 0}</div>
+              <div className="text-2xl sm:text-3xl font-bold">{requests?.length ?? 0}</div>
               <p className="text-xs text-muted-foreground mt-1">Histórico KCFY</p>
             </CardContent>
           </Card>

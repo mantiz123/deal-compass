@@ -72,16 +72,16 @@ export default function Realtors() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Realtors</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Realtors</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Gestiona tus relaciones con Realtors y trackea referidos
             </p>
           </div>
           <Dialog open={newRealtorOpen} onOpenChange={setNewRealtorOpen}>
             <DialogTrigger asChild>
-              <Button className="gradient-primary">
+              <Button className="gradient-primary w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Nuevo Realtor
               </Button>

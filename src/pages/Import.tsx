@@ -9,11 +9,11 @@ const Import = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <FileSpreadsheet className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-3">
+            <FileSpreadsheet className="h-7 w-7 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
             Importar Datos
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Importa listas de propiedades desde PropWire u otras fuentes de datos
           </p>
         </div>
