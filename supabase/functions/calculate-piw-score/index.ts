@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { runStrategyEngine } from "../_shared/strategy-engine.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -211,6 +212,7 @@ serve(async (req) => {
       if (propErr) throw propErr;
 
       const result = calculateScore(property, lead);
+      const strategy = runStrategyEngine(property, lead);
 
       const { error: updateError } = await supabase
         .from('leads')
@@ -225,12 +227,19 @@ serve(async (req) => {
             analysis: result.analysis,
             calculated_at: new Date().toISOString(),
           },
+          recommended_strategy: strategy.recommended.code,
+          alternative_strategies: strategy.alternatives,
+          strategy_confidence: strategy.recommended.confidence,
+          strategy_mao: strategy.recommended.mao,
+          strategy_reasons: strategy.recommended.reasons,
+          strategy_disqualifiers: strategy.disqualified,
+          strategy_calculated_at: strategy.calculated_at,
         })
         .eq('id', leadId);
 
       if (updateError) console.error('Error updating lead:', updateError);
 
-      return new Response(JSON.stringify(result), {
+      return new Response(JSON.stringify({ ...result, strategy }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

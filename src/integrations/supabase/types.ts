@@ -1272,6 +1272,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          alternative_strategies: Json | null
           archive_notes: string | null
           archive_reason: Database["public"]["Enums"]["archive_reason"] | null
           archived_at: string | null
@@ -1289,13 +1290,22 @@ export type Database = {
           piw_score: number | null
           piw_score_factors: Json | null
           property_id: string
+          recommended_strategy:
+            | Database["public"]["Enums"]["lead_strategy"]
+            | null
           referral_commission: number | null
           referred_by_realtor_id: string | null
           source: string | null
           status: Database["public"]["Enums"]["lead_status"]
+          strategy_calculated_at: string | null
+          strategy_confidence: number | null
+          strategy_disqualifiers: Json | null
+          strategy_mao: number | null
+          strategy_reasons: Json | null
           updated_at: string
         }
         Insert: {
+          alternative_strategies?: Json | null
           archive_notes?: string | null
           archive_reason?: Database["public"]["Enums"]["archive_reason"] | null
           archived_at?: string | null
@@ -1313,13 +1323,22 @@ export type Database = {
           piw_score?: number | null
           piw_score_factors?: Json | null
           property_id: string
+          recommended_strategy?:
+            | Database["public"]["Enums"]["lead_strategy"]
+            | null
           referral_commission?: number | null
           referred_by_realtor_id?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
+          strategy_calculated_at?: string | null
+          strategy_confidence?: number | null
+          strategy_disqualifiers?: Json | null
+          strategy_mao?: number | null
+          strategy_reasons?: Json | null
           updated_at?: string
         }
         Update: {
+          alternative_strategies?: Json | null
           archive_notes?: string | null
           archive_reason?: Database["public"]["Enums"]["archive_reason"] | null
           archived_at?: string | null
@@ -1337,10 +1356,18 @@ export type Database = {
           piw_score?: number | null
           piw_score_factors?: Json | null
           property_id?: string
+          recommended_strategy?:
+            | Database["public"]["Enums"]["lead_strategy"]
+            | null
           referral_commission?: number | null
           referred_by_realtor_id?: string | null
           source?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
+          strategy_calculated_at?: string | null
+          strategy_confidence?: number | null
+          strategy_disqualifiers?: Json | null
+          strategy_mao?: number | null
+          strategy_reasons?: Json | null
           updated_at?: string
         }
         Relationships: [
@@ -2557,6 +2584,14 @@ export type Database = {
         | "bajo_contrato"
         | "cesion"
         | "cerrado"
+      lead_strategy:
+        | "cash"
+        | "sub_to"
+        | "wrap"
+        | "seller_finance"
+        | "hybrid"
+        | "novation"
+        | "pass"
       org_member_role: "owner" | "admin" | "agent" | "viewer"
       organization_tier: "internal" | "free" | "pro" | "elite"
       payment_method: "cash" | "check" | "wire" | "zelle" | "venmo" | "other"
@@ -2743,6 +2778,15 @@ export const Constants = {
         "bajo_contrato",
         "cesion",
         "cerrado",
+      ],
+      lead_strategy: [
+        "cash",
+        "sub_to",
+        "wrap",
+        "seller_finance",
+        "hybrid",
+        "novation",
+        "pass",
       ],
       org_member_role: ["owner", "admin", "agent", "viewer"],
       organization_tier: ["internal", "free", "pro", "elite"],
