@@ -83,7 +83,7 @@ export function StatePackSheet({ state, open, onOpenChange }: StatePackSheetProp
           </SheetHeader>
 
           <ScrollArea className="flex-1">
-            <div className="px-6 py-4 space-y-6">
+            <div className="px-4 sm:px-6 py-4 space-y-6">
               {Object.entries(grouped).map(([section, sectionLessons]) => (
                 <div key={section} className="space-y-2">
                   <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
