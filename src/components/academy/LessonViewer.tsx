@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -99,8 +99,10 @@ export function LessonViewer({ lessonId, open, onOpenChange, onCompleted }: Less
             </Badge>
           </div>
           <SheetTitle className="text-2xl text-left">{lesson.title}</SheetTitle>
-          {lesson.summary && (
-            <p className="text-sm text-muted-foreground text-left">{lesson.summary}</p>
+          {lesson.summary ? (
+            <SheetDescription className="text-sm text-muted-foreground text-left">{lesson.summary}</SheetDescription>
+          ) : (
+            <SheetDescription className="sr-only">Lección {lesson.lesson_order} de Academy</SheetDescription>
           )}
         </SheetHeader>
 

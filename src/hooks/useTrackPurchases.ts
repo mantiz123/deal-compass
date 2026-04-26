@@ -49,8 +49,10 @@ export function useTrackPurchases() {
   });
 
   const ownedSlugs = new Set((query.data ?? []).map((p) => p.track_slug));
-  const ownsBundle = PAID_TRACKS.every((t) => ownedSlugs.has(t)) &&
-    (query.data ?? []).some((p) => p.source === 'bundle');
+  // ownsBundle = true para superadmins (acceso comp) o cuando ya posee los 3 tracks pagos
+  // (independiente del source: bundle, individual o comp). Evita mostrar la card de "Obtener bundle"
+  // a quien ya tiene todo desbloqueado.
+  const ownsBundle = isSuperAdmin || PAID_TRACKS.every((t) => ownedSlugs.has(t));
 
   const hasAccess = (slug: string) => {
     if (slug === 'foundations') return true;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -61,8 +61,10 @@ export function TrackDetailSheet({ track, open, onOpenChange }: TrackDetailSheet
                 </div>
               </div>
             </div>
-            {track.description && (
-              <p className="text-sm text-muted-foreground text-left">{track.description}</p>
+            {track.description ? (
+              <SheetDescription className="text-sm text-muted-foreground text-left">{track.description}</SheetDescription>
+            ) : (
+              <SheetDescription className="sr-only">Detalle del track {track.name}</SheetDescription>
             )}
             <Progress value={trackProgress.percent} className="h-2" />
           </SheetHeader>
