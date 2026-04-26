@@ -90,11 +90,11 @@ export default function Academy() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-              <GraduationCap className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+              <GraduationCap className="h-7 w-7 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
               Academy
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               Conviértete en un wholesaler profesional. Aprende, especialízate y cierra.
             </p>
           </div>

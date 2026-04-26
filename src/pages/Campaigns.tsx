@@ -62,15 +62,15 @@ const Campaigns = () => {
   return (
     <Layout>
       {/* Header */}
-      <div className="mb-8 animate-slide-up">
-        <div className="flex items-start justify-between">
+      <div className="mb-6 sm:mb-8 animate-slide-up">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Drip Campaigns</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">Drip Campaigns</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Automatiza secuencias de emails y SMS para nutrir tus leads
             </p>
           </div>
-          <Button onClick={() => setShowNewDialog(true)}>
+          <Button onClick={() => setShowNewDialog(true)} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Nueva Campaña
           </Button>

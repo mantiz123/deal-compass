@@ -337,7 +337,7 @@ export default function Guide() {
               <ClipboardCheck className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gradient">Guía Operativa Alabama</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gradient">Guía Operativa Alabama</h1>
               <p className="text-muted-foreground">
                 Proceso completo para maximizar probabilidades de cerrar deals
               </p>

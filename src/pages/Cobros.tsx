@@ -205,16 +205,16 @@ export default function Cobros() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Link2 className="h-7 w-7" /> Cobros
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <Link2 className="h-6 w-6 sm:h-7 sm:w-7" /> Cobros
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               Genera links de pago únicos para tus servicios
             </p>
           </div>
-          <Button onClick={() => setOpen(true)}>
+          <Button onClick={() => setOpen(true)} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" /> Nuevo Cobro
           </Button>
         </div>
