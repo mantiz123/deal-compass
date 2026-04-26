@@ -38,6 +38,7 @@ import Refund from "./pages/legal/Refund";
 import Privacy from "./pages/legal/Privacy";
 import ContractorAgreement from "./pages/ContractorAgreement";
 import Tools from "./pages/Tools";
+import VerifyCertificate from "./pages/VerifyCertificate";
 import "@/styles/landing.css";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,7 @@ const App = () => (
               <Route path="/legal/privacy" element={<Privacy />} />
               <Route path="/onboarding/contractor-agreement" element={<ContractorAgreement />} />
               <Route path="/tools" element={<Tools />} />
+              <Route path="/verify/:certNumber" element={<VerifyCertificate />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

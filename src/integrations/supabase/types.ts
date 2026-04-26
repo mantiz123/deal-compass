@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_certificates: {
+        Row: {
+          certificate_number: string
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          created_at: string
+          id: string
+          issued_at: string
+          metadata: Json
+          organization_id: string
+          pdf_path: string | null
+          pdf_url: string | null
+          recipient_name: string
+          revoked_at: string | null
+          revoked_reason: string | null
+          total_lessons_completed: number
+          total_xp_earned: number
+          track_id: string | null
+          user_id: string
+        }
+        Insert: {
+          certificate_number: string
+          certificate_type: Database["public"]["Enums"]["certificate_type"]
+          created_at?: string
+          id?: string
+          issued_at?: string
+          metadata?: Json
+          organization_id?: string
+          pdf_path?: string | null
+          pdf_url?: string | null
+          recipient_name: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          total_lessons_completed?: number
+          total_xp_earned?: number
+          track_id?: string | null
+          user_id: string
+        }
+        Update: {
+          certificate_number?: string
+          certificate_type?: Database["public"]["Enums"]["certificate_type"]
+          created_at?: string
+          id?: string
+          issued_at?: string
+          metadata?: Json
+          organization_id?: string
+          pdf_path?: string | null
+          pdf_url?: string | null
+          recipient_name?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          total_lessons_completed?: number
+          total_xp_earned?: number
+          track_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_certificates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_certificates_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "academy_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_enrollments: {
         Row: {
           completed_at: string | null
@@ -2521,6 +2593,10 @@ export type Database = {
         Args: { _state_code: string; _user_id: string }
         Returns: boolean
       }
+      generate_certificate_number: {
+        Args: { _cert_type: Database["public"]["Enums"]["certificate_type"] }
+        Returns: string
+      }
       get_default_org_id: { Args: never; Returns: string }
       get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
       has_completed_foundations: {
@@ -2568,6 +2644,12 @@ export type Database = {
         | "lost_to_competitor"
         | "other"
       buyer_tier: "platinum" | "gold" | "silver" | "bronze"
+      certificate_type:
+        | "foundations"
+        | "closer"
+        | "scaler"
+        | "creative_finance"
+        | "master"
       contract_status: "draft" | "sent" | "viewed" | "signed" | "completed"
       contract_type: "AB" | "BC" | "AMENDMENT"
       kcfy_priority: "low" | "normal" | "high" | "urgent"
@@ -2761,6 +2843,13 @@ export const Constants = {
         "other",
       ],
       buyer_tier: ["platinum", "gold", "silver", "bronze"],
+      certificate_type: [
+        "foundations",
+        "closer",
+        "scaler",
+        "creative_finance",
+        "master",
+      ],
       contract_status: ["draft", "sent", "viewed", "signed", "completed"],
       contract_type: ["AB", "BC", "AMENDMENT"],
       kcfy_priority: ["low", "normal", "high", "urgent"],
