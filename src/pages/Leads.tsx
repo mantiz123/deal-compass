@@ -14,6 +14,7 @@ import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { PropertyComparisonSheet } from "@/components/leads/PropertyComparisonSheet";
 import { ArchiveLeadDialog } from "@/components/leads/ArchiveLeadDialog";
 import { ArchivedLeadsSection } from "@/components/leads/ArchivedLeadsSection";
+import { KCFYReadyBanner } from "@/components/leads/KCFYReadyBanner";
 import { useLeads, useLeadsExport, useLeadFilterOptions, useCalculatePIWScore, useBatchRecalculatePIW, Lead } from "@/hooks/useLeads";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
