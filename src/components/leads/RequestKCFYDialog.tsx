@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Loader2, Sparkles, HandshakeIcon, ShieldCheck } from 'lucide-react';
 import { useCreateKCFYRequest, useKCFYRequestForLead, type KCFYPriority } from '@/hooks/useKCFYRequests';
 import { useICAGuard } from '@/hooks/useICAGuard';
+import { KCFYTimeline } from './KCFYTimeline';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -56,7 +57,7 @@ export function RequestKCFYDialog({ open, onOpenChange, leadId, leadAddress, est
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <HandshakeIcon className="h-5 w-5 text-primary" />
@@ -97,6 +98,22 @@ export function RequestKCFYDialog({ open, onOpenChange, leadId, leadAddress, est
               <p>El equipo de Klose te contactará pronto. Mientras tanto puedes seguir trabajando el lead.</p>
             </div>
           </Card>
+        )}
+
+        {existingRequest && (
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Progreso del deal</h3>
+              <span className="text-xs text-muted-foreground">7 etapas</span>
+            </div>
+            <Card variant="glass" className="p-4">
+              <KCFYTimeline kcfyRequestId={existingRequest.id} />
+            </Card>
+          </div>
+        )}
+
+        {!existingRequest && (
+          <>
         ) : (
           <div className="space-y-4">
             {leadAddress && (
