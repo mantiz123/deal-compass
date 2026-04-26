@@ -14,10 +14,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Briefcase, CheckCircle2, Clock, XCircle, AlertTriangle, MapPin, DollarSign, GitBranch } from 'lucide-react';
+import { Briefcase, CheckCircle2, Clock, XCircle, AlertTriangle, MapPin, DollarSign, GitBranch, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { KCFYTimeline } from '@/components/leads/KCFYTimeline';
+import { KCFYExecutiveSheet } from '@/components/admin/KCFYExecutiveSheet';
 import {
   KCFY_STAGE_META,
   KCFY_STAGE_ORDER,
