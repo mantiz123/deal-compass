@@ -328,6 +328,17 @@ export function LeadDetailSheet({
             )}
           </Card>
 
+          {/* Strategy Battle Card */}
+          <StrategyBattleCard
+            recommended={lead.recommended_strategy as any}
+            confidence={lead.strategy_confidence}
+            mao={lead.strategy_mao ? Number(lead.strategy_mao) : null}
+            reasons={(lead.strategy_reasons as string[]) || []}
+            disqualifiers={(lead.strategy_disqualifiers as string[]) || []}
+            alternatives={(lead.alternative_strategies as any) || []}
+            calculatedAt={lead.strategy_calculated_at}
+          />
+
           {/* Tabs */}
           <Tabs defaultValue="conversations" className="w-full">
             <TabsList className="w-full grid grid-cols-5">
