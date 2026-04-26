@@ -152,9 +152,49 @@ export default function Academy() {
             <div>
               <h2 className="text-xl font-bold text-foreground mb-1">Tu camino de aprendizaje</h2>
               <p className="text-sm text-muted-foreground">
-                Completa Foundations primero para desbloquear Closer y elegir tu primer estado.
+                Foundations es gratis. Closer, Scaler y Creative Finance se desbloquean por compra individual o con el bundle.
               </p>
             </div>
+
+            {/* Bundle banner — solo si no lo tiene completo aún */}
+            {!ownsBundle && (
+              <Card className="border-primary/40 bg-gradient-to-r from-primary/5 to-amber-500/5">
+                <CardContent className="pt-6 pb-5">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-bold text-foreground">Bundle Creative — los 3 tracks avanzados</p>
+                          <Badge variant="outline" className="text-xs border-primary/40 text-primary">Ahorra $294</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Closer + Scaler + Creative Finance. Acceso de por vida.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 md:flex-col md:items-end">
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground line-through">$1,791</p>
+                        <p className="text-2xl font-bold text-foreground">$1,497</p>
+                      </div>
+                      <Button
+                        onClick={() => startCheckout.mutate('bundle_creative')}
+                        disabled={startCheckout.isPending}
+                      >
+                        {startCheckout.isPending ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Cargando...</>
+                        ) : (
+                          'Obtener bundle'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {tracksLoading ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -165,23 +205,43 @@ export default function Academy() {
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {tracks.map((track) => {
-                  const isLocked =
-                    track.level_order > 1 &&
-                    !(
-                      foundationsComplete ||
-                      track.slug === 'foundations'
-                    );
+                  const isPaid = (['closer', 'scaler', 'creative_finance'] as PaidTrackSlug[]).includes(track.slug as PaidTrackSlug);
+                  const userHasAccess = hasAccess(track.slug);
+                  const foundationsGate = track.level_order > 1 && track.slug !== 'foundations' && !foundationsComplete;
+
+                  // Bloqueado por paywall si: es de pago, no lo tiene, y ya pasó el gate de Foundations
+                  const lockedByPaywall = isPaid && !userHasAccess && !foundationsGate;
+                  const isLocked = foundationsGate || lockedByPaywall;
+
+                  const productKey = isPaid ? (track.slug as AcademyProductKey) : null;
+                  const pricing = productKey ? ACADEMY_PRICING[productKey] : null;
+
                   return (
                     <TrackCardWrapper
                       key={track.id}
                       track={track}
                       progress={progress}
                       isLocked={isLocked}
-                      lockReason={isLocked ? 'Completa Foundations primero' : undefined}
+                      lockReason={
+                        foundationsGate
+                          ? 'Completa Foundations primero'
+                          : lockedByPaywall
+                            ? 'Compra requerida para acceder'
+                            : undefined
+                      }
                       onOpen={() => {
                         setSelectedTrack(track);
                         setTrackOpen(true);
                       }}
+                      paywall={
+                        lockedByPaywall && pricing && productKey
+                          ? {
+                              priceCents: pricing.priceCents,
+                              isPurchasing: startCheckout.isPending && startCheckout.variables === productKey,
+                              onPurchase: () => startCheckout.mutate(productKey),
+                            }
+                          : undefined
+                      }
                     />
                   );
                 })}
