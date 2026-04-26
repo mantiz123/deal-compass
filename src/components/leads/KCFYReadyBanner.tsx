@@ -205,11 +205,13 @@ export function KCFYReadyBanner() {
         </CardContent>
       </Card>
 
-      {dialogLead && (
+      {selectedLead && (
         <RequestKCFYDialog
-          lead={dialogLead as any}
           open={!!selectedLead}
           onOpenChange={(open) => !open && setSelectedLead(null)}
+          leadId={selectedLead.id}
+          leadAddress={leadAddress}
+          estimatedDealValue={estimatedDealValue}
         />
       )}
     </>
