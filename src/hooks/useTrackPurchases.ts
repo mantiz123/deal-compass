@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export type PaidTrackSlug = 'closer' | 'scaler' | 'creative_finance';
 export type AcademyProductKey = PaidTrackSlug | 'bundle_creative';
