@@ -63,7 +63,7 @@ function allPhonesDNC(property: any): boolean {
 }
 
 function getDistressBadges(property: any) {
-  const badges: { label: string; color: string }[] = [];
+  const badges: { label: string; shortLabel: string; color: string }[] = [];
   if (!property) return badges;
   
   // Auction urgency badge
@@ -71,20 +71,20 @@ function getDistressBadges(property: any) {
     const daysUntil = differenceInDays(new Date(property.auction_date), new Date());
     const expired = isPast(new Date(property.auction_date));
     if (expired) {
-      badges.push({ label: '⚠️ SUBASTA VENCIDA', color: 'bg-destructive/30 text-destructive border-destructive/40 animate-pulse' });
+      badges.push({ label: '⚠️ SUBASTA VENCIDA', shortLabel: '⚠️ VENCIDA', color: 'bg-destructive/30 text-destructive border-destructive/40 animate-pulse' });
     } else if (daysUntil <= 7) {
-      badges.push({ label: `🔨 ${daysUntil}d SUBASTA`, color: 'bg-destructive/20 text-destructive border-destructive/30' });
+      badges.push({ label: `🔨 ${daysUntil}d SUBASTA`, shortLabel: `🔨 ${daysUntil}d`, color: 'bg-destructive/20 text-destructive border-destructive/30' });
     } else if (daysUntil <= 30) {
-      badges.push({ label: `🔨 ${daysUntil}d SUBASTA`, color: 'bg-warning/20 text-warning border-warning/30' });
+      badges.push({ label: `🔨 ${daysUntil}d SUBASTA`, shortLabel: `🔨 ${daysUntil}d`, color: 'bg-warning/20 text-warning border-warning/30' });
     }
   }
   
-  if (property.is_foreclosure) badges.push({ label: '🏚️ FORECL', color: 'bg-destructive/20 text-destructive border-destructive/30' });
-  if (property.is_vacant) badges.push({ label: '🏚️ VACANT', color: 'bg-warning/20 text-warning border-warning/30' });
-  if (property.tax_delinquent) badges.push({ label: '💰 TAX', color: 'bg-warning/20 text-warning border-warning/30' });
-  if (property.is_probate) badges.push({ label: '⚖️ PROBATE', color: 'bg-accent/20 text-accent border-accent/30' });
-  if (property.equity_percent != null && Number(property.equity_percent) >= 100) badges.push({ label: '💎 FREE&CLEAR', color: 'bg-success/20 text-success border-success/30' });
-  if (property.do_not_mail) badges.push({ label: '🚫 DNM', color: 'bg-muted text-muted-foreground border-border' });
+  if (property.is_foreclosure) badges.push({ label: '🏚️ FORECL', shortLabel: '🏚️ FC', color: 'bg-destructive/20 text-destructive border-destructive/30' });
+  if (property.is_vacant) badges.push({ label: '🏚️ VACANT', shortLabel: '🏚️ VAC', color: 'bg-warning/20 text-warning border-warning/30' });
+  if (property.tax_delinquent) badges.push({ label: '💰 TAX', shortLabel: '💰 TAX', color: 'bg-warning/20 text-warning border-warning/30' });
+  if (property.is_probate) badges.push({ label: '⚖️ PROBATE', shortLabel: '⚖️ PRB', color: 'bg-accent/20 text-accent border-accent/30' });
+  if (property.equity_percent != null && Number(property.equity_percent) >= 100) badges.push({ label: '💎 FREE&CLEAR', shortLabel: '💎 F&C', color: 'bg-success/20 text-success border-success/30' });
+  if (property.do_not_mail) badges.push({ label: '🚫 DNM', shortLabel: '🚫 DNM', color: 'bg-muted text-muted-foreground border-border' });
   
   return badges;
 }
@@ -224,24 +224,25 @@ function HotLeadRow({
 
           {/* City & Owner */}
           <p className="text-xs text-muted-foreground mb-2 truncate">
-            {p?.city}, {p?.state} {p?.zip_code}
-            {p?.owner_name && ` • ${p.owner_name}`}
+            <span className="truncate">{p?.city}, {p?.state} {p?.zip_code}</span>
+            {p?.owner_name && <span className="truncate"> • {p.owner_name}</span>}
           </p>
 
           {/* Distress Badges */}
           <div className="flex flex-wrap gap-1 mb-2">
             {badges.map((b, i) => (
-              <Badge key={i} className={cn("text-[10px] px-1.5 py-0", b.color)}>
-                {b.label}
+              <Badge key={i} className={cn("text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0", b.color)}>
+                <span className="hidden sm:inline">{b.label}</span>
+                <span className="sm:hidden">{b.shortLabel}</span>
               </Badge>
             ))}
           </div>
 
           {/* Financial Row */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-[10px] sm:text-xs text-muted-foreground">
             {equity !== null && (
               <span className={cn(equity >= 60 ? "text-success" : "")}>
-                Equity: {equity}%
+                Eq: {equity}%
               </span>
             )}
             {netEquity !== null && netEquity > 0 && (

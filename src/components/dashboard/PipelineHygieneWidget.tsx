@@ -69,7 +69,7 @@ export function PipelineHygieneWidget() {
   return (
     <Card variant="glass" className="border-primary/20 bg-primary/5">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Shield className="h-4 w-4 text-primary" />
             Higiene del Pipeline
@@ -79,7 +79,7 @@ export function PipelineHygieneWidget() {
             variant="outline"
             onClick={runCleanup}
             disabled={running}
-            className="text-xs"
+            className="text-xs self-start sm:self-auto"
           >
             {running ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
             {running ? 'Limpiando...' : 'Limpiar ahora'}

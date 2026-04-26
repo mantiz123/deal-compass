@@ -44,13 +44,13 @@ export function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <CleanupLoginToast />
       <Sidebar />
       <div className={isMobile ? "pl-0" : "pl-64 transition-all duration-300"}>
         <Header />
         <ContractorAgreementBanner />
-        <main className="p-3 sm:p-6">{children}</main>
+        <main className="p-3 sm:p-6 overflow-x-hidden">{children}</main>
       </div>
     </div>
   );

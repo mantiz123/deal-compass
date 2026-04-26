@@ -45,15 +45,15 @@ export function PipelinePreview() {
   }
 
   return (
-    <Card variant="glass">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-xl">Pipeline Overview</CardTitle>
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/pipeline">
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </Button>
-      </CardHeader>
+      <Card variant="glass">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <CardTitle className="text-lg sm:text-xl">Pipeline Overview</CardTitle>
+          <Button variant="ghost" size="sm" asChild className="self-start sm:self-auto">
+            <Link to="/pipeline">
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </CardHeader>
       <CardContent className="space-y-6">
         {/* Progress bar */}
         {total > 0 ? (

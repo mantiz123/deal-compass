@@ -95,12 +95,12 @@ export function DeadLeadsAnalytics() {
     <>
     <Card variant="glass">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Skull className="h-4 w-4 text-warning" />
+            <Skull className="h-4 w-4 text-warning flex-shrink-0" />
             Por Qué Mueren los Deals
           </CardTitle>
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs self-start sm:self-auto">
             {totalDeadLeads} archivados
           </Badge>
         </div>
@@ -115,10 +115,10 @@ export function DeadLeadsAnalytics() {
           return (
             <div
               key={reason}
-              className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-secondary/30 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border p-3 hover:bg-secondary/30 transition-colors gap-2"
             >
               <div className="flex items-center gap-3">
-                <Badge className={cn('text-xs', reasonColors[reason])}>
+                <Badge className={cn('text-[10px] sm:text-xs', reasonColors[reason])}>
                   {archiveReasonLabels[reason] || reason}
                 </Badge>
               </div>
