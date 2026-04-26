@@ -272,11 +272,57 @@ export default function Contracts() {
           </div>
         </div>
 
+        {/* KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card variant="glass">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">Total</span>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <p className="text-2xl font-bold text-foreground mt-1">{kpis.total}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Contratos en sistema</p>
+            </CardContent>
+          </Card>
+          <Card variant="glass">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">Firmados</span>
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              </div>
+              <p className="text-2xl font-bold text-green-500 mt-1">{kpis.signed}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Cerrados completos</p>
+            </CardContent>
+          </Card>
+          <Card variant="glass" className={kpis.pendingKloseSign > 0 ? 'ring-1 ring-yellow-500/50' : ''}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">Pendientes Klose</span>
+                <AlertCircle className={`h-4 w-4 ${kpis.pendingKloseSign > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+              </div>
+              <p className={`text-2xl font-bold mt-1 ${kpis.pendingKloseSign > 0 ? 'text-yellow-500' : 'text-foreground'}`}>{kpis.pendingKloseSign}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Requieren tu firma</p>
+            </CardContent>
+          </Card>
+          <Card variant="glass">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">$ En juego</span>
+                <DollarSign className="h-4 w-4 text-primary" />
+              </div>
+              <p className="text-2xl font-bold text-primary mt-1">
+                ${kpis.commissionInFlight.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">{kpis.inFlight} contrato(s) activo(s)</p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Filters */}
         <Card variant="glass">
           <CardContent className="pt-4">
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="relative flex-1">
+            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por dirección o nombre..."
@@ -298,6 +344,16 @@ export default function Contracts() {
                   <SelectItem value="completed">Completado</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background/50">
+                <Switch
+                  id="pending-klose"
+                  checked={onlyPendingKlose}
+                  onCheckedChange={setOnlyPendingKlose}
+                />
+                <Label htmlFor="pending-klose" className="text-xs cursor-pointer whitespace-nowrap">
+                  Solo pendientes mi firma
+                </Label>
+              </div>
             </div>
           </CardContent>
         </Card>
