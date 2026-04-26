@@ -14,10 +14,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Briefcase, CheckCircle2, Clock, XCircle, AlertTriangle, MapPin, DollarSign, GitBranch } from 'lucide-react';
+import { Briefcase, CheckCircle2, Clock, XCircle, AlertTriangle, MapPin, DollarSign, GitBranch, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { KCFYTimeline } from '@/components/leads/KCFYTimeline';
+import { KCFYExecutiveSheet } from '@/components/admin/KCFYExecutiveSheet';
 import {
   KCFY_STAGE_META,
   KCFY_STAGE_ORDER,
@@ -72,6 +73,9 @@ export default function AdminKCFY() {
   const [selectedStage, setSelectedStage] = useState<KCFYStage>('contacting_seller');
   const [stageNote, setStageNote] = useState('');
   const addEvent = useAddKCFYStatusEvent();
+
+  // Executive sheet
+  const [executiveReq, setExecutiveReq] = useState<{ id: string; leadId: string; address: string } | null>(null);
 
   const counts = useMemo(() => {
     const map = { pending: 0, accepted: 0, in_progress: 0, closed: 0, rejected: 0 };
@@ -202,12 +206,22 @@ export default function AdminKCFY() {
                         const prop = lead?.property;
                         const statusInfo = STATUS_BADGE[req.status];
                         return (
-                          <TableRow key={req.id}>
+                          <TableRow
+                            key={req.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() =>
+                              setExecutiveReq({
+                                id: req.id,
+                                leadId: req.lead_id,
+                                address: prop?.address ? `${prop.address}, ${prop.city}, ${prop.state}` : '',
+                              })
+                            }
+                          >
                             <TableCell>
                               <div className="flex items-start gap-2">
                                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                                 <div>
-                                  <div className="font-medium text-sm">{prop?.address || '—'}</div>
+                                  <div className="font-medium text-sm hover:text-primary">{prop?.address || '—'}</div>
                                   <div className="text-xs text-muted-foreground">
                                     {prop?.city}, {prop?.state} {prop?.zip_code}
                                   </div>
@@ -249,8 +263,22 @@ export default function AdminKCFY() {
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    setExecutiveReq({
+                                      id: req.id,
+                                      leadId: req.lead_id,
+                                      address: prop?.address ? `${prop.address}, ${prop.city}, ${prop.state}` : '',
+                                    })
+                                  }
+                                >
+                                  <Eye className="h-3.5 w-3.5 mr-1" />
+                                  Ver
+                                </Button>
                                 {req.status === 'pending' && (
                                   <>
                                     <Button
@@ -447,6 +475,15 @@ export default function AdminKCFY() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Executive sheet — vista completa del lead */}
+      <KCFYExecutiveSheet
+        open={!!executiveReq}
+        onOpenChange={(o) => !o && setExecutiveReq(null)}
+        kcfyRequestId={executiveReq?.id ?? null}
+        leadId={executiveReq?.leadId ?? null}
+        propertyAddress={executiveReq?.address}
+      />
     </Layout>
   );
 }
