@@ -39,7 +39,7 @@ export function KCFYReadyBanner() {
     queryKey: ["kcfy-ready-leads", orgId],
     enabled: !!orgId && hasSigned,
     queryFn: async () => {
-      // Leads con K-Score >= 75, no archivados, no cerrados
+      // Leads con K-Score >= 75, no archivados, no cerrados, con propiedad completa (address + MAO/ARV)
       const { data: hotLeads, error: leadsErr } = await supabase
         .from("leads")
         .select(`
@@ -56,12 +56,21 @@ export function KCFYReadyBanner() {
 
       if (leadsErr) throw leadsErr;
 
-      const leadIds = (hotLeads || []).map((l: any) => l.id);
+      // Filtrar leads con dirección y al menos MAO o ARV
+      const validLeads = (hotLeads || []).filter((l: any) => {
+        const p = l.property;
+        if (!p) return false;
+        const hasAddress = !!(p.address && String(p.address).trim());
+        const hasValue = (p.mao != null && Number(p.mao) > 0) || (p.arv != null && Number(p.arv) > 0);
+        return hasAddress && hasValue;
+      });
+
+      const leadIds = validLeads.map((l: any) => l.id);
       if (leadIds.length === 0) {
         return { eligible: [], totalKCFYRequests: 0 };
       }
 
-      // KCFY activos para estos leads
+      // KCFY activos (incluye todos los estados intermedios) para deduplicar
       const { data: activeKcfy, error: kcfyErr } = await supabase
         .from("kcfy_requests")
         .select("lead_id, status")
@@ -70,14 +79,16 @@ export function KCFYReadyBanner() {
 
       if (kcfyErr) throw kcfyErr;
 
-      const activeSet = new Set((activeKcfy || []).map((k) => k.lead_id));
+      // Dedupe por lead_id (un lead puede tener múltiples filas históricas; basta con una activa)
+      const activeSet = new Set<string>();
+      (activeKcfy || []).forEach((k) => activeSet.add(k.lead_id));
 
       // Total KCFY del usuario (para distinguir "primer KCFY" vs "uno más")
       const { count: totalKCFYRequests } = await supabase
         .from("kcfy_requests")
         .select("id", { count: "exact", head: true });
 
-      const eligible: KCFYEligibleLead[] = (hotLeads || []).map((l: any) => ({
+      const eligible: KCFYEligibleLead[] = validLeads.map((l: any) => ({
         id: l.id,
         piw_score: l.piw_score,
         property: l.property,
