@@ -99,8 +99,10 @@ export function LessonViewer({ lessonId, open, onOpenChange, onCompleted }: Less
             </Badge>
           </div>
           <SheetTitle className="text-2xl text-left">{lesson.title}</SheetTitle>
-          {lesson.summary && (
-            <p className="text-sm text-muted-foreground text-left">{lesson.summary}</p>
+          {lesson.summary ? (
+            <SheetDescription className="text-sm text-muted-foreground text-left">{lesson.summary}</SheetDescription>
+          ) : (
+            <SheetDescription className="sr-only">Lección {lesson.lesson_order} de Academy</SheetDescription>
           )}
         </SheetHeader>
 
