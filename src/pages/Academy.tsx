@@ -1,10 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GraduationCap, MapPin, Sparkles, Trophy, Flame, Award } from 'lucide-react';
+import { GraduationCap, MapPin, Sparkles, Trophy, Flame, Award, Loader2 } from 'lucide-react';
 import { TrackCard } from '@/components/academy/TrackCard';
 import { TrackDetailSheet } from '@/components/academy/TrackDetailSheet';
 import { StateCard } from '@/components/academy/StateCard';
@@ -21,8 +24,17 @@ import {
   useTrackLessons,
   calculateTrackProgress,
 } from '@/hooks/useAcademy';
+import {
+  useTrackPurchases,
+  useStartAcademyCheckout,
+  useRefreshPurchasesAfterCheckout,
+  ACADEMY_PRICING,
+  type AcademyProductKey,
+  type PaidTrackSlug,
+} from '@/hooks/useTrackPurchases';
 
 export default function Academy() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: tracks = [], isLoading: tracksLoading } = useAcademyTracks();
   const { data: states = [], isLoading: statesLoading } = useAcademyStates();
   const { data: progress = [] } = useUserProgress();
@@ -31,10 +43,31 @@ export default function Academy() {
   const activateMutation = useActivateState();
   const waitlistMutation = useJoinWaitlist();
 
+  const { hasAccess, ownedSlugs, ownsBundle } = useTrackPurchases();
+  const startCheckout = useStartAcademyCheckout();
+  const refreshPurchases = useRefreshPurchasesAfterCheckout();
+
   const [selectedTrack, setSelectedTrack] = useState<typeof tracks[0] | null>(null);
   const [trackOpen, setTrackOpen] = useState(false);
   const [selectedState, setSelectedState] = useState<typeof states[0] | null>(null);
   const [stateOpen, setStateOpen] = useState(false);
+
+  // Manejar retorno de Stripe Checkout
+  useEffect(() => {
+    const purchase = searchParams.get('purchase');
+    if (purchase === 'success') {
+      toast.success('¡Compra completada! Tu acceso ya está activo.');
+      refreshPurchases();
+      searchParams.delete('purchase');
+      searchParams.delete('product');
+      setSearchParams(searchParams, { replace: true });
+    } else if (purchase === 'canceled') {
+      toast.info('Pago cancelado. Puedes reintentar cuando quieras.');
+      searchParams.delete('purchase');
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get('purchase')]);
 
   // Foundations track (level_order = 1)
   const foundationsTrack = tracks.find((t) => t.slug === 'foundations');
