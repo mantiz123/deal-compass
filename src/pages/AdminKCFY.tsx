@@ -292,7 +292,127 @@ export default function AdminKCFY() {
                                     Cerrar deal
                                   </Button>
                                 )}
+                                {req.status !== 'rejected' && req.status !== 'cancelled' && req.status !== 'closed' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setStageDialogReq({ id: req.id, orgId: req.organization_id });
+                                      setSelectedStage('contacting_seller');
+                                      setStageNote('');
+                                    }}
+                                    disabled={addEvent.isPending}
+                                  >
+                                    <GitBranch className="h-3.5 w-3.5 mr-1" />
+                                    Avanzar etapa
+                                  </Button>
+                                )}
                               </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Stage advance dialog */}
+      <Dialog
+        open={!!stageDialogReq}
+        onOpenChange={(open) => {
+          if (!open) {
+            setStageDialogReq(null);
+            setStageNote('');
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Avanzar etapa del KCFY</DialogTitle>
+            <DialogDescription>
+              Registra el avance del deal. El estudiante verá esta actualización en su timeline.
+            </DialogDescription>
+          </DialogHeader>
+
+          {stageDialogReq && (
+            <div className="space-y-4">
+              <div className="border border-border rounded-lg p-4 max-h-64 overflow-y-auto bg-muted/20">
+                <KCFYTimeline kcfyRequestId={stageDialogReq.id} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="stage-select">Nueva etapa</Label>
+                <Select value={selectedStage} onValueChange={(v) => setSelectedStage(v as KCFYStage)}>
+                  <SelectTrigger id="stage-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {KCFY_STAGE_ORDER.filter((s) => s !== 'submitted').map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {KCFY_STAGE_META[s].label} — {KCFY_STAGE_META[s].description}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="dead">
+                      {KCFY_STAGE_META.dead.label} — {KCFY_STAGE_META.dead.description}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="stage-note">
+                  Nota {selectedStage === 'dead' ? '(razón obligatoria para el estudiante)' : '(opcional, visible para el estudiante)'}
+                </Label>
+                <Textarea
+                  id="stage-note"
+                  value={stageNote}
+                  onChange={(e) => setStageNote(e.target.value)}
+                  placeholder={
+                    selectedStage === 'dead'
+                      ? 'Ej: Seller decidió no vender, ARV no soportó la oferta, título problemático...'
+                      : 'Ej: Hablamos con el seller, contraofertando $5k menos...'
+                  }
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStageDialogReq(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                if (!stageDialogReq) return;
+                if (selectedStage === 'dead' && !stageNote.trim()) return;
+                addEvent.mutate(
+                  {
+                    kcfy_request_id: stageDialogReq.id,
+                    organization_id: stageDialogReq.orgId,
+                    stage: selectedStage,
+                    note: stageNote,
+                  },
+                  {
+                    onSuccess: () => {
+                      setStageDialogReq(null);
+                      setStageNote('');
+                    },
+                  },
+                );
+              }}
+              disabled={addEvent.isPending || (selectedStage === 'dead' && !stageNote.trim())}
+            >
+              Registrar etapa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
                             </TableCell>
                           </TableRow>
                         );
