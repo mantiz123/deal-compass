@@ -244,11 +244,6 @@ serve(async (req) => {
       });
     }
 
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     // Fallback: propertyData passed directly (no lead context)
     const result = calculateScore(propertyData || {});
 
