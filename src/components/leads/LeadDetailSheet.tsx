@@ -46,6 +46,7 @@ import { useUpdateProperty } from '@/hooks/useProperties';
 import { useLatestConversation } from '@/hooks/useSellerConversations';
 import { useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
   MapPin,
   User,
@@ -183,6 +184,7 @@ export function LeadDetailSheet({
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <ErrorBoundary fallbackTitle="No se pudo cargar el lead">
           <SheetHeader className="pb-4">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -955,6 +957,7 @@ export function LeadDetailSheet({
               <LeadDocuments leadId={lead.id} />
             </TabsContent>
           </Tabs>
+          </ErrorBoundary>
         </SheetContent>
       </Sheet>
 
