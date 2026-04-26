@@ -194,6 +194,19 @@ async function issueIfQualified(
 
   if (!qualifies) return null
 
+  // Resolve user's organization_id (service role bypasses get_default_org_id() default)
+  const { data: membership, error: memErr } = await supabase
+    .from('organization_members')
+    .select('organization_id, joined_at, organizations!inner(is_active, is_klose_internal)')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('joined_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  if (memErr) throw new Error(`Membership lookup failed: ${memErr.message}`)
+  const organizationId = membership?.organization_id
+  if (!organizationId) throw new Error('User has no active organization membership')
+
   // Generate certificate number
   const { data: certNumber } = await supabase.rpc('generate_certificate_number', { _cert_type: certType })
   if (!certNumber) throw new Error('Failed to generate certificate number')
