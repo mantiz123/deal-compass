@@ -115,10 +115,10 @@ export function DeadLeadsAnalytics() {
           return (
             <div
               key={reason}
-              className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-secondary/30 transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border p-3 hover:bg-secondary/30 transition-colors gap-2"
             >
               <div className="flex items-center gap-3">
-                <Badge className={cn('text-xs', reasonColors[reason])}>
+                <Badge className={cn('text-[10px] sm:text-xs', reasonColors[reason])}>
                   {archiveReasonLabels[reason] || reason}
                 </Badge>
               </div>
