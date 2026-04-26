@@ -224,8 +224,8 @@ function HotLeadRow({
 
           {/* City & Owner */}
           <p className="text-xs text-muted-foreground mb-2 truncate">
-            {p?.city}, {p?.state} {p?.zip_code}
-            {p?.owner_name && ` • ${p.owner_name}`}
+            <span className="truncate">{p?.city}, {p?.state} {p?.zip_code}</span>
+            {p?.owner_name && <span className="truncate"> • {p.owner_name}</span>}
           </p>
 
           {/* Distress Badges */}
