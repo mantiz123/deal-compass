@@ -25,6 +25,7 @@ import {
   Menu,
   X,
   Wallet,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +60,7 @@ const coreItems: NavItem[] = [
 
 // Items SOLO Pro/Elite/Internal (estudiante free NO los ve — Modelo A puro)
 const proItems: NavItem[] = [
+  { name: "Herramientas", href: "/tools", icon: Wrench, tiers: ['pro', 'elite', 'internal'] },
   { name: "Buyers", href: "/buyers", icon: Users, tiers: ['pro', 'elite', 'internal'] },
   { name: "Realtors", href: "/realtors", icon: UserCheck, tiers: ['pro', 'elite', 'internal'] },
   { name: "Tracking", href: "/tracking", icon: Mail, tiers: ['pro', 'elite', 'internal'] },
