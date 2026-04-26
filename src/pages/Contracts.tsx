@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useContracts, type Contract } from '@/hooks/useContracts';
 import { ContractDetailSheet } from '@/components/contracts/ContractDetailSheet';
-import { Search, Download, Eye, Loader2, CheckCircle2, FileText, Clock, AlertCircle, DollarSign } from 'lucide-react';
+import { Search, Download, Eye, CheckCircle2, FileText, AlertCircle, DollarSign } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -288,19 +288,19 @@ export default function Contracts() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground uppercase tracking-wide">Firmados</span>
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <CheckCircle2 className="h-4 w-4 text-success" />
               </div>
-              <p className="text-2xl font-bold text-green-500 mt-1">{kpis.signed}</p>
+              <p className="text-2xl font-bold text-success mt-1">{kpis.signed}</p>
               <p className="text-xs text-muted-foreground mt-0.5">Cerrados completos</p>
             </CardContent>
           </Card>
-          <Card variant="glass" className={kpis.pendingKloseSign > 0 ? 'ring-1 ring-yellow-500/50' : ''}>
+          <Card variant="glass" className={kpis.pendingKloseSign > 0 ? 'ring-1 ring-warning/50' : ''}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground uppercase tracking-wide">Pendientes Klose</span>
-                <AlertCircle className={`h-4 w-4 ${kpis.pendingKloseSign > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+                <AlertCircle className={`h-4 w-4 ${kpis.pendingKloseSign > 0 ? 'text-warning' : 'text-muted-foreground'}`} />
               </div>
-              <p className={`text-2xl font-bold mt-1 ${kpis.pendingKloseSign > 0 ? 'text-yellow-500' : 'text-foreground'}`}>{kpis.pendingKloseSign}</p>
+              <p className={`text-2xl font-bold mt-1 ${kpis.pendingKloseSign > 0 ? 'text-warning' : 'text-foreground'}`}>{kpis.pendingKloseSign}</p>
               <p className="text-xs text-muted-foreground mt-0.5">Requieren tu firma</p>
             </CardContent>
           </Card>
