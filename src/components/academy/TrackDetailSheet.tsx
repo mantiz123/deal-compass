@@ -70,7 +70,7 @@ export function TrackDetailSheet({ track, open, onOpenChange }: TrackDetailSheet
           </SheetHeader>
 
           <ScrollArea className="flex-1">
-            <div className="px-6 py-4">
+            <div className="px-4 sm:px-6 py-4">
               {lessons.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
                   Aún no hay lecciones publicadas en este track.
