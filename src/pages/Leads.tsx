@@ -310,8 +310,8 @@ const Leads = () => {
       {/* Filters */}
       <Card variant="glass" className="mb-6">
         <CardContent className="py-4 space-y-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative flex-1 min-w-0 sm:min-w-[300px]">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4">
+            <div className="relative w-full sm:flex-1 sm:min-w-[300px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar por dirección, propietario o ciudad..."
@@ -320,24 +320,27 @@ const Leads = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <PropertyComparisonSheet />
-            <Button 
-              variant={showFilters ? "default" : "outline"}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="mr-2 h-4 w-4" />
-              Filtros
-              {hasActiveFilters && (
-                <Badge variant="accent" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
-                  !
-                </Badge>
-              )}
-            </Button>
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
-                Limpiar filtros
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <PropertyComparisonSheet />
+              <Button 
+                variant={showFilters ? "default" : "outline"}
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex-1 sm:flex-none"
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Filtros
+                {hasActiveFilters && (
+                  <Badge variant="accent" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                    !
+                  </Badge>
+                )}
               </Button>
-            )}
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                  Limpiar
+                </Button>
+              )}
+            </div>
           </div>
 
           {showFilters && (
