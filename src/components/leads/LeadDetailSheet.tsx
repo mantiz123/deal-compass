@@ -184,7 +184,19 @@ export function LeadDetailSheet({
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-          <ErrorBoundary fallbackTitle="No se pudo cargar el lead">
+          <ErrorBoundary
+            fallbackTitle="No se pudo cargar el lead"
+            context={{
+              leadId: lead?.id,
+              status: lead?.status,
+              propertyId: lead?.property_id,
+              recommended_strategy: lead?.recommended_strategy,
+              strategy_reasons: lead?.strategy_reasons,
+              strategy_disqualifiers: lead?.strategy_disqualifiers,
+              alternative_strategies: lead?.alternative_strategies,
+              piw_score_factors: lead?.piw_score_factors,
+            }}
+          >
           <SheetHeader className="pb-4">
             <div className="flex items-start justify-between gap-4">
               <div>
