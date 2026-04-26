@@ -231,7 +231,7 @@ function HotLeadRow({
           {/* Distress Badges */}
           <div className="flex flex-wrap gap-1 mb-2">
             {badges.map((b, i) => (
-              <Badge key={i} className={cn("text-[10px] px-1.5 py-0", b.color)}>
+              <Badge key={i} className={cn("text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0", b.color)}>
                 <span className="hidden sm:inline">{b.label}</span>
                 <span className="sm:hidden">{b.shortLabel}</span>
               </Badge>
@@ -239,7 +239,7 @@ function HotLeadRow({
           </div>
 
           {/* Financial Row */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-[10px] sm:text-xs text-muted-foreground">
             {equity !== null && (
               <span className={cn(equity >= 60 ? "text-success" : "")}>
                 Eq: {equity}%
