@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Lock, CheckCircle2, ArrowRight } from 'lucide-react';
+import { GraduationCap, Lock, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TrackCardProps {
