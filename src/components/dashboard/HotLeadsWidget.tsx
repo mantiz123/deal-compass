@@ -196,7 +196,7 @@ function HotLeadRow({
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left rounded-lg border p-3 transition-all hover:scale-[1.01]",
+        "w-full text-left rounded-lg border p-2.5 sm:p-3 transition-all hover:scale-[1.01]",
         needsSkipTrace
           ? "border-warning/40 bg-warning/5 hover:bg-warning/10 hover:border-warning/60"
           : "border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50"
@@ -205,20 +205,20 @@ function HotLeadRow({
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           {/* Address & Score */}
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-sm truncate">
+          <div className="flex items-center gap-2 mb-1 min-w-0">
+            <span className="font-semibold text-sm truncate min-w-0">
               {p?.address || 'Sin dirección'}
             </span>
             <Badge
               variant="outline"
               className={cn(
-                "text-xs font-mono flex-shrink-0",
+                "text-[10px] sm:text-xs font-mono flex-shrink-0",
                 (lead.piw_score || 0) >= 75
                   ? "border-warning/50 text-warning bg-warning/10"
                   : "border-primary/50 text-primary bg-primary/10"
               )}
             >
-              PIW {lead.piw_score}
+              {lead.piw_score}
             </Badge>
           </div>
 
@@ -238,7 +238,7 @@ function HotLeadRow({
           </div>
 
           {/* Financial Row */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {equity !== null && (
               <span className={cn(equity >= 60 ? "text-success" : "")}>
                 Equity: {equity}%
@@ -256,19 +256,19 @@ function HotLeadRow({
         {/* Right side: Contact status + action */}
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           {needsSkipTrace ? (
-            <Badge className="bg-warning/20 text-warning border-warning/30 text-[10px]">
-              <Search className="h-3 w-3 mr-1" />
-              SKIP-TRACE
+            <Badge className="bg-warning/20 text-warning border-warning/30 text-[10px] whitespace-nowrap">
+              <Search className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline">SKIP-TRACE</span>
             </Badge>
           ) : allPhonesDNC(p) ? (
-            <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-[10px]">
-              <PhoneOff className="h-3 w-3 mr-1" />
-              ALL DNC
+            <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-[10px] whitespace-nowrap">
+              <PhoneOff className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline">ALL DNC</span>
             </Badge>
           ) : (
-            <Badge className="bg-success/20 text-success border-success/30 text-[10px]">
-              <Phone className="h-3 w-3 mr-1" />
-              CONTACTO
+            <Badge className="bg-success/20 text-success border-success/30 text-[10px] whitespace-nowrap">
+              <Phone className="h-3 w-3 sm:mr-1" />
+              <span className="hidden sm:inline">CONTACTO</span>
             </Badge>
           )}
           <ExternalLink className="h-3 w-3 text-muted-foreground mt-1" />
