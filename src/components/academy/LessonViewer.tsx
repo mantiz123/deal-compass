@@ -63,6 +63,11 @@ export function LessonViewer({ lessonId, open, onOpenChange, onCompleted }: Less
   const { data: quiz } = useLessonQuiz(lessonId ?? undefined);
   const startMutation = useStartLesson();
 
+  const segments = useMemo(
+    () => parseLessonContent(lesson?.content_markdown ?? ''),
+    [lesson?.content_markdown]
+  );
+
   useEffect(() => {
     if (lessonId && open) {
       startMutation.mutate(lessonId);
@@ -104,7 +109,15 @@ export function LessonViewer({ lessonId, open, onOpenChange, onCompleted }: Less
             {!showQuiz ? (
               <>
                 <article className="prose prose-invert prose-sm max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-li:text-muted-foreground prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-blockquote:border-primary prose-blockquote:text-foreground prose-table:border prose-table:border-border prose-table:rounded-lg prose-table:overflow-hidden prose-thead:bg-muted prose-th:text-foreground prose-th:font-semibold prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:border-b prose-th:border-border prose-td:px-3 prose-td:py-2 prose-td:border-b prose-td:border-border/50 prose-td:text-muted-foreground prose-tr:hover:bg-muted/30 prose-hr:border-border">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.content_markdown}</ReactMarkdown>
+                  {segments.map((seg, idx) =>
+                    seg.type === 'markdown' ? (
+                      <ReactMarkdown key={idx} remarkPlugins={[remarkGfm]}>
+                        {seg.content}
+                      </ReactMarkdown>
+                    ) : (
+                      <ToolEmbed key={idx} toolId={seg.toolId} />
+                    )
+                  )}
                 </article>
 
                 <Separator className="my-8" />
