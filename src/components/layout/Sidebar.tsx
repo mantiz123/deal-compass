@@ -85,17 +85,18 @@ const operationsSection: NavSection = {
     { name: "Tracking", href: "/tracking", icon: Mail },
     { name: "Campaigns", href: "/campaigns", icon: MessageSquare },
     { name: "Deals", href: "/deals", icon: FileText },
-    { name: "Contratos", href: "/contracts", icon: FileSignature },
     { name: "Payments", href: "/payments", icon: DollarSign },
     { name: "Cobros", href: "/cobros", icon: Link2 },
   ],
 };
 
-// === SECCIÓN 4: KLOSE INTERNAL — solo equipo interno Klose ===
+// === SECCIÓN 4: KLOSE INTERNAL — exclusivo equipo interno Klose ===
+// Contratos y Entrenamiento AI son herramientas operativas de Klose, no del estudiante.
 const kloseInternalSection: NavSection = {
   label: "Klose Internal",
   tiers: ['internal'],
   items: [
+    { name: "Contratos", href: "/contracts", icon: FileSignature },
     { name: "Entrenamiento AI", href: "/training", icon: GraduationCap },
   ],
 };
