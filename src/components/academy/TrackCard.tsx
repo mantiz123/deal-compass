@@ -14,14 +14,21 @@ interface TrackCardProps {
     color: string | null;
     level_order: number;
   };
-  progress: { completed: number; total: number; percent: number };
+  progress: {
+    completed: number;
+    total: number;
+    percent: number;
+    xpEarned?: number;
+    xpTotal?: number;
+    isComplete?: boolean;
+  };
   isLocked: boolean;
   lockReason?: string;
   onOpen: () => void;
 }
 
 export function TrackCard({ track, progress, isLocked, lockReason, onOpen }: TrackCardProps) {
-  const isComplete = progress.total > 0 && progress.completed === progress.total;
+  const isComplete = progress.isComplete ?? (progress.total > 0 && progress.completed === progress.total);
 
   return (
     <Card
