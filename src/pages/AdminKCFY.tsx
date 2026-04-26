@@ -12,10 +12,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Briefcase, CheckCircle2, Clock, XCircle, AlertTriangle, MapPin, DollarSign } from 'lucide-react';
+import { Briefcase, CheckCircle2, Clock, XCircle, AlertTriangle, MapPin, DollarSign, GitBranch } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { KCFYTimeline } from '@/components/leads/KCFYTimeline';
+import {
+  KCFY_STAGE_META,
+  KCFY_STAGE_ORDER,
+  useAddKCFYStatusEvent,
+  type KCFYStage,
+} from '@/hooks/useKCFYStatusEvents';
 
 const STATUS_TABS: { value: KCFYStatus | 'all'; label: string }[] = [
   { value: 'pending', label: 'Pendientes' },
@@ -58,6 +66,12 @@ export default function AdminKCFY() {
 
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+
+  // Stage advance dialog
+  const [stageDialogReq, setStageDialogReq] = useState<{ id: string; orgId: string } | null>(null);
+  const [selectedStage, setSelectedStage] = useState<KCFYStage>('contacting_seller');
+  const [stageNote, setStageNote] = useState('');
+  const addEvent = useAddKCFYStatusEvent();
 
   const counts = useMemo(() => {
     const map = { pending: 0, accepted: 0, in_progress: 0, closed: 0, rejected: 0 };
