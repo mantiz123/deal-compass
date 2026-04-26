@@ -190,6 +190,7 @@ export default function AdminKCFY() {
                     No hay solicitudes en este estado.
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -344,6 +345,7 @@ export default function AdminKCFY() {
                       })}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
