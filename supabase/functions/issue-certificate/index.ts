@@ -235,6 +235,7 @@ async function issueIfQualified(
     .from('academy_certificates')
     .insert({
       user_id: userId,
+      organization_id: organizationId,
       certificate_type: certType,
       track_id: certType === 'master' ? null : await getTrackId(supabase, meta.trackSlug!),
       certificate_number: certNumber,
