@@ -1,10 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GraduationCap, MapPin, Sparkles, Trophy, Flame, Award } from 'lucide-react';
+import { GraduationCap, MapPin, Sparkles, Trophy, Flame, Award, Loader2 } from 'lucide-react';
 import { TrackCard } from '@/components/academy/TrackCard';
 import { TrackDetailSheet } from '@/components/academy/TrackDetailSheet';
 import { StateCard } from '@/components/academy/StateCard';
@@ -21,8 +24,17 @@ import {
   useTrackLessons,
   calculateTrackProgress,
 } from '@/hooks/useAcademy';
+import {
+  useTrackPurchases,
+  useStartAcademyCheckout,
+  useRefreshPurchasesAfterCheckout,
+  ACADEMY_PRICING,
+  type AcademyProductKey,
+  type PaidTrackSlug,
+} from '@/hooks/useTrackPurchases';
 
 export default function Academy() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: tracks = [], isLoading: tracksLoading } = useAcademyTracks();
   const { data: states = [], isLoading: statesLoading } = useAcademyStates();
   const { data: progress = [] } = useUserProgress();
@@ -31,10 +43,31 @@ export default function Academy() {
   const activateMutation = useActivateState();
   const waitlistMutation = useJoinWaitlist();
 
+  const { hasAccess, ownsBundle } = useTrackPurchases();
+  const startCheckout = useStartAcademyCheckout();
+  const refreshPurchases = useRefreshPurchasesAfterCheckout();
+
   const [selectedTrack, setSelectedTrack] = useState<typeof tracks[0] | null>(null);
   const [trackOpen, setTrackOpen] = useState(false);
   const [selectedState, setSelectedState] = useState<typeof states[0] | null>(null);
   const [stateOpen, setStateOpen] = useState(false);
+
+  // Manejar retorno de Stripe Checkout
+  useEffect(() => {
+    const purchase = searchParams.get('purchase');
+    if (purchase === 'success') {
+      toast.success('¡Compra completada! Tu acceso ya está activo.');
+      refreshPurchases();
+      searchParams.delete('purchase');
+      searchParams.delete('product');
+      setSearchParams(searchParams, { replace: true });
+    } else if (purchase === 'canceled') {
+      toast.info('Pago cancelado. Puedes reintentar cuando quieras.');
+      searchParams.delete('purchase');
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get('purchase')]);
 
   // Foundations track (level_order = 1)
   const foundationsTrack = tracks.find((t) => t.slug === 'foundations');
@@ -119,9 +152,49 @@ export default function Academy() {
             <div>
               <h2 className="text-xl font-bold text-foreground mb-1">Tu camino de aprendizaje</h2>
               <p className="text-sm text-muted-foreground">
-                Completa Foundations primero para desbloquear Closer y elegir tu primer estado.
+                Foundations es gratis. Closer, Scaler y Creative Finance se desbloquean por compra individual o con el bundle.
               </p>
             </div>
+
+            {/* Bundle banner — solo si no lo tiene completo aún */}
+            {!ownsBundle && (
+              <Card className="border-primary/40 bg-gradient-to-r from-primary/5 to-amber-500/5">
+                <CardContent className="pt-6 pb-5">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-bold text-foreground">Bundle Creative — los 3 tracks avanzados</p>
+                          <Badge variant="outline" className="text-xs border-primary/40 text-primary">Ahorra $294</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Closer + Scaler + Creative Finance. Acceso de por vida.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 md:flex-col md:items-end">
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground line-through">$1,791</p>
+                        <p className="text-2xl font-bold text-foreground">$1,497</p>
+                      </div>
+                      <Button
+                        onClick={() => startCheckout.mutate('bundle_creative')}
+                        disabled={startCheckout.isPending}
+                      >
+                        {startCheckout.isPending ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Cargando...</>
+                        ) : (
+                          'Obtener bundle'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {tracksLoading ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -132,23 +205,43 @@ export default function Academy() {
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {tracks.map((track) => {
-                  const isLocked =
-                    track.level_order > 1 &&
-                    !(
-                      foundationsComplete ||
-                      track.slug === 'foundations'
-                    );
+                  const isPaid = (['closer', 'scaler', 'creative_finance'] as PaidTrackSlug[]).includes(track.slug as PaidTrackSlug);
+                  const userHasAccess = hasAccess(track.slug);
+                  const foundationsGate = track.level_order > 1 && track.slug !== 'foundations' && !foundationsComplete;
+
+                  // Bloqueado por paywall si: es de pago, no lo tiene, y ya pasó el gate de Foundations
+                  const lockedByPaywall = isPaid && !userHasAccess && !foundationsGate;
+                  const isLocked = foundationsGate || lockedByPaywall;
+
+                  const productKey = isPaid ? (track.slug as AcademyProductKey) : null;
+                  const pricing = productKey ? ACADEMY_PRICING[productKey] : null;
+
                   return (
                     <TrackCardWrapper
                       key={track.id}
                       track={track}
                       progress={progress}
                       isLocked={isLocked}
-                      lockReason={isLocked ? 'Completa Foundations primero' : undefined}
+                      lockReason={
+                        foundationsGate
+                          ? 'Completa Foundations primero'
+                          : lockedByPaywall
+                            ? 'Compra requerida para acceder'
+                            : undefined
+                      }
                       onOpen={() => {
                         setSelectedTrack(track);
                         setTrackOpen(true);
                       }}
+                      paywall={
+                        lockedByPaywall && pricing && productKey
+                          ? {
+                              priceCents: pricing.priceCents,
+                              isPurchasing: startCheckout.isPending && startCheckout.variables === productKey,
+                              onPurchase: () => startCheckout.mutate(productKey),
+                            }
+                          : undefined
+                      }
                     />
                   );
                 })}
@@ -239,12 +332,18 @@ function TrackCardWrapper({
   isLocked,
   lockReason,
   onOpen,
+  paywall,
 }: {
   track: any;
   progress: { lesson_id: string; status: string }[];
   isLocked: boolean;
   lockReason?: string;
   onOpen: () => void;
+  paywall?: {
+    priceCents: number;
+    onPurchase: () => void;
+    isPurchasing?: boolean;
+  };
 }) {
   const { data: lessons = [] } = useTrackLessons(track.id);
   const trackProgress = calculateTrackProgress(lessons, progress);
@@ -255,6 +354,7 @@ function TrackCardWrapper({
       isLocked={isLocked}
       lockReason={lockReason}
       onOpen={onOpen}
+      paywall={paywall}
     />
   );
 }

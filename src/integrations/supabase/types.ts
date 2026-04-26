@@ -422,6 +422,48 @@ export type Database = {
           },
         ]
       }
+      academy_track_purchases: {
+        Row: {
+          amount_cents: number
+          bundle_purchase_id: string | null
+          created_at: string
+          currency: string
+          id: string
+          purchased_at: string
+          source: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          track_slug: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          bundle_purchase_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          purchased_at?: string
+          source?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          track_slug: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          bundle_purchase_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          purchased_at?: string
+          source?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          track_slug?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       academy_tracks: {
         Row: {
           color: string | null
@@ -2612,6 +2654,10 @@ export type Database = {
       }
       has_signed_contractor_agreement: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      has_track_access: {
+        Args: { _track_slug: string; _user_id: string }
         Returns: boolean
       }
       is_klose_super_admin: { Args: { _user_id: string }; Returns: boolean }
