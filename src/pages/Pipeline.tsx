@@ -11,14 +11,14 @@ const Pipeline = () => {
   return (
     <Layout>
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between animate-slide-up">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-slide-up">
         <div>
-          <h1 className="text-3xl font-bold">Pipeline</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Pipeline</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Arrastra y suelta deals entre etapas de tu workflow
           </p>
         </div>
-        <Button onClick={() => setShowNewLeadDialog(true)}>
+        <Button onClick={() => setShowNewLeadDialog(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Agregar Deal
         </Button>

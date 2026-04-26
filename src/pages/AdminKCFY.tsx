@@ -140,12 +140,12 @@ export default function AdminKCFY() {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <Briefcase className="h-7 w-7 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Panel KCFY — Klose Closes For You</h1>
-            <p className="text-sm text-muted-foreground">
+      <div className="space-y-6">
+        <div className="flex items-start gap-3">
+          <Briefcase className="h-6 w-6 sm:h-7 sm:w-7 text-primary flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight">Panel KCFY — Klose Closes For You</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Gestiona solicitudes de cierre asistido enviadas por estudiantes.
             </p>
           </div>
