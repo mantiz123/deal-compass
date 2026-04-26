@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Lock, CheckCircle2, ArrowRight } from 'lucide-react';
+import { GraduationCap, Lock, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TrackCardProps {
@@ -14,14 +14,21 @@ interface TrackCardProps {
     color: string | null;
     level_order: number;
   };
-  progress: { completed: number; total: number; percent: number };
+  progress: {
+    completed: number;
+    total: number;
+    percent: number;
+    xpEarned?: number;
+    xpTotal?: number;
+    isComplete?: boolean;
+  };
   isLocked: boolean;
   lockReason?: string;
   onOpen: () => void;
 }
 
 export function TrackCard({ track, progress, isLocked, lockReason, onOpen }: TrackCardProps) {
-  const isComplete = progress.total > 0 && progress.completed === progress.total;
+  const isComplete = progress.isComplete ?? (progress.total > 0 && progress.completed === progress.total);
 
   return (
     <Card
@@ -73,6 +80,17 @@ export function TrackCard({ track, progress, isLocked, lockReason, onOpen }: Tra
             <span className="font-semibold text-foreground">{progress.percent}%</span>
           </div>
           <Progress value={progress.percent} className="h-2" />
+          {(progress.xpTotal ?? 0) > 0 && (
+            <div className="flex items-center justify-between text-xs pt-1">
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <Sparkles className="h-3 w-3 text-warning" />
+                XP
+              </span>
+              <span className="font-semibold text-foreground tabular-nums">
+                {(progress.xpEarned ?? 0).toLocaleString()} / {(progress.xpTotal ?? 0).toLocaleString()}
+              </span>
+            </div>
+          )}
         </div>
 
         {isLocked ? (

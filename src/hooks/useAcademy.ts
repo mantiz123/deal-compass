@@ -316,17 +316,26 @@ export function useUserWaitlist() {
 
 // ============= Helpers =============
 export function calculateTrackProgress(
-  lessons: { id: string }[],
-  progress: { lesson_id: string; status: string }[]
+  lessons: { id: string; xp_reward?: number }[],
+  progress: { lesson_id: string; status: string; xp_earned?: number }[]
 ) {
-  if (lessons.length === 0) return { completed: 0, total: 0, percent: 0 };
-  const completed = lessons.filter((l) =>
-    progress.some((p) => p.lesson_id === l.id && p.status === 'completed')
-  ).length;
+  if (lessons.length === 0)
+    return { completed: 0, total: 0, percent: 0, xpEarned: 0, xpTotal: 0, isComplete: false };
+  const completedLessonIds = new Set(
+    progress.filter((p) => p.status === 'completed').map((p) => p.lesson_id)
+  );
+  const completed = lessons.filter((l) => completedLessonIds.has(l.id)).length;
+  const xpTotal = lessons.reduce((sum, l) => sum + (l.xp_reward ?? 0), 0);
+  const xpEarned = lessons
+    .filter((l) => completedLessonIds.has(l.id))
+    .reduce((sum, l) => sum + (l.xp_reward ?? 0), 0);
   return {
     completed,
     total: lessons.length,
     percent: Math.round((completed / lessons.length) * 100),
+    xpEarned,
+    xpTotal,
+    isComplete: completed === lessons.length,
   };
 }
 

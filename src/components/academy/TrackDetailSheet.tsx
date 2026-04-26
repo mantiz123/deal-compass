@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useTrackLessons, useUserProgress, calculateTrackProgress } from '@/hooks/useAcademy';
 import { LessonList } from './LessonList';
 import { LessonViewer } from './LessonViewer';
@@ -43,11 +43,22 @@ export function TrackDetailSheet({ track, open, onOpenChange }: TrackDetailSheet
                   style={{ color: track.color ?? 'hsl(var(--primary))' }}
                 />
               </div>
-              <div>
-                <SheetTitle className="text-left">{track.name}</SheetTitle>
-                <Badge variant="outline" className="text-xs mt-1">
-                  {trackProgress.completed} / {trackProgress.total} lecciones
-                </Badge>
+              <div className="flex-1">
+                <SheetTitle className="text-left flex items-center gap-2">
+                  {track.name}
+                  {trackProgress.isComplete && (
+                    <CheckCircle2 className="h-5 w-5 text-success" />
+                  )}
+                </SheetTitle>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <Badge variant="outline" className="text-xs">
+                    {trackProgress.completed} / {trackProgress.total} lecciones
+                  </Badge>
+                  <Badge variant="outline" className="text-xs gap-1">
+                    <Sparkles className="h-3 w-3 text-warning" />
+                    {trackProgress.xpEarned.toLocaleString()} / {trackProgress.xpTotal.toLocaleString()} XP
+                  </Badge>
+                </div>
               </div>
             </div>
             {track.description && (
