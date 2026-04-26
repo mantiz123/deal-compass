@@ -475,6 +475,15 @@ export default function AdminKCFY() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Executive sheet — vista completa del lead */}
+      <KCFYExecutiveSheet
+        open={!!executiveReq}
+        onOpenChange={(o) => !o && setExecutiveReq(null)}
+        kcfyRequestId={executiveReq?.id ?? null}
+        leadId={executiveReq?.leadId ?? null}
+        propertyAddress={executiveReq?.address}
+      />
     </Layout>
   );
 }
