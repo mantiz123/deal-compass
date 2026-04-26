@@ -8,6 +8,7 @@ import { Clock, Sparkles, BookOpen, Target } from 'lucide-react';
 import { useLesson, useLessonQuiz, useStartLesson } from '@/hooks/useAcademy';
 import { QuizRunner } from './QuizRunner';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface LessonViewerProps {
   lessonId: string | null;
