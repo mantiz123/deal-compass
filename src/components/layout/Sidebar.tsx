@@ -41,35 +41,64 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   /** Tiers que pueden ver este item. Si no se define, todos lo ven. */
   tiers?: Array<'free' | 'pro' | 'elite' | 'internal'>;
-  /** Solo super admin de Klose lo ve */
+};
+
+type NavSection = {
+  label: string;
+  items: NavItem[];
+  /** Si se define, solo se muestra a tiers que matchean. */
+  tiers?: Array<'free' | 'pro' | 'elite' | 'internal'>;
+  /** Si true, solo super admin de Klose lo ve. */
   superAdminOnly?: boolean;
 };
 
-// Items SIEMPRE visibles (todos los tiers, incluido free / estudiante Modelo A)
-const coreItems: NavItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Guía", href: "/guide", icon: BookOpen },
-  { name: "Importar", href: "/import", icon: Upload },
-  { name: "Leads", href: "/leads", icon: Target },
-  { name: "Pipeline", href: "/pipeline", icon: Zap },
-  { name: "Properties", href: "/properties", icon: Building2 },
-  { name: "Academy", href: "/academy", icon: GraduationCap },
-  { name: "Entrenamiento AI", href: "/training", icon: GraduationCap },
-  { name: "Mis Ganancias", href: "/earnings", icon: Wallet },
-];
+// === SECCIÓN 1: APRENDIZAJE — todos los tiers ===
+const learningSection: NavSection = {
+  label: "Aprendizaje",
+  items: [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Guía", href: "/guide", icon: BookOpen },
+    { name: "Academy", href: "/academy", icon: GraduationCap },
+  ],
+};
 
-// Items SOLO Pro/Elite/Internal (estudiante free NO los ve — Modelo A puro)
-const proItems: NavItem[] = [
-  { name: "Herramientas", href: "/tools", icon: Wrench, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Buyers", href: "/buyers", icon: Users, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Realtors", href: "/realtors", icon: UserCheck, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Tracking", href: "/tracking", icon: Mail, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Campaigns", href: "/campaigns", icon: MessageSquare, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Deals", href: "/deals", icon: FileText, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Contratos", href: "/contracts", icon: FileSignature, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Payments", href: "/payments", icon: DollarSign, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Cobros", href: "/cobros", icon: Link2, tiers: ['pro', 'elite', 'internal'] },
-];
+// === SECCIÓN 2: MI NEGOCIO — todos los tiers (estudiante Modelo A incluido) ===
+const businessSection: NavSection = {
+  label: "Mi Negocio",
+  items: [
+    { name: "Importar", href: "/import", icon: Upload },
+    { name: "Leads", href: "/leads", icon: Target },
+    { name: "Pipeline", href: "/pipeline", icon: Zap },
+    { name: "Properties", href: "/properties", icon: Building2 },
+    { name: "Mis Ganancias", href: "/earnings", icon: Wallet },
+  ],
+};
+
+// === SECCIÓN 3: OPERACIÓN — solo Pro/Elite/Internal (estudiante NO lo ve) ===
+const operationsSection: NavSection = {
+  label: "Operación",
+  tiers: ['pro', 'elite', 'internal'],
+  items: [
+    { name: "Herramientas", href: "/tools", icon: Wrench },
+    { name: "Buyers", href: "/buyers", icon: Users },
+    { name: "Realtors", href: "/realtors", icon: UserCheck },
+    { name: "Tracking", href: "/tracking", icon: Mail },
+    { name: "Campaigns", href: "/campaigns", icon: MessageSquare },
+    { name: "Deals", href: "/deals", icon: FileText },
+    { name: "Contratos", href: "/contracts", icon: FileSignature },
+    { name: "Payments", href: "/payments", icon: DollarSign },
+    { name: "Cobros", href: "/cobros", icon: Link2 },
+  ],
+};
+
+// === SECCIÓN 4: KLOSE INTERNAL — solo equipo interno Klose ===
+const kloseInternalSection: NavSection = {
+  label: "Klose Internal",
+  tiers: ['internal'],
+  items: [
+    { name: "Entrenamiento AI", href: "/training", icon: GraduationCap },
+  ],
+};
 
 const settingsItem: NavItem = { name: "Settings", href: "/settings", icon: Settings };
 
@@ -83,16 +112,54 @@ export function Sidebar() {
   const pendingKcfy = isSuperAdmin ? (kcfyRequests?.length ?? 0) : 0;
   const isMobile = useIsMobile();
 
-  // Build navigation list dynamically based on org tier (Modelo A: free students see less)
-  const tier = currentOrg?.tier ?? 'free';
-  const visibleProItems = proItems.filter(item =>
-    !item.tiers || item.tiers.includes(tier as 'free' | 'pro' | 'elite' | 'internal')
+  // Build sections dynamically based on org tier (Modelo A: free students see less)
+  const tier = (currentOrg?.tier ?? 'free') as 'free' | 'pro' | 'elite' | 'internal';
+  const allSections: NavSection[] = [
+    learningSection,
+    businessSection,
+    operationsSection,
+    kloseInternalSection,
+  ];
+  const visibleSections = allSections.filter(
+    section => !section.tiers || section.tiers.includes(tier)
   );
-  const navigation: NavItem[] = [...coreItems, ...visibleProItems, settingsItem];
 
   const handleNavClick = () => {
     if (isMobile) setMobileOpen(false);
   };
+
+  const renderNavItem = (item: NavItem) => {
+    const isActive =
+      location.pathname === item.href ||
+      (item.href === '/dashboard' && location.pathname === '/dashboard');
+    return (
+      <Link
+        key={item.name}
+        to={item.href}
+        onClick={handleNavClick}
+        className={cn(
+          "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+          isActive
+            ? "bg-primary/10 text-primary shadow-[inset_0_0_20px_hsl(187_85%_53%_/_0.1)]"
+            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+        )}
+      >
+        <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-primary")} />
+        {(!collapsed || isMobile) && <span>{item.name}</span>}
+      </Link>
+    );
+  };
+
+  const renderSectionLabel = (label: string) => (
+    <div
+      className={cn(
+        "mt-4 mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70",
+        collapsed && !isMobile && "text-center"
+      )}
+    >
+      {(!collapsed || isMobile) ? label : '•'}
+    </div>
+  );
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
@@ -118,32 +185,24 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
-        {navigation.map((item) => {
-          const isActive = location.pathname === item.href || (item.href === '/dashboard' && location.pathname === '/dashboard');
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              onClick={handleNavClick}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                isActive
-                  ? "bg-primary/10 text-primary shadow-[inset_0_0_20px_hsl(187_85%_53%_/_0.1)]"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              )}
-            >
-              <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-primary")} />
-              {(!collapsed || isMobile) && <span>{item.name}</span>}
-            </Link>
-          );
-        })}
+        {visibleSections.map((section, idx) => (
+          <div key={section.label}>
+            {/* Primera sección sin label superior pegado al borde */}
+            {idx > 0 && renderSectionLabel(section.label)}
+            {idx === 0 && renderSectionLabel(section.label)}
+            {section.items.map(renderNavItem)}
+          </div>
+        ))}
+
+        {/* Settings — siempre visible al final del bloque general */}
+        <div className="pt-2">
+          {renderNavItem(settingsItem)}
+        </div>
 
         {/* Super admin only: KCFY panel */}
         {isSuperAdmin && (
           <>
-            <div className={cn("mt-4 mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70", collapsed && !isMobile && "text-center")}>
-              {(!collapsed || isMobile) ? 'Klose Admin' : '•'}
-            </div>
+            {renderSectionLabel('Klose Admin')}
             <Link
               to="/admin/kcfy"
               onClick={handleNavClick}
