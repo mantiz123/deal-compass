@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useContractSignatures, type Contract } from '@/hooks/useContracts';
-import { Download, Eye, Send, FileText, Clock, MapPin, Loader2 } from 'lucide-react';
+import { Download, Eye, Send, FileText, Clock, MapPin, Loader2, ExternalLink, Maximize2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -103,15 +103,57 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-        <SheetHeader>
+      <SheetContent className="w-full sm:max-w-[95vw] lg:max-w-[1400px] overflow-hidden p-0 flex flex-col">
+        <SheetHeader className="px-6 pt-6 pb-3 border-b">
           <SheetTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
             Detalle del Contrato
+            <Badge className={contract.contract_type === 'AB' ? 'bg-blue-500/20 text-blue-400' : contract.contract_type === 'BC' ? 'bg-purple-500/20 text-purple-400' : 'bg-orange-500/20 text-orange-400'}>
+              {contract.contract_type}
+            </Badge>
+            <Badge className={
+              contract.status === 'signed' ? 'bg-green-500/20 text-green-400' :
+              contract.status === 'sent' ? 'bg-blue-500/20 text-blue-400' :
+              contract.status === 'viewed' ? 'bg-yellow-500/20 text-yellow-400' :
+              contract.status === 'completed' ? 'bg-primary/20 text-primary' :
+              'bg-muted text-muted-foreground'
+            }>
+              {contract.status}
+            </Badge>
           </SheetTitle>
         </SheetHeader>
 
-        <div className="space-y-6 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] flex-1 overflow-hidden">
+          {/* PDF Viewer (left) */}
+          <div className="hidden lg:flex flex-col bg-muted/30 border-r">
+            <div className="flex items-center justify-between px-4 py-2 border-b bg-background/50">
+              <span className="text-xs font-medium text-muted-foreground">
+                {contract.signed_pdf_url ? '✓ PDF Firmado' : 'PDF Original (sin firmar)'}
+              </span>
+              {preferredPdfUrl && (
+                <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => handleOpenPdf(preferredPdfUrl)}>
+                  <Maximize2 className="h-3 w-3" /> Abrir en nueva pestaña
+                </Button>
+              )}
+            </div>
+            {preferredPdfUrl ? (
+              <iframe
+                src={`${preferredPdfUrl}#toolbar=1&navpanes=0`}
+                className="flex-1 w-full bg-white"
+                title="Contract PDF"
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                <div className="text-center">
+                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                  <p>PDF aún no generado</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Metadata (right) */}
+          <div className="overflow-y-auto p-6 space-y-6">
           {/* Property & Status */}
           <div className="flex items-start justify-between">
             <div>
