@@ -22,6 +22,7 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
   const { data: signatures = [] } = useContractSignatures(contract?.id);
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
+  const [kloseSignOpen, setKloseSignOpen] = useState(false);
 
   const handleDownloadPdf = async (url: string, filename: string) => {
     setDownloading(true);
