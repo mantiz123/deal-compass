@@ -1283,6 +1283,44 @@ export type Database = {
           },
         ]
       }
+      kcfy_status_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          kcfy_request_id: string
+          note: string | null
+          organization_id: string
+          stage: Database["public"]["Enums"]["kcfy_stage"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kcfy_request_id: string
+          note?: string | null
+          organization_id: string
+          stage: Database["public"]["Enums"]["kcfy_stage"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kcfy_request_id?: string
+          note?: string | null
+          organization_id?: string
+          stage?: Database["public"]["Enums"]["kcfy_stage"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kcfy_status_events_kcfy_request_id_fkey"
+            columns: ["kcfy_request_id"]
+            isOneToOne: false
+            referencedRelation: "kcfy_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_cleanup_log: {
         Row: {
           action: string
@@ -2699,6 +2737,15 @@ export type Database = {
       contract_status: "draft" | "sent" | "viewed" | "signed" | "completed"
       contract_type: "AB" | "BC" | "AMENDMENT"
       kcfy_priority: "low" | "normal" | "high" | "urgent"
+      kcfy_stage:
+        | "submitted"
+        | "accepted"
+        | "contacting_seller"
+        | "negotiating"
+        | "under_contract"
+        | "buyer_secured"
+        | "closed"
+        | "dead"
       kcfy_status:
         | "pending"
         | "accepted"
@@ -2899,6 +2946,16 @@ export const Constants = {
       contract_status: ["draft", "sent", "viewed", "signed", "completed"],
       contract_type: ["AB", "BC", "AMENDMENT"],
       kcfy_priority: ["low", "normal", "high", "urgent"],
+      kcfy_stage: [
+        "submitted",
+        "accepted",
+        "contacting_seller",
+        "negotiating",
+        "under_contract",
+        "buyer_secured",
+        "closed",
+        "dead",
+      ],
       kcfy_status: [
         "pending",
         "accepted",
