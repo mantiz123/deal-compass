@@ -43,7 +43,7 @@ export default function Academy() {
   const activateMutation = useActivateState();
   const waitlistMutation = useJoinWaitlist();
 
-  const { hasAccess, ownedSlugs, ownsBundle } = useTrackPurchases();
+  const { hasAccess, ownsBundle } = useTrackPurchases();
   const startCheckout = useStartAcademyCheckout();
   const refreshPurchases = useRefreshPurchasesAfterCheckout();
 
@@ -332,12 +332,18 @@ function TrackCardWrapper({
   isLocked,
   lockReason,
   onOpen,
+  paywall,
 }: {
   track: any;
   progress: { lesson_id: string; status: string }[];
   isLocked: boolean;
   lockReason?: string;
   onOpen: () => void;
+  paywall?: {
+    priceCents: number;
+    onPurchase: () => void;
+    isPurchasing?: boolean;
+  };
 }) {
   const { data: lessons = [] } = useTrackLessons(track.id);
   const trackProgress = calculateTrackProgress(lessons, progress);
@@ -348,6 +354,7 @@ function TrackCardWrapper({
       isLocked={isLocked}
       lockReason={lockReason}
       onOpen={onOpen}
+      paywall={paywall}
     />
   );
 }
