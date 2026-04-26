@@ -218,7 +218,6 @@ export default function Academy() {
               </div>
             )}
           </TabsContent>
-        </Tabs>
 
           {/* CERTIFICATES TAB */}
           <TabsContent value="certificates">
