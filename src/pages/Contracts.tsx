@@ -9,8 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useContracts, type Contract } from '@/hooks/useContracts';
 import { ContractDetailSheet } from '@/components/contracts/ContractDetailSheet';
-import { Search, Download, Eye, Loader2, CheckCircle2 } from 'lucide-react';
+import { Search, Download, Eye, CheckCircle2, FileText, AlertCircle, DollarSign } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,8 +39,9 @@ export default function Contracts() {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('AB');
+  const [onlyPendingKlose, setOnlyPendingKlose] = useState(false);
 
-  const { data: contracts = [], isLoading } = useContracts({
+  const { data: allContracts = [], isLoading } = useContracts({
     status: statusFilter,
     contract_type: 'all',
     search,
@@ -61,10 +64,33 @@ export default function Contracts() {
   const { toast } = useToast();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  // Apply "pending Klose signature" filter
+  const contracts = useMemo(() => {
+    if (!onlyPendingKlose) return allContracts;
+    return allContracts.filter(c => !kloseSignatures[c.id] && c.status !== 'draft');
+  }, [allContracts, onlyPendingKlose, kloseSignatures]);
+
   // Split contracts by type
   const abContracts = useMemo(() => contracts.filter(c => c.contract_type === 'AB'), [contracts]);
   const bcContracts = useMemo(() => contracts.filter(c => c.contract_type === 'BC'), [contracts]);
   const amdContracts = useMemo(() => contracts.filter(c => c.contract_type === 'AMENDMENT'), [contracts]);
+
+  // KPIs calculated on ALL contracts (not filtered) for true overview
+  const kpis = useMemo(() => {
+    const total = allContracts.length;
+    const signed = allContracts.filter(c => c.status === 'signed' || c.status === 'completed').length;
+    const pendingKloseSign = allContracts.filter(c => !kloseSignatures[c.id] && c.status !== 'draft').length;
+    const inFlight = allContracts.filter(c => c.status === 'sent' || c.status === 'viewed').length;
+    // Estimated commission at risk: sum option_fee from contract_data of in-flight contracts
+    const commissionInFlight = allContracts
+      .filter(c => c.status === 'sent' || c.status === 'viewed' || c.status === 'signed')
+      .reduce((sum, c) => {
+        const cd = (c as any).contract_data || {};
+        const fee = parseFloat(cd.option_fee || cd.assignment_fee || '0');
+        return sum + (isNaN(fee) ? 0 : fee);
+      }, 0);
+    return { total, signed, pendingKloseSign, inFlight, commissionInFlight };
+  }, [allContracts, kloseSignatures]);
 
   const handleOpenPdf = (url: string | null) => {
     if (!url) return;
@@ -246,11 +272,57 @@ export default function Contracts() {
           </div>
         </div>
 
+        {/* KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card variant="glass">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">Total</span>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <p className="text-2xl font-bold text-foreground mt-1">{kpis.total}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Contratos en sistema</p>
+            </CardContent>
+          </Card>
+          <Card variant="glass">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">Firmados</span>
+                <CheckCircle2 className="h-4 w-4 text-success" />
+              </div>
+              <p className="text-2xl font-bold text-success mt-1">{kpis.signed}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Cerrados completos</p>
+            </CardContent>
+          </Card>
+          <Card variant="glass" className={kpis.pendingKloseSign > 0 ? 'ring-1 ring-warning/50' : ''}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">Pendientes Klose</span>
+                <AlertCircle className={`h-4 w-4 ${kpis.pendingKloseSign > 0 ? 'text-warning' : 'text-muted-foreground'}`} />
+              </div>
+              <p className={`text-2xl font-bold mt-1 ${kpis.pendingKloseSign > 0 ? 'text-warning' : 'text-foreground'}`}>{kpis.pendingKloseSign}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Requieren tu firma</p>
+            </CardContent>
+          </Card>
+          <Card variant="glass">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">$ En juego</span>
+                <DollarSign className="h-4 w-4 text-primary" />
+              </div>
+              <p className="text-2xl font-bold text-primary mt-1">
+                ${kpis.commissionInFlight.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">{kpis.inFlight} contrato(s) activo(s)</p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Filters */}
         <Card variant="glass">
           <CardContent className="pt-4">
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="relative flex-1">
+            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por dirección o nombre..."
@@ -272,6 +344,16 @@ export default function Contracts() {
                   <SelectItem value="completed">Completado</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-background/50">
+                <Switch
+                  id="pending-klose"
+                  checked={onlyPendingKlose}
+                  onCheckedChange={setOnlyPendingKlose}
+                />
+                <Label htmlFor="pending-klose" className="text-xs cursor-pointer whitespace-nowrap">
+                  Solo pendientes mi firma
+                </Label>
+              </div>
             </div>
           </CardContent>
         </Card>
