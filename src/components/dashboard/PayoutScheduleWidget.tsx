@@ -78,23 +78,23 @@ export const PayoutScheduleWidget = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Banknote className="h-5 w-5 text-primary" />
+            <Banknote className="h-5 w-5 text-primary flex-shrink-0" />
             <div>
               <CardTitle className="text-base">Payout Schedule</CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs">
                 Frecuencia de depósitos Stripe → Mercury
               </CardDescription>
             </div>
           </div>
           {!loading &&
             (payoutsEnabled ? (
-              <Badge variant="secondary" className="gap-1 shrink-0">
+              <Badge variant="secondary" className="gap-1 shrink-0 self-start sm:self-auto">
                 <CheckCircle2 className="h-3 w-3" /> Activo
               </Badge>
             ) : (
-              <Badge variant="destructive" className="gap-1 shrink-0">
+              <Badge variant="destructive" className="gap-1 shrink-0 self-start sm:self-auto">
                 <AlertCircle className="h-3 w-3" /> Pendiente
               </Badge>
             ))}
