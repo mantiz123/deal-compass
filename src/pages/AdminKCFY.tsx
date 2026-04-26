@@ -140,12 +140,12 @@ export default function AdminKCFY() {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <Briefcase className="h-7 w-7 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Panel KCFY — Klose Closes For You</h1>
-            <p className="text-sm text-muted-foreground">
+      <div className="space-y-6">
+        <div className="flex items-start gap-3">
+          <Briefcase className="h-6 w-6 sm:h-7 sm:w-7 text-primary flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight">Panel KCFY — Klose Closes For You</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Gestiona solicitudes de cierre asistido enviadas por estudiantes.
             </p>
           </div>
@@ -161,13 +161,15 @@ export default function AdminKCFY() {
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-          <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full">
-            {STATUS_TABS.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value}>
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full min-w-[480px] md:min-w-0">
+              {STATUS_TABS.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm">
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
           <TabsContent value={activeTab} className="mt-4">
             <Card>
@@ -188,6 +190,7 @@ export default function AdminKCFY() {
                     No hay solicitudes en este estado.
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -342,6 +345,7 @@ export default function AdminKCFY() {
                       })}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
