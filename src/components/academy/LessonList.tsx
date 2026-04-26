@@ -56,14 +56,14 @@ export function LessonList({ lessons, progress, onSelect }: LessonListProps) {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant="outline" className="text-xs font-mono">
+                <div className="flex items-start gap-2 mb-1 flex-wrap">
+                  <Badge variant="outline" className="text-xs font-mono flex-shrink-0">
                     {lesson.lesson_order}
                   </Badge>
-                  <h4 className="font-medium text-foreground truncate">{lesson.title}</h4>
+                  <h4 className="font-medium text-foreground break-words min-w-0">{lesson.title}</h4>
                 </div>
                 {lesson.summary && (
-                  <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
+                  <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
                     {lesson.summary}
                   </p>
                 )}
