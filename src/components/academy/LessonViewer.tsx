@@ -80,8 +80,8 @@ export function LessonViewer({ lessonId, open, onOpenChange, onCompleted }: Less
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
-        <SheetHeader className="px-6 pt-6 pb-4 border-b border-border space-y-3">
+      <SheetContent side="right" className="w-full max-w-full sm:max-w-2xl p-0 flex flex-col">
+        <SheetHeader className="px-4 sm:px-6 pt-6 pb-4 border-b border-border space-y-3">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
               <BookOpen className="h-3 w-3 mr-1" />
