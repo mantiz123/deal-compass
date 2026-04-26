@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { KScoreGauge } from '@/components/dashboard/KScoreGauge';
 import { LeadTimeline } from './LeadTimeline';
+import { StrategyBattleCard } from './StrategyBattleCard';
 import { LeadDocuments } from './LeadDocuments';
 import { NewInteractionDialog } from './NewInteractionDialog';
 import { AIPropertyInsights } from './AIPropertyInsights';
