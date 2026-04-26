@@ -1,0 +1,6 @@
+---
+name: KCFY Executive View
+description: Sheet ancho admin con vista completa del lead (skip-trace, DNC, motivation, comps, docs, interactions) + timeline horizontal premium + acciones rápidas Call/Email/Copy
+type: feature
+---
+Componente `KCFYExecutiveSheet` (src/components/admin/) abierto desde `AdminKCFY` al hacer click en una fila o en el botón "Ver". Carga lead+property+interactions+documents en una sola query con joins. Muestra: 3 botones de acción rápida (tel: al primer phone no-DNC, mailto: con template Klose pre-rellenado, copy contactos al clipboard), `KCFYHorizontalTimeline` (7 nodos conectados con duración entre etapas y avatar/nombre del responsable), 4 metric cards (K-Score con highlight si ≥75, ARV, MAO, Net Equity), card de propietario con phones (con badge DNC en rojo y type) + emails + motivation badges (FORECLOSURE/VACANT/PROBATE/etc), detalles de propiedad (12 campos), estrategia recomendada con confianza+MAO+reasons, historial de interacciones del estudiante (top 10), documentos (con signed URLs vía storage 'lead-documents'), notas internas. El timeline horizontal usa connector lines con color condicional (primary cuando done/current, border cuando pending, muted cuando dead) y "duration pills" sobre la línea. Todos los botones de acción en TableCell tienen `e.stopPropagation()` para no abrir el sheet al clickearlos.
