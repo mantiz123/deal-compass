@@ -80,6 +80,17 @@ export function TrackCard({ track, progress, isLocked, lockReason, onOpen }: Tra
             <span className="font-semibold text-foreground">{progress.percent}%</span>
           </div>
           <Progress value={progress.percent} className="h-2" />
+          {(progress.xpTotal ?? 0) > 0 && (
+            <div className="flex items-center justify-between text-xs pt-1">
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <Sparkles className="h-3 w-3 text-amber-500" />
+                XP
+              </span>
+              <span className="font-semibold text-foreground tabular-nums">
+                {(progress.xpEarned ?? 0).toLocaleString()} / {(progress.xpTotal ?? 0).toLocaleString()}
+              </span>
+            </div>
+          )}
         </div>
 
         {isLocked ? (
