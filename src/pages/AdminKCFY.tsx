@@ -263,8 +263,22 @@ export default function AdminKCFY() {
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    setExecutiveReq({
+                                      id: req.id,
+                                      leadId: req.lead_id,
+                                      address: prop?.address ? `${prop.address}, ${prop.city}, ${prop.state}` : '',
+                                    })
+                                  }
+                                >
+                                  <Eye className="h-3.5 w-3.5 mr-1" />
+                                  Ver
+                                </Button>
                                 {req.status === 'pending' && (
                                   <>
                                     <Button
