@@ -42,7 +42,7 @@ export function ActivityFeed() {
     return (
       <Card variant="glass">
         <CardHeader>
-          <CardTitle className="text-xl">Actividad Reciente</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Actividad Reciente</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
