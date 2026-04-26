@@ -41,35 +41,64 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   /** Tiers que pueden ver este item. Si no se define, todos lo ven. */
   tiers?: Array<'free' | 'pro' | 'elite' | 'internal'>;
-  /** Solo super admin de Klose lo ve */
+};
+
+type NavSection = {
+  label: string;
+  items: NavItem[];
+  /** Si se define, solo se muestra a tiers que matchean. */
+  tiers?: Array<'free' | 'pro' | 'elite' | 'internal'>;
+  /** Si true, solo super admin de Klose lo ve. */
   superAdminOnly?: boolean;
 };
 
-// Items SIEMPRE visibles (todos los tiers, incluido free / estudiante Modelo A)
-const coreItems: NavItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Guía", href: "/guide", icon: BookOpen },
-  { name: "Importar", href: "/import", icon: Upload },
-  { name: "Leads", href: "/leads", icon: Target },
-  { name: "Pipeline", href: "/pipeline", icon: Zap },
-  { name: "Properties", href: "/properties", icon: Building2 },
-  { name: "Academy", href: "/academy", icon: GraduationCap },
-  { name: "Entrenamiento AI", href: "/training", icon: GraduationCap },
-  { name: "Mis Ganancias", href: "/earnings", icon: Wallet },
-];
+// === SECCIÓN 1: APRENDIZAJE — todos los tiers ===
+const learningSection: NavSection = {
+  label: "Aprendizaje",
+  items: [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Guía", href: "/guide", icon: BookOpen },
+    { name: "Academy", href: "/academy", icon: GraduationCap },
+  ],
+};
 
-// Items SOLO Pro/Elite/Internal (estudiante free NO los ve — Modelo A puro)
-const proItems: NavItem[] = [
-  { name: "Herramientas", href: "/tools", icon: Wrench, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Buyers", href: "/buyers", icon: Users, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Realtors", href: "/realtors", icon: UserCheck, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Tracking", href: "/tracking", icon: Mail, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Campaigns", href: "/campaigns", icon: MessageSquare, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Deals", href: "/deals", icon: FileText, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Contratos", href: "/contracts", icon: FileSignature, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Payments", href: "/payments", icon: DollarSign, tiers: ['pro', 'elite', 'internal'] },
-  { name: "Cobros", href: "/cobros", icon: Link2, tiers: ['pro', 'elite', 'internal'] },
-];
+// === SECCIÓN 2: MI NEGOCIO — todos los tiers (estudiante Modelo A incluido) ===
+const businessSection: NavSection = {
+  label: "Mi Negocio",
+  items: [
+    { name: "Importar", href: "/import", icon: Upload },
+    { name: "Leads", href: "/leads", icon: Target },
+    { name: "Pipeline", href: "/pipeline", icon: Zap },
+    { name: "Properties", href: "/properties", icon: Building2 },
+    { name: "Mis Ganancias", href: "/earnings", icon: Wallet },
+  ],
+};
+
+// === SECCIÓN 3: OPERACIÓN — solo Pro/Elite/Internal (estudiante NO lo ve) ===
+const operationsSection: NavSection = {
+  label: "Operación",
+  tiers: ['pro', 'elite', 'internal'],
+  items: [
+    { name: "Herramientas", href: "/tools", icon: Wrench },
+    { name: "Buyers", href: "/buyers", icon: Users },
+    { name: "Realtors", href: "/realtors", icon: UserCheck },
+    { name: "Tracking", href: "/tracking", icon: Mail },
+    { name: "Campaigns", href: "/campaigns", icon: MessageSquare },
+    { name: "Deals", href: "/deals", icon: FileText },
+    { name: "Contratos", href: "/contracts", icon: FileSignature },
+    { name: "Payments", href: "/payments", icon: DollarSign },
+    { name: "Cobros", href: "/cobros", icon: Link2 },
+  ],
+};
+
+// === SECCIÓN 4: KLOSE INTERNAL — solo equipo interno Klose ===
+const kloseInternalSection: NavSection = {
+  label: "Klose Internal",
+  tiers: ['internal'],
+  items: [
+    { name: "Entrenamiento AI", href: "/training", icon: GraduationCap },
+  ],
+};
 
 const settingsItem: NavItem = { name: "Settings", href: "/settings", icon: Settings };
 
