@@ -9,8 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useContracts, type Contract } from '@/hooks/useContracts';
 import { ContractDetailSheet } from '@/components/contracts/ContractDetailSheet';
-import { Search, Download, Eye, Loader2, CheckCircle2 } from 'lucide-react';
+import { Search, Download, Eye, Loader2, CheckCircle2, FileText, Clock, AlertCircle, DollarSign } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,8 +39,9 @@ export default function Contracts() {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('AB');
+  const [onlyPendingKlose, setOnlyPendingKlose] = useState(false);
 
-  const { data: contracts = [], isLoading } = useContracts({
+  const { data: allContracts = [], isLoading } = useContracts({
     status: statusFilter,
     contract_type: 'all',
     search,
