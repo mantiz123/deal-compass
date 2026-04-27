@@ -85,22 +85,25 @@ export function CriticalActionsWidget() {
 
   return (
     <>
-      <Card variant="glow">
-        <CardHeader className="pb-3">
+      <Card variant="glow" className="overflow-hidden">
+        <CardHeader className="pb-3 px-3 sm:px-6">
           <div className="flex items-start justify-between gap-2 flex-wrap">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg min-w-0">
-              <Target className="h-5 w-5 text-primary flex-shrink-0" />
-              <span className="truncate">Próximas Acciones Críticas</span>
+            <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-lg min-w-0">
+              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+              <span className="truncate">
+                <span className="sm:hidden">Acciones Críticas</span>
+                <span className="hidden sm:inline">Próximas Acciones Críticas</span>
+              </span>
             </CardTitle>
-            <Badge variant="outline" className="text-xs font-mono flex-shrink-0">
+            <Badge variant="outline" className="text-[10px] sm:text-xs font-mono flex-shrink-0">
               Top {actions?.length || 0}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+          <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 line-clamp-2 hidden sm:block">
             Acciones priorizadas por K-Score, urgencia de contratos y actividad de buyers
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6 overflow-hidden">
           {!actions || actions.length === 0 ? (
             <div className="text-center py-8">
               <CheckCircle2 className="h-10 w-10 mx-auto text-success/40 mb-3" />
