@@ -87,16 +87,16 @@ export function CriticalActionsWidget() {
     <>
       <Card variant="glow">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Target className="h-5 w-5 text-primary" />
-              Próximas Acciones Críticas
+          <div className="flex items-start justify-between gap-2 flex-wrap">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg min-w-0">
+              <Target className="h-5 w-5 text-primary flex-shrink-0" />
+              <span className="truncate">Próximas Acciones Críticas</span>
             </CardTitle>
-            <Badge variant="outline" className="text-xs font-mono">
+            <Badge variant="outline" className="text-xs font-mono flex-shrink-0">
               Top {actions?.length || 0}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
             Acciones priorizadas por K-Score, urgencia de contratos y actividad de buyers
           </p>
         </CardHeader>
@@ -121,44 +121,44 @@ export function CriticalActionsWidget() {
                     key={action.id}
                     onClick={() => setSelectedAction(action)}
                     className={cn(
-                      'w-full text-left rounded-lg border p-3 transition-all hover:scale-[1.01]',
+                      'w-full text-left rounded-lg border p-2.5 sm:p-3 transition-all hover:scale-[1.01]',
                       meta.color
                     )}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2 sm:gap-3 min-w-0">
                       {/* Rank */}
-                      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-background/60 border border-border flex items-center justify-center">
-                        <span className="text-xs font-bold text-muted-foreground">
+                      <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-background/60 border border-border flex items-center justify-center">
+                        <span className="text-[10px] sm:text-xs font-bold text-muted-foreground">
                           {idx + 1}
                         </span>
                       </div>
 
                       {/* Body */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <Icon className="h-3.5 w-3.5 flex-shrink-0" />
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        <div className="flex items-center gap-1 sm:gap-2 mb-1 flex-wrap">
+                          <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
+                          <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0">
                             {meta.label}
                           </Badge>
                           <Badge
                             className={cn(
-                              'text-[10px] px-1.5 py-0',
+                              'text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0',
                               priorityBadgeClass(action.priority)
                             )}
                           >
-                            {priorityLabel(action.priority)} · {action.priority}
+                            <span className="hidden sm:inline">{priorityLabel(action.priority)} · </span>{action.priority}
                           </Badge>
                           {action.piwScore != null && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
+                            <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0 font-mono">
                               K-{action.piwScore}
                             </Badge>
                           )}
                         </div>
-                        <p className="font-semibold text-sm truncate">{action.title}</p>
-                        <p className="text-xs text-muted-foreground truncate mb-1">
+                        <p className="font-semibold text-xs sm:text-sm truncate">{action.title}</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground truncate mb-1">
                           {action.subtitle}
                         </p>
-                        <p className="text-xs text-foreground/80">{action.reason}</p>
+                        <p className="text-[11px] sm:text-xs text-foreground/80 line-clamp-2">{action.reason}</p>
                       </div>
 
                       <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0 mt-1" />
