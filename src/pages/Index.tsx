@@ -132,7 +132,7 @@ const Index = () => {
       </div>
 
       {/* Hot Leads + Critical Actions side by side */}
-      <div className="mb-6 grid gap-6 lg:grid-cols-2">
+      <div className="mb-6 grid gap-4 sm:gap-6 lg:grid-cols-2">
         <HotLeadsWidget />
         <CriticalActionsWidget />
       </div>
