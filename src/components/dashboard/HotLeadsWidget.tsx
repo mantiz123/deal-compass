@@ -113,27 +113,30 @@ export function HotLeadsWidget() {
 
   return (
     <>
-      <Card variant="glow">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Flame className="h-5 w-5 text-warning" />
-              Hot Leads — Acción Requerida
+      <Card variant="glow" className="overflow-hidden">
+        <CardHeader className="pb-3 px-3 sm:px-6">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-lg min-w-0">
+              <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-warning flex-shrink-0" />
+              <span className="truncate">
+                <span className="sm:hidden">Hot Leads</span>
+                <span className="hidden sm:inline">Hot Leads — Acción Requerida</span>
+              </span>
             </CardTitle>
-            <Badge variant="outline" className="text-xs font-mono">
-              {hotLeads?.length || 0} detectados
+            <Badge variant="outline" className="text-[10px] sm:text-xs font-mono flex-shrink-0">
+              {hotLeads?.length || 0}
             </Badge>
           </div>
           {needsAction.length > 0 && (
             <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-warning/10 border border-warning/20">
               <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
-              <p className="text-xs text-warning">
-                <strong>{needsAction.length} leads HOT</strong> sin contacto — requieren skip-tracing
+              <p className="text-[11px] sm:text-xs text-warning min-w-0">
+                <strong>{needsAction.length} HOT</strong> sin contacto — skip-tracing
               </p>
             </div>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6 overflow-hidden">
           {(!hotLeads || hotLeads.length === 0) ? (
             <div className="text-center py-8">
               <Flame className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
@@ -196,23 +199,23 @@ function HotLeadRow({
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left rounded-lg border p-2.5 sm:p-3 transition-all hover:scale-[1.01]",
+        "w-full text-left rounded-lg border p-2 sm:p-3 transition-all hover:scale-[1.01] overflow-hidden",
         needsSkipTrace
           ? "border-warning/40 bg-warning/5 hover:bg-warning/10 hover:border-warning/60"
           : "border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50"
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
+      <div className="flex items-start justify-between gap-1.5 sm:gap-2 min-w-0 w-full">
+        <div className="flex-1 min-w-0 overflow-hidden">
           {/* Address & Score */}
-          <div className="flex items-center gap-2 mb-1 min-w-0">
-            <span className="font-semibold text-sm truncate min-w-0">
+          <div className="flex items-center gap-1.5 mb-1 min-w-0">
+            <span className="font-semibold text-xs sm:text-sm truncate min-w-0 flex-1">
               {p?.address || 'Sin dirección'}
             </span>
             <Badge
               variant="outline"
               className={cn(
-                "text-[10px] sm:text-xs font-mono flex-shrink-0",
+                "text-[10px] sm:text-xs font-mono flex-shrink-0 px-1 sm:px-1.5 py-0",
                 (lead.piw_score || 0) >= 75
                   ? "border-warning/50 text-warning bg-warning/10"
                   : "border-primary/50 text-primary bg-primary/10"
@@ -223,23 +226,28 @@ function HotLeadRow({
           </div>
 
           {/* City & Owner */}
-          <p className="text-xs text-muted-foreground mb-2 truncate">
-            <span className="truncate">{p?.city}, {p?.state} {p?.zip_code}</span>
-            {p?.owner_name && <span className="truncate"> • {p.owner_name}</span>}
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 truncate">
+            <span>{p?.city}, {p?.state} {p?.zip_code}</span>
+            {p?.owner_name && <span className="hidden sm:inline"> • {p.owner_name}</span>}
           </p>
 
           {/* Distress Badges */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            {badges.map((b, i) => (
+          <div className="flex flex-wrap gap-1 mb-1.5">
+            {badges.slice(0, 3).map((b, i) => (
               <Badge key={i} className={cn("text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0", b.color)}>
                 <span className="hidden sm:inline">{b.label}</span>
                 <span className="sm:hidden">{b.shortLabel}</span>
               </Badge>
             ))}
+            {badges.length > 3 && (
+              <Badge variant="outline" className="text-[9px] sm:text-[10px] px-1 py-0 sm:hidden">
+                +{badges.length - 3}
+              </Badge>
+            )}
           </div>
 
           {/* Financial Row */}
-          <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-[10px] sm:text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] sm:text-xs text-muted-foreground">
             {equity !== null && (
               <span className={cn(equity >= 60 ? "text-success" : "")}>
                 Eq: {equity}%
@@ -250,29 +258,29 @@ function HotLeadRow({
                 Net: {formatCurrency(netEquity)}
               </span>
             )}
-            {arv && <span>ARV: {formatCurrency(arv)}</span>}
+            {arv && <span className="hidden sm:inline">ARV: {formatCurrency(arv)}</span>}
           </div>
         </div>
 
-        {/* Right side: Contact status + action */}
+        {/* Right side: Contact status (icon-only on mobile) */}
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           {needsSkipTrace ? (
-            <Badge className="bg-warning/20 text-warning border-warning/30 text-[10px] whitespace-nowrap">
+            <Badge className="bg-warning/20 text-warning border-warning/30 text-[10px] whitespace-nowrap px-1 sm:px-2 py-0.5">
               <Search className="h-3 w-3 sm:mr-1" />
-              <span className="hidden sm:inline">SKIP-TRACE</span>
+              <span className="hidden sm:inline">SKIP</span>
             </Badge>
           ) : allPhonesDNC(p) ? (
-            <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-[10px] whitespace-nowrap">
+            <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-[10px] whitespace-nowrap px-1 sm:px-2 py-0.5">
               <PhoneOff className="h-3 w-3 sm:mr-1" />
-              <span className="hidden sm:inline">ALL DNC</span>
+              <span className="hidden sm:inline">DNC</span>
             </Badge>
           ) : (
-            <Badge className="bg-success/20 text-success border-success/30 text-[10px] whitespace-nowrap">
+            <Badge className="bg-success/20 text-success border-success/30 text-[10px] whitespace-nowrap px-1 sm:px-2 py-0.5">
               <Phone className="h-3 w-3 sm:mr-1" />
-              <span className="hidden sm:inline">CONTACTO</span>
+              <span className="hidden sm:inline">OK</span>
             </Badge>
           )}
-          <ExternalLink className="h-3 w-3 text-muted-foreground mt-1" />
+          <ExternalLink className="h-3 w-3 text-muted-foreground" />
         </div>
       </div>
     </button>
