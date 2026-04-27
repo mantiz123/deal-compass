@@ -88,20 +88,20 @@ export const LeadsDelDia = () => {
   return (
     <Card className="glass-card">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Flame className="h-5 w-5 text-destructive" />
-            <CardTitle className="text-lg">Centro de Acción</CardTitle>
-            <Badge variant="accent" className="ml-1">{hotCount} 🔥 HOT</Badge>
-            <Badge variant="secondary" className="ml-1">{contactedCount}/{leadsWithSpread.length} contactados</Badge>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <Flame className="h-5 w-5 text-destructive flex-shrink-0" />
+            <CardTitle className="text-base sm:text-lg">Centro de Acción</CardTitle>
+            <Badge variant="accent" className="text-[10px] sm:text-xs">{hotCount} 🔥 HOT</Badge>
+            <Badge variant="secondary" className="text-[10px] sm:text-xs">{contactedCount}/{leadsWithSpread.length} ✓</Badge>
           </div>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="self-start sm:self-auto">
             <Link to="/leads" className="flex items-center gap-1">
               Ver Todos <ChevronRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
           Top 10 oportunidades ordenadas por spread potencial — llama de arriba hacia abajo
         </p>
       </CardHeader>
