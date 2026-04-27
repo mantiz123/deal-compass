@@ -88,20 +88,20 @@ export const LeadsDelDia = () => {
   return (
     <Card className="glass-card">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Flame className="h-5 w-5 text-destructive" />
-            <CardTitle className="text-lg">Centro de Acción</CardTitle>
-            <Badge variant="accent" className="ml-1">{hotCount} 🔥 HOT</Badge>
-            <Badge variant="secondary" className="ml-1">{contactedCount}/{leadsWithSpread.length} contactados</Badge>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <Flame className="h-5 w-5 text-destructive flex-shrink-0" />
+            <CardTitle className="text-base sm:text-lg">Centro de Acción</CardTitle>
+            <Badge variant="accent" className="text-[10px] sm:text-xs">{hotCount} 🔥 HOT</Badge>
+            <Badge variant="secondary" className="text-[10px] sm:text-xs">{contactedCount}/{leadsWithSpread.length} ✓</Badge>
           </div>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="self-start sm:self-auto">
             <Link to="/leads" className="flex items-center gap-1">
               Ver Todos <ChevronRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
           Top 10 oportunidades ordenadas por spread potencial — llama de arriba hacia abajo
         </p>
       </CardHeader>
@@ -137,7 +137,7 @@ export const LeadsDelDia = () => {
                 return (
                   <div
                     key={lead.id}
-                    className={`group flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
+                    className={`group flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-all duration-200 ${
                       contactedToday
                         ? "border-success/30 bg-success/5 opacity-60"
                         : priority === 'hot'
@@ -146,42 +146,49 @@ export const LeadsDelDia = () => {
                     }`}
                   >
                     {/* Rank */}
-                    <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                    <div className={`flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${
                       priority === 'hot' ? 'bg-accent/20 text-accent' : 'bg-primary/10 text-primary'
                     }`}>
                       {index + 1}
                     </div>
 
-                    {/* K-Score */}
-                    <div className="flex-shrink-0">
+                    {/* K-Score (hidden on mobile) */}
+                    <div className="flex-shrink-0 hidden sm:block">
                       <KScoreGauge score={lead.piw_score || 0} size="sm" />
                     </div>
 
                     {/* Property Info + Indicators */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
+                      <p className="font-medium text-xs sm:text-sm truncate">
                         {property?.address}
                       </p>
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-xs text-muted-foreground">{property?.city}</span>
+                      <div className="flex items-center gap-1 sm:gap-1.5 mt-0.5 flex-wrap">
+                        {/* K-Score badge on mobile only */}
+                        <Badge
+                          variant={priority === 'hot' ? 'accent' : 'secondary'}
+                          className="sm:hidden text-[9px] px-1 py-0 h-4 font-mono"
+                        >
+                          K-{lead.piw_score || 0}
+                        </Badge>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{property?.city}</span>
                         {indicators.length > 0 && (
                           <>
-                            <span className="text-muted-foreground">•</span>
-                            {indicators.slice(0, 3).map((ind, i) => (
+                            <span className="text-muted-foreground hidden sm:inline">•</span>
+                            {indicators.slice(0, 2).map((ind, i) => (
                               <Badge key={i} variant={ind.variant as any} className="text-[9px] px-1 py-0 h-4">
                                 {ind.label}
                               </Badge>
                             ))}
-                            {indicators.length > 3 && (
+                            {indicators.length > 2 && (
                               <Tooltip>
                                 <TooltipTrigger>
                                   <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
-                                    +{indicators.length - 3}
+                                    +{indicators.length - 2}
                                   </Badge>
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <div className="flex gap-1 flex-wrap">
-                                    {indicators.slice(3).map((ind, i) => (
+                                    {indicators.slice(2).map((ind, i) => (
                                       <Badge key={i} variant={ind.variant as any} className="text-[9px]">
                                         {ind.label}
                                       </Badge>
@@ -223,9 +230,9 @@ export const LeadsDelDia = () => {
                           <div>
                             <div className={`flex items-center gap-0.5 font-semibold ${spreadColor}`}>
                               <DollarSign className="h-3 w-3" />
-                              <span className="text-sm">{formatCurrency(Math.abs(lead.spread))}</span>
+                              <span className="text-xs sm:text-sm">{formatCurrency(Math.abs(lead.spread))}</span>
                             </div>
-                            <span className="text-[10px] text-muted-foreground">spread</span>
+                            <span className="text-[10px] text-muted-foreground hidden sm:inline">spread</span>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -237,8 +244,8 @@ export const LeadsDelDia = () => {
                       </Tooltip>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Quick Actions (desktop hover only) */}
+                    <div className="flex-shrink-0 hidden sm:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {property?.owner_phone && (
                         <Button
                           variant="ghost"
@@ -272,13 +279,12 @@ export const LeadsDelDia = () => {
                       {contactedToday ? (
                         <div className="flex items-center gap-1 text-success text-xs">
                           <CheckCircle className="h-4 w-4" />
-                          <span className="hidden sm:inline">✓</span>
                         </div>
                       ) : (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs gap-1"
+                          className="h-7 w-7 sm:w-auto p-0 sm:px-3 text-xs gap-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             markContacted.mutate(lead.id);

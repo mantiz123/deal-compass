@@ -37,27 +37,27 @@ const Index = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <div className="mb-8 animate-slide-up">
-        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-2xl sm:text-3xl font-bold">Bienvenido, {userName}</h1>
-              <Badge variant="glow" className="animate-pulse-glow">
+      <div className="mb-6 sm:mb-8 animate-slide-up">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">Bienvenido, {userName}</h1>
+              <Badge variant="glow" className="animate-pulse-glow text-[10px] sm:text-xs flex-shrink-0">
                 <Zap className="mr-1 h-3 w-3" />
                 AI Active
               </Badge>
             </div>
-            <p className="text-muted-foreground text-sm sm:text-base">
+            <p className="text-muted-foreground text-xs sm:text-sm md:text-base">
               Aquí está el resumen de tu pipeline de wholesaling hoy.
             </p>
           </div>
-          <div className="flex gap-2 sm:gap-3">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/import">Import Leads</Link>
+          <div className="flex gap-2 sm:gap-3 flex-shrink-0">
+            <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-initial">
+              <Link to="/import">Import</Link>
             </Button>
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="flex-1 sm:flex-initial">
               <Link to="/leads">
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="mr-1 sm:mr-2 h-4 w-4" />
                 Nuevo Lead
               </Link>
             </Button>
@@ -66,7 +66,7 @@ const Index = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-6 sm:mb-8 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {isLoading ? (
           <>
             {[1, 2, 3, 4].map((i) => (
@@ -132,7 +132,7 @@ const Index = () => {
       </div>
 
       {/* Hot Leads + Critical Actions side by side */}
-      <div className="mb-6 grid gap-6 lg:grid-cols-2">
+      <div className="mb-6 grid gap-4 sm:gap-6 lg:grid-cols-2">
         <HotLeadsWidget />
         <CriticalActionsWidget />
       </div>
