@@ -66,7 +66,7 @@ const Index = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-6 sm:mb-8 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {isLoading ? (
           <>
             {[1, 2, 3, 4].map((i) => (
