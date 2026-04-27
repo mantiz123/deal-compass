@@ -230,9 +230,9 @@ export const LeadsDelDia = () => {
                           <div>
                             <div className={`flex items-center gap-0.5 font-semibold ${spreadColor}`}>
                               <DollarSign className="h-3 w-3" />
-                              <span className="text-sm">{formatCurrency(Math.abs(lead.spread))}</span>
+                              <span className="text-xs sm:text-sm">{formatCurrency(Math.abs(lead.spread))}</span>
                             </div>
-                            <span className="text-[10px] text-muted-foreground">spread</span>
+                            <span className="text-[10px] text-muted-foreground hidden sm:inline">spread</span>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -244,8 +244,8 @@ export const LeadsDelDia = () => {
                       </Tooltip>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Quick Actions (desktop hover only) */}
+                    <div className="flex-shrink-0 hidden sm:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {property?.owner_phone && (
                         <Button
                           variant="ghost"
@@ -279,13 +279,12 @@ export const LeadsDelDia = () => {
                       {contactedToday ? (
                         <div className="flex items-center gap-1 text-success text-xs">
                           <CheckCircle className="h-4 w-4" />
-                          <span className="hidden sm:inline">✓</span>
                         </div>
                       ) : (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-7 text-xs gap-1"
+                          className="h-7 w-7 sm:w-auto p-0 sm:px-3 text-xs gap-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             markContacted.mutate(lead.id);
