@@ -113,27 +113,30 @@ export function HotLeadsWidget() {
 
   return (
     <>
-      <Card variant="glow">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Flame className="h-5 w-5 text-warning" />
-              Hot Leads — Acción Requerida
+      <Card variant="glow" className="overflow-hidden">
+        <CardHeader className="pb-3 px-3 sm:px-6">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-lg min-w-0">
+              <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-warning flex-shrink-0" />
+              <span className="truncate">
+                <span className="sm:hidden">Hot Leads</span>
+                <span className="hidden sm:inline">Hot Leads — Acción Requerida</span>
+              </span>
             </CardTitle>
-            <Badge variant="outline" className="text-xs font-mono">
-              {hotLeads?.length || 0} detectados
+            <Badge variant="outline" className="text-[10px] sm:text-xs font-mono flex-shrink-0">
+              {hotLeads?.length || 0}
             </Badge>
           </div>
           {needsAction.length > 0 && (
             <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-warning/10 border border-warning/20">
               <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
-              <p className="text-xs text-warning">
-                <strong>{needsAction.length} leads HOT</strong> sin contacto — requieren skip-tracing
+              <p className="text-[11px] sm:text-xs text-warning min-w-0">
+                <strong>{needsAction.length} HOT</strong> sin contacto — skip-tracing
               </p>
             </div>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6 overflow-hidden">
           {(!hotLeads || hotLeads.length === 0) ? (
             <div className="text-center py-8">
               <Flame className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
