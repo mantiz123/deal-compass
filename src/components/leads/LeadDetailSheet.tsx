@@ -41,6 +41,7 @@ import { VoiceAgentSheet } from './VoiceAgentSheet';
 import { RequestKCFYDialog } from './RequestKCFYDialog';
 import { EditPropertyDialog } from '@/components/properties/EditPropertyDialog';
 import { useKCFYRequestForLead } from '@/hooks/useKCFYRequests';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { useInteractions } from '@/hooks/useInteractions';
 import { usePermanentlyDeleteLead } from '@/hooks/useArchiveLead';
 import { useUpdateProperty } from '@/hooks/useProperties';
