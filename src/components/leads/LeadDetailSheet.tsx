@@ -1050,6 +1050,12 @@ export function LeadDetailSheet({
         estimatedDealValue={lead.assignment_fee ? Number(lead.assignment_fee) : null}
       />
 
+      <EditPropertyDialog
+        property={property as any}
+        open={showEditProperty}
+        onOpenChange={setShowEditProperty}
+      />
+
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
