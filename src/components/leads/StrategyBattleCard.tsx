@@ -180,6 +180,108 @@ function EconomicsBreakdown({ econ }: { econ: ReturnType<typeof computeStrategyE
   );
 }
 
+function AlternativeStrategyItem({
+  alt,
+  inputs,
+}: {
+  alt: StrategyResult;
+  inputs?: EconomicsInputs | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const altMeta = STRATEGY_META[alt.code];
+  const AltIcon = altMeta.icon;
+  const altTone = confidenceTone(alt.confidence);
+  const econ = inputs ? computeStrategyEconomics(alt.code, alt.mao, inputs) : null;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div className="rounded-lg border border-border bg-card/40 overflow-hidden">
+        <CollapsibleTrigger className="w-full p-3 hover:bg-card/60 transition-colors text-left">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <AltIcon className={`h-4 w-4 ${altMeta.color}`} />
+              <span className="font-semibold text-sm">{altMeta.label}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                MAO {formatUsd(alt.mao)}
+              </span>
+              <Badge variant="outline" className={`${altTone.cls} text-xs`}>
+                {alt.confidence}%
+              </Badge>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
+              />
+            </div>
+          </div>
+          {econ && econ.lines.length > 0 && (
+            <div className="ml-6 grid grid-cols-3 gap-2 text-[11px]">
+              <div>
+                <p className="text-muted-foreground">Costo</p>
+                <p className="font-semibold">{formatUsd(econ.totalAcquisition)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Cash seller</p>
+                <p className="font-semibold">{formatUsd(econ.sellerCashAtClose)}</p>
+              </div>
+              <div>
+                <p className="text-emerald-600 dark:text-emerald-400">Profit</p>
+                <p className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  {formatUsd(econ.estimatedProfit)}
+                </p>
+              </div>
+            </div>
+          )}
+          {econ?.pitchLine && (
+            <p className="ml-6 mt-2 text-[11px] italic text-muted-foreground border-l-2 border-primary/30 pl-2">
+              "{econ.pitchLine}"
+            </p>
+          )}
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="border-t border-border bg-background/40 p-3 space-y-3">
+          {/* Desglose económico completo */}
+          {econ && <EconomicsBreakdown econ={econ} />}
+
+          {/* Reasons */}
+          {alt.reasons && alt.reasons.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Por qué considerar esta estrategia
+              </p>
+              <ul className="space-y-1.5">
+                {alt.reasons.map((r, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                    <span>{r}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Disqualifiers */}
+          {alt.disqualifiers && alt.disqualifiers.length > 0 && (
+            <div className="rounded-md bg-amber-500/5 border border-amber-500/20 p-2.5">
+              <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                <AlertTriangle className="h-3 w-3" />
+                Cuidado con
+              </p>
+              <ul className="space-y-0.5">
+                {alt.disqualifiers.map((d, i) => (
+                  <li key={i} className="text-[11px] text-muted-foreground">
+                    • {d}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
 export function StrategyBattleCard({
   recommended,
   confidence,
@@ -301,69 +403,13 @@ export function StrategyBattleCard({
             />
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3 space-y-2">
-            {alternatives.map((alt) => {
-              const altMeta = STRATEGY_META[alt.code];
-              const AltIcon = altMeta.icon;
-              const altTone = confidenceTone(alt.confidence);
-              return (
-                <div
-                  key={alt.code}
-                  className="rounded-lg border border-border bg-card/40 p-3"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <AltIcon className={`h-4 w-4 ${altMeta.color}`} />
-                      <span className="font-semibold text-sm">{altMeta.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        MAO {formatUsd(alt.mao)}
-                      </span>
-                      <Badge variant="outline" className={`${altTone.cls} text-xs`}>
-                        {alt.confidence}%
-                      </Badge>
-                    </div>
-                  </div>
-                  {alt.reasons?.length > 0 && (
-                    <ul className="space-y-0.5 ml-6 mb-2">
-                      {alt.reasons.slice(0, 3).map((r, i) => (
-                        <li key={i} className="text-xs text-muted-foreground">
-                          • {r}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {inputs && (() => {
-                    const e = computeStrategyEconomics(alt.code, alt.mao, inputs);
-                    if (!e.lines.length) return null;
-                    return (
-                      <div className="ml-6 grid grid-cols-3 gap-2 text-[11px] mb-1">
-                        <div>
-                          <p className="text-muted-foreground">Costo</p>
-                          <p className="font-semibold">{formatUsd(e.totalAcquisition)}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Cash seller</p>
-                          <p className="font-semibold">{formatUsd(e.sellerCashAtClose)}</p>
-                        </div>
-                        <div>
-                          <p className="text-emerald-600 dark:text-emerald-400">Profit</p>
-                          <p className="font-semibold text-emerald-600 dark:text-emerald-400">{formatUsd(e.estimatedProfit)}</p>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  {inputs && (() => {
-                    const e = computeStrategyEconomics(alt.code, alt.mao, inputs);
-                    return e.pitchLine ? (
-                      <p className="ml-6 text-[11px] italic text-muted-foreground border-l-2 border-primary/30 pl-2 mt-1">
-                        "{e.pitchLine}"
-                      </p>
-                    ) : null;
-                  })()}
-                </div>
-              );
-            })}
+            {alternatives.map((alt) => (
+              <AlternativeStrategyItem
+                key={alt.code}
+                alt={alt}
+                inputs={inputs}
+              />
+            ))}
           </CollapsibleContent>
         </Collapsible>
       )}
