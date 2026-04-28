@@ -45,6 +45,9 @@ const propertySchema = z.object({
   arv: z.coerce.number().optional().nullable(),
   mao: z.coerce.number().optional().nullable(),
   repair_cost: z.coerce.number().optional().nullable(),
+  mortgage_balance: z.coerce.number().optional().nullable(),
+  equity_percent: z.coerce.number().min(0).max(100).optional().nullable(),
+  last_sale_price: z.coerce.number().optional().nullable(),
   owner_name: z.string().max(200).optional().nullable(),
   owner_email: z.string().email().max(255).optional().nullable().or(z.literal('')),
   owner_phone: z.string().max(20).optional().nullable(),
@@ -92,6 +95,9 @@ export function EditPropertyDialog({ property, open, onOpenChange }: EditPropert
         arv: property.arv ? Number(property.arv) : null,
         mao: property.mao ? Number(property.mao) : null,
         repair_cost: property.repair_cost ? Number(property.repair_cost) : null,
+        mortgage_balance: (property as any).mortgage_balance ? Number((property as any).mortgage_balance) : null,
+        equity_percent: (property as any).equity_percent ? Number((property as any).equity_percent) : null,
+        last_sale_price: (property as any).last_sale_price ? Number((property as any).last_sale_price) : null,
         owner_name: property.owner_name || '',
         owner_email: property.owner_email || '',
         owner_phone: property.owner_phone || '',
@@ -329,6 +335,50 @@ export function EditPropertyDialog({ property, open, onOpenChange }: EditPropert
                   )}
                 />
               </div>
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="mortgage_balance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hipoteca Pendiente ($)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} value={field.value ?? ''} placeholder="ej: 85000" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="equity_percent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Equity %</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.1" {...field} value={field.value ?? ''} placeholder="ej: 65" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="last_sale_price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Última Venta ($)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} value={field.value ?? ''} placeholder="ej: 45000" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                💡 Los datos manuales se priorizan sobre los del CMA. Click "Recalcular" en el lead después de guardar.
+              </p>
             </div>
 
             {/* Owner */}
