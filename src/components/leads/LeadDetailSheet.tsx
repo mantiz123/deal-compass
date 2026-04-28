@@ -296,15 +296,17 @@ export function LeadDetailSheet({
                   <FileText className="mr-2 h-4 w-4" />
                   📄 Contrato
                 </Button>
-                <Button
-                  variant={kcfyRequest ? 'outline' : 'default'}
-                  onClick={() => setShowKCFY(true)}
-                  size="sm"
-                  className={kcfyRequest ? 'border-primary/40 text-primary hover:bg-primary/10' : 'bg-gradient-to-r from-primary to-primary/80'}
-                >
-                  <Handshake className="mr-2 h-4 w-4" />
-                  {kcfyRequest ? `KCFY · ${kcfyRequest.status}` : 'Pedir KCFY'}
-                </Button>
+                {!isSuperAdmin && (
+                  <Button
+                    variant={kcfyRequest ? 'outline' : 'default'}
+                    onClick={() => setShowKCFY(true)}
+                    size="sm"
+                    className={kcfyRequest ? 'border-primary/40 text-primary hover:bg-primary/10' : 'bg-gradient-to-r from-primary to-primary/80'}
+                  >
+                    <Handshake className="mr-2 h-4 w-4" />
+                    {kcfyRequest ? `KCFY · ${kcfyRequest.status}` : 'Pedir KCFY'}
+                  </Button>
+                )}
               </div>
             </div>
 
