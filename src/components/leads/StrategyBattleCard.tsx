@@ -18,8 +18,15 @@ import {
   CheckCircle2,
   AlertTriangle,
   TrendingUp,
+  Calculator,
+  Quote,
 } from 'lucide-react';
 import { useState } from 'react';
+import {
+  computeStrategyEconomics,
+  type EconomicsInputs,
+  type StrategyEconomics,
+} from '@/lib/strategyEconomics';
 
 type StrategyCode =
   | 'cash'
@@ -47,6 +54,8 @@ interface StrategyBattleCardProps {
   disqualifiers?: string[] | null;
   alternatives?: StrategyResult[] | null;
   calculatedAt?: string | null;
+  /** Datos crudos para calcular el desglose económico en cliente */
+  inputs?: EconomicsInputs | null;
 }
 
 const STRATEGY_META: Record<
@@ -112,6 +121,65 @@ function confidenceTone(c: number) {
   return { label: 'Baja', cls: 'bg-red-500/10 text-red-500 border-red-500/30' };
 }
 
+function EconomicsBreakdown({ econ }: { econ: ReturnType<typeof computeStrategyEconomics> }) {
+  if (!econ.lines.length) return null;
+  return (
+    <div className="mb-3 rounded-md border border-primary/20 bg-primary/5 p-3">
+      <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2 flex items-center gap-1.5">
+        <Calculator className="h-3.5 w-3.5" />
+        Números del deal
+      </p>
+
+      {/* Top-line summary */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="rounded bg-card/60 border border-border p-2">
+          <p className="text-[10px] text-muted-foreground uppercase">Costo total</p>
+          <p className="text-sm font-bold">{formatUsd(econ.totalAcquisition)}</p>
+        </div>
+        <div className="rounded bg-card/60 border border-border p-2">
+          <p className="text-[10px] text-muted-foreground uppercase">Cash al seller</p>
+          <p className="text-sm font-bold">{formatUsd(econ.sellerCashAtClose)}</p>
+        </div>
+        <div className="rounded bg-emerald-500/10 border border-emerald-500/30 p-2">
+          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase">Tu profit</p>
+          <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatUsd(econ.estimatedProfit)}</p>
+        </div>
+      </div>
+
+      {/* Detail lines */}
+      <div className="space-y-1.5">
+        {econ.lines.map((l, i) => (
+          <div key={i} className="flex items-start justify-between text-xs gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-foreground">{l.label}</p>
+              {l.hint && <p className="text-[10px] text-muted-foreground">{l.hint}</p>}
+            </div>
+            <span
+              className={`font-semibold tabular-nums shrink-0 ${
+                l.emphasis === 'positive'
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : l.emphasis === 'negative'
+                    ? 'text-red-500'
+                    : 'text-foreground'
+              }`}
+            >
+              {l.value}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Pitch */}
+      {econ.pitchLine && (
+        <div className="mt-3 pt-3 border-t border-primary/20 flex gap-2">
+          <Quote className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+          <p className="text-xs italic text-foreground">"{econ.pitchLine}"</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function StrategyBattleCard({
   recommended,
   confidence,
@@ -120,6 +188,7 @@ export function StrategyBattleCard({
   disqualifiers,
   alternatives,
   calculatedAt,
+  inputs,
 }: StrategyBattleCardProps) {
   const [showAlts, setShowAlts] = useState(false);
 
@@ -183,7 +252,12 @@ export function StrategyBattleCard({
         </div>
       </div>
 
-      {/* Reasons */}
+      {/* Economics breakdown — números reales del deal */}
+      {inputs && (
+        <EconomicsBreakdown econ={computeStrategyEconomics(recommended, mao ?? null, inputs)} />
+      )}
+
+
       {reasons && reasons.length > 0 && (
         <div className="mb-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
@@ -251,7 +325,7 @@ export function StrategyBattleCard({
                     </div>
                   </div>
                   {alt.reasons?.length > 0 && (
-                    <ul className="space-y-0.5 ml-6">
+                    <ul className="space-y-0.5 ml-6 mb-2">
                       {alt.reasons.slice(0, 3).map((r, i) => (
                         <li key={i} className="text-xs text-muted-foreground">
                           • {r}
@@ -259,6 +333,34 @@ export function StrategyBattleCard({
                       ))}
                     </ul>
                   )}
+                  {inputs && (() => {
+                    const e = computeStrategyEconomics(alt.code, alt.mao, inputs);
+                    if (!e.lines.length) return null;
+                    return (
+                      <div className="ml-6 grid grid-cols-3 gap-2 text-[11px] mb-1">
+                        <div>
+                          <p className="text-muted-foreground">Costo</p>
+                          <p className="font-semibold">{formatUsd(e.totalAcquisition)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Cash seller</p>
+                          <p className="font-semibold">{formatUsd(e.sellerCashAtClose)}</p>
+                        </div>
+                        <div>
+                          <p className="text-emerald-600 dark:text-emerald-400">Profit</p>
+                          <p className="font-semibold text-emerald-600 dark:text-emerald-400">{formatUsd(e.estimatedProfit)}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {inputs && (() => {
+                    const e = computeStrategyEconomics(alt.code, alt.mao, inputs);
+                    return e.pitchLine ? (
+                      <p className="ml-6 text-[11px] italic text-muted-foreground border-l-2 border-primary/30 pl-2 mt-1">
+                        "{e.pitchLine}"
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
               );
             })}
