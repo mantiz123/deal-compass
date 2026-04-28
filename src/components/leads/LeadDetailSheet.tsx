@@ -373,6 +373,13 @@ export function LeadDetailSheet({
                 disqualifiers={normalizeList(lead.strategy_disqualifiers)}
                 alternatives={(lead.alternative_strategies as any) || []}
                 calculatedAt={lead.strategy_calculated_at}
+                inputs={{
+                  arv: property?.arv ? Number(property.arv) : null,
+                  mortgageBalance: property?.mortgage_balance ? Number(property.mortgage_balance) : null,
+                  repairs: property?.repair_cost ? Number(property.repair_cost) : null,
+                  equityPercent: property?.equity_percent != null ? Number(property.equity_percent) : null,
+                  listingPrice: lead.listing_price ? Number(lead.listing_price) : null,
+                }}
               />
             );
           })()}
