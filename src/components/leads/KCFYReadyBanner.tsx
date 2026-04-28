@@ -27,6 +27,7 @@ interface KCFYEligibleLead {
 
 export function KCFYReadyBanner() {
   const orgId = useCurrentOrgIdSafe();
+  const { isSuperAdmin } = useOrganization();
   const { hasSigned } = useICAGuard();
   const [selectedLead, setSelectedLead] = useState<KCFYEligibleLead | null>(null);
   const [dismissedAt, setDismissedAt] = useState<number | null>(() => {
