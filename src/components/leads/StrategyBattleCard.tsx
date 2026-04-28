@@ -54,6 +54,8 @@ interface StrategyBattleCardProps {
   disqualifiers?: string[] | null;
   alternatives?: StrategyResult[] | null;
   calculatedAt?: string | null;
+  /** Datos crudos para calcular el desglose económico en cliente */
+  inputs?: EconomicsInputs | null;
 }
 
 const STRATEGY_META: Record<
