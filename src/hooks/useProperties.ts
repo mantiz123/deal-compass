@@ -155,9 +155,10 @@ export function useUpdateProperty() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       queryClient.invalidateQueries({ queryKey: ['property-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
       toast({
         title: 'Propiedad actualizada',
-        description: 'Los cambios se han guardado',
+        description: 'Los cambios se han guardado. Recalcula el K-Score para reflejar los nuevos datos.',
       });
     },
     onError: (error) => {
