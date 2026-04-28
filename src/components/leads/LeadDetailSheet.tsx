@@ -41,6 +41,7 @@ import { VoiceAgentSheet } from './VoiceAgentSheet';
 import { RequestKCFYDialog } from './RequestKCFYDialog';
 import { EditPropertyDialog } from '@/components/properties/EditPropertyDialog';
 import { useKCFYRequestForLead } from '@/hooks/useKCFYRequests';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { useInteractions } from '@/hooks/useInteractions';
 import { usePermanentlyDeleteLead } from '@/hooks/useArchiveLead';
 import { useUpdateProperty } from '@/hooks/useProperties';
@@ -113,6 +114,7 @@ export function LeadDetailSheet({
   const [showEditProperty, setShowEditProperty] = useState(false);
   const [showKCFY, setShowKCFY] = useState(false);
   const { data: kcfyRequest } = useKCFYRequestForLead(lead?.id);
+  const { isSuperAdmin } = useOrganization();
   const deleteLead = usePermanentlyDeleteLead();
   const { data: interactions, isLoading: loadingInteractions } = useInteractions(lead?.id || '');
   const { data: latestConversation } = useLatestConversation(lead?.id);
@@ -294,15 +296,17 @@ export function LeadDetailSheet({
                   <FileText className="mr-2 h-4 w-4" />
                   📄 Contrato
                 </Button>
-                <Button
-                  variant={kcfyRequest ? 'outline' : 'default'}
-                  onClick={() => setShowKCFY(true)}
-                  size="sm"
-                  className={kcfyRequest ? 'border-primary/40 text-primary hover:bg-primary/10' : 'bg-gradient-to-r from-primary to-primary/80'}
-                >
-                  <Handshake className="mr-2 h-4 w-4" />
-                  {kcfyRequest ? `KCFY · ${kcfyRequest.status}` : 'Pedir KCFY'}
-                </Button>
+                {!isSuperAdmin && (
+                  <Button
+                    variant={kcfyRequest ? 'outline' : 'default'}
+                    onClick={() => setShowKCFY(true)}
+                    size="sm"
+                    className={kcfyRequest ? 'border-primary/40 text-primary hover:bg-primary/10' : 'bg-gradient-to-r from-primary to-primary/80'}
+                  >
+                    <Handshake className="mr-2 h-4 w-4" />
+                    {kcfyRequest ? `KCFY · ${kcfyRequest.status}` : 'Pedir KCFY'}
+                  </Button>
+                )}
               </div>
             </div>
 
