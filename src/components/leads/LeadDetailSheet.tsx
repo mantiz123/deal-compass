@@ -39,6 +39,7 @@ import { OutreachEmailGenerator } from './OutreachEmailGenerator';
 import { ConversationHistory } from './ConversationHistory';
 import { VoiceAgentSheet } from './VoiceAgentSheet';
 import { RequestKCFYDialog } from './RequestKCFYDialog';
+import { EditPropertyDialog } from '@/components/properties/EditPropertyDialog';
 import { useKCFYRequestForLead } from '@/hooks/useKCFYRequests';
 import { useInteractions } from '@/hooks/useInteractions';
 import { usePermanentlyDeleteLead } from '@/hooks/useArchiveLead';
@@ -73,6 +74,7 @@ import {
   Trash2,
   UserSearch,
   Handshake,
+  Pencil,
 } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -108,6 +110,7 @@ export function LeadDetailSheet({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSkipTrace, setShowSkipTrace] = useState(false);
   const [showVoiceAgent, setShowVoiceAgent] = useState(false);
+  const [showEditProperty, setShowEditProperty] = useState(false);
   const [showKCFY, setShowKCFY] = useState(false);
   const { data: kcfyRequest } = useKCFYRequestForLead(lead?.id);
   const deleteLead = usePermanentlyDeleteLead();
@@ -452,10 +455,22 @@ export function LeadDetailSheet({
             <TabsContent value="details" className="mt-4 space-y-6">
               {/* Property Info */}
               <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Home className="h-4 w-4" />
-                  Información de la Propiedad
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Home className="h-4 w-4" />
+                    Información de la Propiedad
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEditProperty(true)}
+                    disabled={!property?.id}
+                    className="h-7 text-xs"
+                  >
+                    <Pencil className="h-3 w-3 mr-1" />
+                    Editar datos
+                  </Button>
+                </div>
                 <Card variant="glass" className="p-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
@@ -1033,6 +1048,12 @@ export function LeadDetailSheet({
         leadId={lead.id}
         leadAddress={property ? `${property.address}, ${property.city}, ${property.state}` : undefined}
         estimatedDealValue={lead.assignment_fee ? Number(lead.assignment_fee) : null}
+      />
+
+      <EditPropertyDialog
+        property={property as any}
+        open={showEditProperty}
+        onOpenChange={setShowEditProperty}
       />
 
 
