@@ -134,6 +134,7 @@ export function KCFYReadyBanner() {
     return parts.join(", ");
   }, [selectedLead]);
 
+  if (isSuperAdmin) return null; // Klose Internal team no solicita KCFY a sí mismo
   if (isLoading || !data || isDismissed || !hasSigned) return null;
   if (data.eligible.length === 0) return null;
 
