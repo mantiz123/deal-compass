@@ -18,8 +18,15 @@ import {
   CheckCircle2,
   AlertTriangle,
   TrendingUp,
+  Calculator,
+  Quote,
 } from 'lucide-react';
 import { useState } from 'react';
+import {
+  computeStrategyEconomics,
+  type EconomicsInputs,
+  type StrategyEconomics,
+} from '@/lib/strategyEconomics';
 
 type StrategyCode =
   | 'cash'
