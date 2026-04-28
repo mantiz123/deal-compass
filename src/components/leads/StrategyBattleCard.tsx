@@ -252,7 +252,12 @@ export function StrategyBattleCard({
         </div>
       </div>
 
-      {/* Reasons */}
+      {/* Economics breakdown — números reales del deal */}
+      {inputs && (
+        <EconomicsBreakdown econ={computeStrategyEconomics(recommended, mao ?? null, inputs)} />
+      )}
+
+
       {reasons && reasons.length > 0 && (
         <div className="mb-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
