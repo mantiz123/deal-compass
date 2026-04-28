@@ -114,6 +114,7 @@ export function LeadDetailSheet({
   const [showEditProperty, setShowEditProperty] = useState(false);
   const [showKCFY, setShowKCFY] = useState(false);
   const { data: kcfyRequest } = useKCFYRequestForLead(lead?.id);
+  const { isSuperAdmin } = useOrganization();
   const deleteLead = usePermanentlyDeleteLead();
   const { data: interactions, isLoading: loadingInteractions } = useInteractions(lead?.id || '');
   const { data: latestConversation } = useLatestConversation(lead?.id);
