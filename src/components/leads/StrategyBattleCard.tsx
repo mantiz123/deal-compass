@@ -121,6 +121,65 @@ function confidenceTone(c: number) {
   return { label: 'Baja', cls: 'bg-red-500/10 text-red-500 border-red-500/30' };
 }
 
+function EconomicsBreakdown({ econ }: { econ: ReturnType<typeof computeStrategyEconomics> }) {
+  if (!econ.lines.length) return null;
+  return (
+    <div className="mb-3 rounded-md border border-primary/20 bg-primary/5 p-3">
+      <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2 flex items-center gap-1.5">
+        <Calculator className="h-3.5 w-3.5" />
+        Números del deal
+      </p>
+
+      {/* Top-line summary */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="rounded bg-card/60 border border-border p-2">
+          <p className="text-[10px] text-muted-foreground uppercase">Costo total</p>
+          <p className="text-sm font-bold">{formatUsd(econ.totalAcquisition)}</p>
+        </div>
+        <div className="rounded bg-card/60 border border-border p-2">
+          <p className="text-[10px] text-muted-foreground uppercase">Cash al seller</p>
+          <p className="text-sm font-bold">{formatUsd(econ.sellerCashAtClose)}</p>
+        </div>
+        <div className="rounded bg-emerald-500/10 border border-emerald-500/30 p-2">
+          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase">Tu profit</p>
+          <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatUsd(econ.estimatedProfit)}</p>
+        </div>
+      </div>
+
+      {/* Detail lines */}
+      <div className="space-y-1.5">
+        {econ.lines.map((l, i) => (
+          <div key={i} className="flex items-start justify-between text-xs gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-foreground">{l.label}</p>
+              {l.hint && <p className="text-[10px] text-muted-foreground">{l.hint}</p>}
+            </div>
+            <span
+              className={`font-semibold tabular-nums shrink-0 ${
+                l.emphasis === 'positive'
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : l.emphasis === 'negative'
+                    ? 'text-red-500'
+                    : 'text-foreground'
+              }`}
+            >
+              {l.value}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Pitch */}
+      {econ.pitchLine && (
+        <div className="mt-3 pt-3 border-t border-primary/20 flex gap-2">
+          <Quote className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+          <p className="text-xs italic text-foreground">"{econ.pitchLine}"</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function StrategyBattleCard({
   recommended,
   confidence,
@@ -129,6 +188,7 @@ export function StrategyBattleCard({
   disqualifiers,
   alternatives,
   calculatedAt,
+  inputs,
 }: StrategyBattleCardProps) {
   const [showAlts, setShowAlts] = useState(false);
 
