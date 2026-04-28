@@ -325,7 +325,7 @@ export function StrategyBattleCard({
                     </div>
                   </div>
                   {alt.reasons?.length > 0 && (
-                    <ul className="space-y-0.5 ml-6">
+                    <ul className="space-y-0.5 ml-6 mb-2">
                       {alt.reasons.slice(0, 3).map((r, i) => (
                         <li key={i} className="text-xs text-muted-foreground">
                           • {r}
@@ -333,6 +333,34 @@ export function StrategyBattleCard({
                       ))}
                     </ul>
                   )}
+                  {inputs && (() => {
+                    const e = computeStrategyEconomics(alt.code, alt.mao, inputs);
+                    if (!e.lines.length) return null;
+                    return (
+                      <div className="ml-6 grid grid-cols-3 gap-2 text-[11px] mb-1">
+                        <div>
+                          <p className="text-muted-foreground">Costo</p>
+                          <p className="font-semibold">{formatUsd(e.totalAcquisition)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Cash seller</p>
+                          <p className="font-semibold">{formatUsd(e.sellerCashAtClose)}</p>
+                        </div>
+                        <div>
+                          <p className="text-emerald-600 dark:text-emerald-400">Profit</p>
+                          <p className="font-semibold text-emerald-600 dark:text-emerald-400">{formatUsd(e.estimatedProfit)}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {inputs && (() => {
+                    const e = computeStrategyEconomics(alt.code, alt.mao, inputs);
+                    return e.pitchLine ? (
+                      <p className="ml-6 text-[11px] italic text-muted-foreground border-l-2 border-primary/30 pl-2 mt-1">
+                        "{e.pitchLine}"
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
               );
             })}
