@@ -232,6 +232,21 @@ Deno.serve(async (req) => {
 
     const { token } = await tokenRes.json();
 
+    // ============================================================
+    // REALISM TUNING (HappyRobot-style):
+    // - eleven_turbo_v2_5 → ultra-low latency (<300ms), more expressive in EN-US
+    // - stability 0.30 → more emotional variability (vs default 0.5 = robotic)
+    // - style 0.70 → leans into the voice's natural personality
+    // - similarity_boost 0.80 → keeps voice identity intact
+    // - speaker_boost true → punchier, clearer phone-call audio
+    // Per-personality speed: Sarah pausada, Mike enérgico, Alex neutral
+    // ============================================================
+    const PERSONALITY_SPEED: Record<string, number> = {
+      sarah: 0.96,
+      mike: 1.05,
+      discovery: 1.00,
+    };
+
     return new Response(
       JSON.stringify({
         token,
@@ -242,6 +257,17 @@ Deno.serve(async (req) => {
           agent: {
             prompt: { prompt: PERSONALITIES[personality] },
             firstMessage: FIRST_MESSAGES[personality],
+            language: "en",
+          },
+          tts: {
+            modelId: "eleven_turbo_v2_5",
+            voiceSettings: {
+              stability: 0.30,
+              similarity_boost: 0.80,
+              style: 0.70,
+              use_speaker_boost: true,
+              speed: PERSONALITY_SPEED[personality] ?? 1.0,
+            },
           },
         },
         negotiation: { mao, min_offer: minOffer, arv },
