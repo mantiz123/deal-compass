@@ -324,9 +324,58 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
             />
           </div>
 
-          <p className="text-xs text-muted-foreground text-center">
-            💡 Puedes editar el email antes de copiarlo. Cuando tengas API de Gmail o Resend, se enviará directamente.
-          </p>
+          {/* Send via Resend */}
+          <div className="space-y-3 border-t pt-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs flex items-center gap-1">
+                  Para (seller) *
+                </Label>
+                <Input
+                  type="email"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  placeholder="seller@example.com"
+                  className="text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs flex items-center gap-1">
+                  BCC (tu Gmail)
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Recibirás una copia oculta en tu inbox para tener registro del envío.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </Label>
+                <Input
+                  type="email"
+                  value={bccEmail}
+                  onChange={(e) => setBccEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  className="text-sm"
+                />
+              </div>
+            </div>
+            <Button
+              onClick={handleSend}
+              disabled={isSending || !generatedEmail || !subjectLine}
+              className="w-full"
+              variant="default"
+            >
+              {isSending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+              ) : (
+                <><Zap className="h-4 w-4 mr-2" /> Enviar email ahora (límite 50/día)</>
+              )}
+            </Button>
+            <p className="text-[11px] text-muted-foreground text-center">
+              Envío vía Resend desde <code>outreach@klosellc.com</code>. Recibes copia oculta en tu correo. Reply-to apunta a ti.
+            </p>
+          </div>
         </Card>
       )}
     </div>
