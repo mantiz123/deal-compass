@@ -94,6 +94,46 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
     }
   };
 
+  const handleSend = async () => {
+    if (!requireICA("enviar outreach a sellers")) return;
+    const to = (recipientEmail || property?.owner_email || '').trim();
+    if (!to) {
+      toast({ title: 'Falta destinatario', description: 'Ingresa el email del seller.', variant: 'destructive' });
+      return;
+    }
+    if (!subjectLine.trim() || !generatedEmail.trim()) {
+      toast({ title: 'Email vacío', description: 'Genera el contenido primero.', variant: 'destructive' });
+      return;
+    }
+    setIsSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-outreach-email', {
+        body: {
+          leadId: lead.id,
+          to,
+          subject: subjectLine,
+          bodyText: generatedEmail,
+          bcc: bccEmail.trim() || undefined,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast({
+        title: '✅ Email enviado',
+        description: `Enviado a ${to}${(data as any)?.bcc ? ` · BCC a ${(data as any).bcc}` : ''}. Restantes hoy: ${(data as any)?.remainingToday ?? '—'}`,
+      });
+    } catch (err: any) {
+      console.error('Send error:', err);
+      toast({
+        title: 'Error al enviar',
+        description: err.message || 'No se pudo enviar el email',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
