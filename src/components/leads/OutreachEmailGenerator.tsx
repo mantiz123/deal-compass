@@ -61,6 +61,7 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
 
       setGeneratedEmail(data.email);
       setSubjectLine(data.subject);
+      if (!recipientEmail) setRecipientEmail(property?.owner_email || '');
       toast({
         title: 'Email generado',
         description: 'El email ha sido generado exitosamente. Cópialo para enviarlo.',
