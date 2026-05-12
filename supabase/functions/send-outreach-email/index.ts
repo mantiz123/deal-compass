@@ -142,14 +142,19 @@ Deno.serve(async (req) => {
       bcc_email: bccList[0] ?? null,
     })
 
-    // Add to lead_interactions if leadId provided
+    // Add to interactions if leadId provided (best-effort, don't fail send)
     if (leadId) {
-      await supabase.from('interactions').insert({
-        lead_id: leadId,
-        type: 'email',
-        notes: `Email sent: ${subject}`,
-        created_by: user.id,
-      }).then(() => {}, (e) => console.warn('interaction log failed', e))
+      try {
+        await supabase.from('interactions').insert({
+          lead_id: leadId,
+          interaction_type: 'email',
+          direction: 'outbound',
+          content: `Subject: ${subject}\n\n${bodyText}`,
+          created_by: user.id,
+        })
+      } catch (e) {
+        console.warn('interaction log failed', e)
+      }
     }
 
     return new Response(JSON.stringify({
