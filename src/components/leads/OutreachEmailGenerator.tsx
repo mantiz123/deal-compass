@@ -10,7 +10,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useICAGuard } from '@/hooks/useICAGuard';
-import { Mail, Sparkles, Copy, Check, Loader2, Send, DollarSign, Info } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Mail, Sparkles, Copy, Check, Loader2, Send, DollarSign, Info, Zap } from 'lucide-react';
 import type { Lead } from '@/hooks/useLeads';
 
 interface OutreachEmailGeneratorProps {
@@ -20,10 +21,14 @@ interface OutreachEmailGeneratorProps {
 export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
   const { toast } = useToast();
   const { requireICA } = useICAGuard();
+  const { user } = useAuth();
   const [templateType, setTemplateType] = useState<string>('initial_outreach');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState('');
   const [subjectLine, setSubjectLine] = useState('');
+  const [bccEmail, setBccEmail] = useState(user?.email || '');
+  const [recipientEmail, setRecipientEmail] = useState('');
   const [copied, setCopied] = useState(false);
   const [copiedSubject, setCopiedSubject] = useState(false);
 
@@ -56,6 +61,7 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
 
       setGeneratedEmail(data.email);
       setSubjectLine(data.subject);
+      if (!recipientEmail) setRecipientEmail(property?.owner_email || '');
       toast({
         title: 'Email generado',
         description: 'El email ha sido generado exitosamente. Cópialo para enviarlo.',
@@ -85,6 +91,46 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
       toast({ title: type === 'body' ? 'Email copiado' : 'Asunto copiado' });
     } catch {
       toast({ title: 'Error', description: 'No se pudo copiar', variant: 'destructive' });
+    }
+  };
+
+  const handleSend = async () => {
+    if (!requireICA("enviar outreach a sellers")) return;
+    const to = (recipientEmail || property?.owner_email || '').trim();
+    if (!to) {
+      toast({ title: 'Falta destinatario', description: 'Ingresa el email del seller.', variant: 'destructive' });
+      return;
+    }
+    if (!subjectLine.trim() || !generatedEmail.trim()) {
+      toast({ title: 'Email vacío', description: 'Genera el contenido primero.', variant: 'destructive' });
+      return;
+    }
+    setIsSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-outreach-email', {
+        body: {
+          leadId: lead.id,
+          to,
+          subject: subjectLine,
+          bodyText: generatedEmail,
+          bcc: bccEmail.trim() || undefined,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast({
+        title: '✅ Email enviado',
+        description: `Enviado a ${to}${(data as any)?.bcc ? ` · BCC a ${(data as any).bcc}` : ''}. Restantes hoy: ${(data as any)?.remainingToday ?? '—'}`,
+      });
+    } catch (err: any) {
+      console.error('Send error:', err);
+      toast({
+        title: 'Error al enviar',
+        description: err.message || 'No se pudo enviar el email',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -278,9 +324,58 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
             />
           </div>
 
-          <p className="text-xs text-muted-foreground text-center">
-            💡 Puedes editar el email antes de copiarlo. Cuando tengas API de Gmail o Resend, se enviará directamente.
-          </p>
+          {/* Send via Resend */}
+          <div className="space-y-3 border-t pt-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs flex items-center gap-1">
+                  Para (seller) *
+                </Label>
+                <Input
+                  type="email"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  placeholder="seller@example.com"
+                  className="text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs flex items-center gap-1">
+                  BCC (tu Gmail)
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Recibirás una copia oculta en tu inbox para tener registro del envío.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </Label>
+                <Input
+                  type="email"
+                  value={bccEmail}
+                  onChange={(e) => setBccEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  className="text-sm"
+                />
+              </div>
+            </div>
+            <Button
+              onClick={handleSend}
+              disabled={isSending || !generatedEmail || !subjectLine}
+              className="w-full"
+              variant="default"
+            >
+              {isSending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+              ) : (
+                <><Zap className="h-4 w-4 mr-2" /> Enviar email ahora (límite 50/día)</>
+              )}
+            </Button>
+            <p className="text-[11px] text-muted-foreground text-center">
+              Envío vía Resend desde <code>outreach@klosellc.com</code>. Recibes copia oculta en tu correo. Reply-to apunta a ti.
+            </p>
+          </div>
         </Card>
       )}
     </div>

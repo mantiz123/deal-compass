@@ -33,3 +33,6 @@ verify_jwt = true
 [functions.generate-agent-demo]
 verify_jwt = true
 
+[functions.send-outreach-email]
+verify_jwt = true
+
