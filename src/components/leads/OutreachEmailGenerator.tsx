@@ -21,10 +21,14 @@ interface OutreachEmailGeneratorProps {
 export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
   const { toast } = useToast();
   const { requireICA } = useICAGuard();
+  const { user } = useAuth();
   const [templateType, setTemplateType] = useState<string>('initial_outreach');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState('');
   const [subjectLine, setSubjectLine] = useState('');
+  const [bccEmail, setBccEmail] = useState(user?.email || '');
+  const [recipientEmail, setRecipientEmail] = useState('');
   const [copied, setCopied] = useState(false);
   const [copiedSubject, setCopiedSubject] = useState(false);
 
