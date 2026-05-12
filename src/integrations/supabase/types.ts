@@ -1657,6 +1657,53 @@ export type Database = {
         }
         Relationships: []
       }
+      outreach_email_log: {
+        Row: {
+          bcc_email: string | null
+          error: string | null
+          id: string
+          lead_id: string | null
+          provider_id: string | null
+          recipient_email: string
+          sent_at: string
+          sent_by: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          bcc_email?: string | null
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          provider_id?: string | null
+          recipient_email: string
+          sent_at?: string
+          sent_by: string
+          status?: string
+          subject: string
+        }
+        Update: {
+          bcc_email?: string | null
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          provider_id?: string | null
+          recipient_email?: string
+          sent_at?: string
+          sent_by?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_email_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_links: {
         Row: {
           amount_cents: number
