@@ -10,7 +10,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useICAGuard } from '@/hooks/useICAGuard';
-import { Mail, Sparkles, Copy, Check, Loader2, Send, DollarSign, Info } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Mail, Sparkles, Copy, Check, Loader2, Send, DollarSign, Info, Zap } from 'lucide-react';
 import type { Lead } from '@/hooks/useLeads';
 
 interface OutreachEmailGeneratorProps {
