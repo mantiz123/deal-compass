@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     const htmlBody = `<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #222; white-space: pre-wrap;">${escaped}</div>`
 
     const senderName = user.user_metadata?.full_name || 'Klose LLC'
-    const fromAddress = `${senderName} <outreach@klosellc.com>`
+    const fromAddress = `${senderName} <sergio@goklose.com>`
     const userEmail = user.email
     const bccList: string[] = []
     if (bcc && emailRe.test(bcc)) bccList.push(bcc)
