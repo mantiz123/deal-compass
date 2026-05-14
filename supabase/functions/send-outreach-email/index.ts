@@ -85,12 +85,12 @@ Deno.serve(async (req) => {
       .replace(/>/g, '&gt;')
     const htmlBody = `<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #222; white-space: pre-wrap;">${escaped}</div>`
 
+    const PRIMARY_EMAIL = 'sergio@goklose.com'
     const senderName = user.user_metadata?.full_name || 'Klose LLC'
-    const fromAddress = `${senderName} <sergio@goklose.com>`
-    const userEmail = user.email
+    const fromAddress = `${senderName} <${PRIMARY_EMAIL}>`
     const bccList: string[] = []
     if (bcc && emailRe.test(bcc)) bccList.push(bcc)
-    else if (userEmail && emailRe.test(userEmail)) bccList.push(userEmail) // default BCC = user's email
+    else bccList.push(PRIMARY_EMAIL) // default BCC = sergio@goklose.com (historial centralizado)
 
     const payload: Record<string, any> = {
       from: fromAddress,
@@ -98,10 +98,9 @@ Deno.serve(async (req) => {
       subject,
       html: htmlBody,
       text: bodyText,
+      reply_to: (replyTo && emailRe.test(replyTo)) ? replyTo : PRIMARY_EMAIL,
     }
     if (bccList.length) payload.bcc = bccList
-    if (replyTo && emailRe.test(replyTo)) payload.reply_to = replyTo
-    else if (userEmail) payload.reply_to = userEmail
 
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
