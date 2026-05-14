@@ -168,7 +168,8 @@ Deno.serve(async (req) => {
           lead_id: leadId,
           interaction_type: 'email',
           direction: 'outbound',
-          content: `Subject: ${subject}\n\n${bodyText}`,
+          sentiment: 'positive',
+          content: `[SENT] To: ${to}\nBCC: ${bccList[0] ?? '-'}\nReply-To: ${replyToAddr}\nSubject: ${subject}\nProvider ID: ${resendData?.id ?? '-'}\n\n${bodyText}`,
           created_by: user.id,
         })
       } catch (e) {
