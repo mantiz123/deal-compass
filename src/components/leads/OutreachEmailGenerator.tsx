@@ -27,7 +27,7 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
   const [isSending, setIsSending] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState('');
   const [subjectLine, setSubjectLine] = useState('');
-  const [bccEmail, setBccEmail] = useState(user?.email || '');
+  const [bccEmail, setBccEmail] = useState('sergio@goklose.com');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [copied, setCopied] = useState(false);
   const [copiedSubject, setCopiedSubject] = useState(false);
