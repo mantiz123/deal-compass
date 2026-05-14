@@ -113,6 +113,8 @@ Deno.serve(async (req) => {
 
     const resendData = await resendRes.json().catch(() => ({}))
 
+    const replyToAddr = (replyTo && emailRe.test(replyTo)) ? replyTo : PRIMARY_EMAIL
+
     if (!resendRes.ok) {
       console.error('Resend error:', resendData)
       // Log failed attempt
@@ -125,6 +127,24 @@ Deno.serve(async (req) => {
         error: JSON.stringify(resendData).slice(0, 500),
         bcc_email: bccList[0] ?? null,
       })
+
+      // Also log failed interaction so it shows in the lead timeline
+      if (leadId) {
+        try {
+          const errMsg = (resendData?.message || 'Unknown error').toString().slice(0, 300)
+          await supabase.from('interactions').insert({
+            lead_id: leadId,
+            interaction_type: 'email',
+            direction: 'outbound',
+            sentiment: 'negative',
+            content: `[FAILED] To: ${to}\nBCC: ${bccList[0] ?? '-'}\nReply-To: ${replyToAddr}\nSubject: ${subject}\nError: ${errMsg}\n\n${bodyText}`,
+            created_by: user.id,
+          })
+        } catch (e) {
+          console.warn('failed interaction log error', e)
+        }
+      }
+
       return new Response(JSON.stringify({ error: resendData?.message || 'Failed to send' }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -148,7 +168,8 @@ Deno.serve(async (req) => {
           lead_id: leadId,
           interaction_type: 'email',
           direction: 'outbound',
-          content: `Subject: ${subject}\n\n${bodyText}`,
+          sentiment: 'positive',
+          content: `[SENT] To: ${to}\nBCC: ${bccList[0] ?? '-'}\nReply-To: ${replyToAddr}\nSubject: ${subject}\nProvider ID: ${resendData?.id ?? '-'}\n\n${bodyText}`,
           created_by: user.id,
         })
       } catch (e) {
