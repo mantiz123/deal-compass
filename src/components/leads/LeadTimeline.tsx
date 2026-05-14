@@ -94,11 +94,51 @@ export function LeadTimeline({ interactions, className }: LeadTimelineProps) {
                   )}
                 </div>
 
-                {interaction.content && (
-                  <p className="text-sm text-muted-foreground mb-2 whitespace-pre-wrap">
-                    {interaction.content}
-                  </p>
-                )}
+                {interaction.content && (() => {
+                  if (interaction.interaction_type === 'email' && /^\[(SENT|FAILED)\]/.test(interaction.content)) {
+                    const c = interaction.content;
+                    const failed = c.startsWith('[FAILED]');
+                    const get = (k: string) => {
+                      const m = c.match(new RegExp(`^${k}:\\s*(.+)$`, 'm'));
+                      return m?.[1]?.trim();
+                    };
+                    const to = get('To');
+                    const bcc = get('BCC');
+                    const replyTo = get('Reply-To');
+                    const subject = get('Subject');
+                    const error = get('Error');
+                    const bodyIdx = c.indexOf('\n\n');
+                    const body = bodyIdx >= 0 ? c.slice(bodyIdx + 2) : '';
+                    return (
+                      <div className="space-y-2 mb-2">
+                        <div className="flex flex-wrap gap-1.5">
+                          <span className={cn(
+                            'text-xs px-2 py-0.5 rounded-full font-medium',
+                            failed ? 'bg-destructive/20 text-destructive' : 'bg-success/20 text-success'
+                          )}>
+                            {failed ? 'Envío fallido' : 'Email enviado'}
+                          </span>
+                          {to && <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">To: {to}</span>}
+                          {bcc && bcc !== '-' && <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">BCC: {bcc}</span>}
+                          {replyTo && <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">Reply-To: {replyTo}</span>}
+                        </div>
+                        {subject && <p className="text-sm font-medium">{subject}</p>}
+                        {error && <p className="text-xs text-destructive">Error: {error}</p>}
+                        {body && (
+                          <details className="text-sm text-muted-foreground">
+                            <summary className="cursor-pointer text-xs hover:text-foreground">Ver contenido del email</summary>
+                            <p className="mt-2 whitespace-pre-wrap">{body}</p>
+                          </details>
+                        )}
+                      </div>
+                    );
+                  }
+                  return (
+                    <p className="text-sm text-muted-foreground mb-2 whitespace-pre-wrap">
+                      {interaction.content}
+                    </p>
+                  );
+                })()}
 
                 <p className="text-xs text-muted-foreground">
                   {format(new Date(interaction.created_at), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es })}
