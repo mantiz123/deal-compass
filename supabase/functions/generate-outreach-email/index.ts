@@ -78,38 +78,43 @@ serve(async (req) => {
     let userPrompt = "";
 
     if (templateType === "initial_outreach") {
-      systemPrompt = `You are a professional real estate investment copywriter for Klose LLC. Generate a SHORT, direct, and professional initial outreach email to a property owner. Keep it concise — no filler, no fluff. The email must:
-1. Address the owner by first name
-2. Briefly introduce Sergio Mantilla, Managing Director of Klose
-3. Include the required Alabama Wholesale & Assignment Disclosure (Who We Are, Our Process, Fees) but keep each section to 1-2 sentences max
-4. Mention awareness of property situation tactfully in one sentence
-5. Ask if they're open to a formal purchase proposal
-6. One-line opt-out option
-7. Signature: Sergio Mantilla, Managing Director | Klose LLC
-8. Mandatory legal disclaimer block (REQUIRED — do not omit or shorten):
-   "I am an Independent Contractor of KLOSE LLC, a Wyoming registered real estate investment firm (EIN 41-4409334). I am NOT a licensed real estate agent and do not represent you in any real estate transaction. KLOSE LLC purchases properties as a principal buyer or assigns purchase contracts to end buyers."
+      // Short, personal first-contact format used by Sergio.
+      // No AI rewriting needed — deterministic template keeps tone and STOP opt-out consistent.
+      const firstName = (ownerName || "there").split(/\s+/)[0];
+      const shortAddress = `${p.address}${p.city ? `, ${p.city}` : ""}`;
 
-CRITICAL FORMATTING RULES:
-- Output ONLY plain text. Do NOT use markdown formatting.
-- Do NOT use asterisks (**) for bold or any other markdown syntax.
-- Use ALL CAPS for section headers instead of bold formatting.
-- The legal disclaimer block above MUST appear verbatim at the bottom, after the signature, under the header "LEGAL DISCLAIMER".
-- Keep the entire email under 280 words (excluding the disclaimer).`;
+      const emailContent = `Hi ${firstName},
 
-      userPrompt = `Generate an initial outreach email for:
-- Owner Name: ${ownerName}
-- Property Address: ${address}
-- Property Type: ${p.property_type?.replace("_", " ") || "residential"}
-- Size: ${sqft}, ${bedsBaths}
-- Year Built: ${yearBuilt || "N/A"}
-- ARV: ${arv}
-${isForeclosure ? `- Foreclosure Status: Yes (${prefcRecordType || "Notice filed"})` : ""}
-${mortgageBalance ? `- Mortgage Balance: ${mortgageBalance}` : ""}
-${equityPercent ? `- Equity: ${equityPercent}` : ""}
-${propertyCondition ? `- Property Condition: ${propertyCondition}` : ""}
-${lowestSourcePrice ? `- Lowest Market Value Found: ${lowestSourcePrice}` : ""}
-${p.is_vacant ? "- Property appears vacant" : ""}
-${p.tax_delinquent ? "- Tax delinquent status" : ""}`;
+My name is Sergio Mantilla. I work with a small group of cash buyers in Alabama.
+
+I came across your property at ${shortAddress} and wanted to see if you would consider a cash as-is offer.
+
+We can close quickly (14-21 days) and cover all standard closing costs. No repairs needed, no commissions.
+
+Would you be open to discussing a no-obligation cash offer?
+
+Best,
+Sergio Mantilla
+Klose LLC
+
+P.S. This is our first contact regarding this property. If you prefer not to receive any more messages, simply reply STOP and we will not contact you again.`;
+
+      const subjectLine = `Cash offer for ${p.address}`;
+      return new Response(
+        JSON.stringify({
+          email: emailContent,
+          subject: subjectLine,
+          templateType,
+          propertyAddress: address,
+          ownerEmail: p.owner_email || null,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (templateType === "__never__") {
+      systemPrompt = "";
+      userPrompt = "";
 
     } else if (templateType === "foreclosure_offer") {
       if (!offerAmount) throw new Error("offerAmount is required for foreclosure offer template");
