@@ -1,18 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useICAGuard } from '@/hooks/useICAGuard';
 import { useAuth } from '@/contexts/AuthContext';
-import { Mail, Sparkles, Copy, Check, Loader2, Send, DollarSign, Info, Zap } from 'lucide-react';
+import { Mail, Sparkles, Copy, Check, Loader2, Send, DollarSign, Info, Zap, AlertTriangle } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import type { Lead } from '@/hooks/useLeads';
+
+const DUPLICATE_WARNING_DAYS = 7;
+
+interface PreviousSend {
+  recipient_email: string;
+  subject: string;
+  sent_at: string;
+}
 
 interface OutreachEmailGeneratorProps {
   lead: Lead;
@@ -40,6 +54,33 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
 
   const property = lead.property;
   const isForeclosure = property?.is_foreclosure;
+
+  // Anti-duplicate: previous sends to this lead in last N days
+  const [previousSends, setPreviousSends] = useState<PreviousSend[]>([]);
+  const [confirmDuplicate, setConfirmDuplicate] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const since = new Date(Date.now() - DUPLICATE_WARNING_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    supabase
+      .from('outreach_email_log')
+      .select('recipient_email, subject, sent_at')
+      .eq('lead_id', lead.id)
+      .eq('status', 'sent')
+      .gte('sent_at', since)
+      .order('sent_at', { ascending: false })
+      .limit(5)
+      .then(({ data }) => {
+        if (!cancelled && data) setPreviousSends(data as PreviousSend[]);
+      });
+    return () => { cancelled = true; };
+  }, [lead.id]);
+
+  const matchingPrevious = (() => {
+    const target = (recipientEmail || property?.owner_email || '').trim().toLowerCase();
+    if (!target) return null;
+    return previousSends.find(p => p.recipient_email.toLowerCase() === target) || null;
+  })();
 
   const handleGenerate = async () => {
     if (!requireICA("enviar outreach a sellers")) return;
@@ -94,17 +135,8 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
     }
   };
 
-  const handleSend = async () => {
-    if (!requireICA("enviar outreach a sellers")) return;
+  const performSend = async () => {
     const to = (recipientEmail || property?.owner_email || '').trim();
-    if (!to) {
-      toast({ title: 'Falta destinatario', description: 'Ingresa el email del seller.', variant: 'destructive' });
-      return;
-    }
-    if (!subjectLine.trim() || !generatedEmail.trim()) {
-      toast({ title: 'Email vacío', description: 'Genera el contenido primero.', variant: 'destructive' });
-      return;
-    }
     setIsSending(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-outreach-email', {
@@ -122,6 +154,11 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
         title: '✅ Email enviado',
         description: `Enviado a ${to}${(data as any)?.bcc ? ` · BCC a ${(data as any).bcc}` : ''}. Restantes hoy: ${(data as any)?.remainingToday ?? '—'}`,
       });
+      // Refresh previous sends so the warning updates immediately
+      setPreviousSends(prev => [
+        { recipient_email: to, subject: subjectLine, sent_at: new Date().toISOString() },
+        ...prev,
+      ]);
     } catch (err: any) {
       console.error('Send error:', err);
       toast({
@@ -134,6 +171,24 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
     }
   };
 
+  const handleSend = async () => {
+    if (!requireICA("enviar outreach a sellers")) return;
+    const to = (recipientEmail || property?.owner_email || '').trim();
+    if (!to) {
+      toast({ title: 'Falta destinatario', description: 'Ingresa el email del seller.', variant: 'destructive' });
+      return;
+    }
+    if (!subjectLine.trim() || !generatedEmail.trim()) {
+      toast({ title: 'Email vacío', description: 'Genera el contenido primero.', variant: 'destructive' });
+      return;
+    }
+    if (matchingPrevious) {
+      setConfirmDuplicate(true);
+      return;
+    }
+    await performSend();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -143,6 +198,21 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
           <Badge variant="glow" className="text-xs">IA</Badge>
         </h3>
       </div>
+
+      {matchingPrevious && (
+        <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Ya contactaste a este seller</AlertTitle>
+          <AlertDescription className="text-xs space-y-1 mt-1">
+            <div>
+              Email enviado a <strong>{matchingPrevious.recipient_email}</strong> hace{' '}
+              <strong>{formatDistanceToNow(new Date(matchingPrevious.sent_at))}</strong>.
+            </div>
+            <div className="opacity-80">Subject anterior: "{matchingPrevious.subject}"</div>
+            <div className="opacity-80">Te pediremos confirmación al enviar de nuevo.</div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Template Selection */}
       <Card variant="glass" className="p-4 space-y-4">
@@ -378,6 +448,47 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
           </div>
         </Card>
       )}
+
+      <AlertDialog open={confirmDuplicate} onOpenChange={setConfirmDuplicate}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              ¿Reenviar email a este seller?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                {matchingPrevious && (
+                  <>
+                    <div>
+                      Ya enviaste un email a <strong>{matchingPrevious.recipient_email}</strong> hace{' '}
+                      <strong>{formatDistanceToNow(new Date(matchingPrevious.sent_at))}</strong>.
+                    </div>
+                    <div className="rounded-md border bg-muted/50 p-2 text-xs">
+                      <div className="text-muted-foreground">Subject anterior:</div>
+                      <div className="font-medium">"{matchingPrevious.subject}"</div>
+                    </div>
+                  </>
+                )}
+                <div className="text-muted-foreground">
+                  Reenviar muy seguido puede afectar la deliverability y verse como spam.
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setConfirmDuplicate(false);
+                await performSend();
+              }}
+            >
+              Sí, enviar de nuevo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
