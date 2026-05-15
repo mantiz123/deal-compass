@@ -448,6 +448,47 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
           </div>
         </Card>
       )}
+
+      <AlertDialog open={confirmDuplicate} onOpenChange={setConfirmDuplicate}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              ¿Reenviar email a este seller?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                {matchingPrevious && (
+                  <>
+                    <div>
+                      Ya enviaste un email a <strong>{matchingPrevious.recipient_email}</strong> hace{' '}
+                      <strong>{formatDistanceToNow(new Date(matchingPrevious.sent_at))}</strong>.
+                    </div>
+                    <div className="rounded-md border bg-muted/50 p-2 text-xs">
+                      <div className="text-muted-foreground">Subject anterior:</div>
+                      <div className="font-medium">"{matchingPrevious.subject}"</div>
+                    </div>
+                  </>
+                )}
+                <div className="text-muted-foreground">
+                  Reenviar muy seguido puede afectar la deliverability y verse como spam.
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setConfirmDuplicate(false);
+                await performSend();
+              }}
+            >
+              Sí, enviar de nuevo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
