@@ -199,6 +199,21 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
         </h3>
       </div>
 
+      {matchingPrevious && (
+        <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Ya contactaste a este seller</AlertTitle>
+          <AlertDescription className="text-xs space-y-1 mt-1">
+            <div>
+              Email enviado a <strong>{matchingPrevious.recipient_email}</strong> hace{' '}
+              <strong>{formatDistanceToNow(new Date(matchingPrevious.sent_at))}</strong>.
+            </div>
+            <div className="opacity-80">Subject anterior: "{matchingPrevious.subject}"</div>
+            <div className="opacity-80">Te pediremos confirmación al enviar de nuevo.</div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Template Selection */}
       <Card variant="glass" className="p-4 space-y-4">
         <div>
