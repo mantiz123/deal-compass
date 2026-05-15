@@ -55,6 +55,33 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
   const property = lead.property;
   const isForeclosure = property?.is_foreclosure;
 
+  // Anti-duplicate: previous sends to this lead in last N days
+  const [previousSends, setPreviousSends] = useState<PreviousSend[]>([]);
+  const [confirmDuplicate, setConfirmDuplicate] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const since = new Date(Date.now() - DUPLICATE_WARNING_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    supabase
+      .from('outreach_email_log')
+      .select('recipient_email, subject, sent_at')
+      .eq('lead_id', lead.id)
+      .eq('status', 'sent')
+      .gte('sent_at', since)
+      .order('sent_at', { ascending: false })
+      .limit(5)
+      .then(({ data }) => {
+        if (!cancelled && data) setPreviousSends(data as PreviousSend[]);
+      });
+    return () => { cancelled = true; };
+  }, [lead.id]);
+
+  const matchingPrevious = (() => {
+    const target = (recipientEmail || property?.owner_email || '').trim().toLowerCase();
+    if (!target) return null;
+    return previousSends.find(p => p.recipient_email.toLowerCase() === target) || null;
+  })();
+
   const handleGenerate = async () => {
     if (!requireICA("enviar outreach a sellers")) return;
     setIsGenerating(true);
