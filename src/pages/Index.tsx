@@ -10,6 +10,7 @@ import { HotLeadsWidget } from "@/components/dashboard/HotLeadsWidget";
 import { CriticalActionsWidget } from "@/components/dashboard/CriticalActionsWidget";
 import { StaleLeadsAlert } from "@/components/dashboard/StaleLeadsAlert";
 import { SMSFollowupAlert } from "@/components/dashboard/SMSFollowupAlert";
+import { OutreachDraftsWidget } from "@/components/dashboard/OutreachDraftsWidget";
 import { PipelineHygieneWidget } from "@/components/dashboard/PipelineHygieneWidget";
 import { PayoutScheduleWidget } from "@/components/dashboard/PayoutScheduleWidget";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
@@ -135,6 +136,11 @@ const Index = () => {
       {/* SMS Followup Alert — leads in contacto with no SMS in last 3 days */}
       <div className="mb-6">
         <SMSFollowupAlert />
+      </div>
+
+      {/* Outreach Drafts — AI-generated email drafts ready for TC to review and send */}
+      <div className="mb-6">
+        <OutreachDraftsWidget />
       </div>
 
       {/* Hot Leads + Critical Actions side by side */}
