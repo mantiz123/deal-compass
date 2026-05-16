@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -27,7 +28,6 @@ import {
   Send
 } from 'lucide-react';
 import type { Buyer } from '@/hooks/useBuyers';
-import { SendToBuyerSheet } from './SendToBuyerSheet';
 
 interface BuyerDetailSheetProps {
   buyer: Buyer | null;
@@ -52,7 +52,37 @@ const propertyTypeLabels: Record<string, string> = {
 };
 
 export function BuyerDetailSheet({ buyer, open, onOpenChange }: BuyerDetailSheetProps) {
-  const [showSendSheet, setShowSendSheet] = useState(false);
+  const sendReactivationMutation = useMutation({
+    mutationFn: async () => {
+      if (!buyer?.id) throw new Error("No buyer selected");
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reactivate-buyers`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ buyer_id: buyer.id }),
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error ?? "Send failed");
+      return result as { sent: number; failed: number };
+    },
+    onSuccess: (data) => {
+      if (data.sent > 0) {
+        toast.success(`Email enviado a ${buyer?.contact_name ?? "buyer"}`);
+      } else {
+        toast.error("No se pudo enviar — verifica que el buyer tenga email");
+      }
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
   // Fetch deal packages for this buyer
   const { data: dealPackages, isLoading: loadingDeals } = useQuery({
     queryKey: ['buyer-deals', buyer?.id],
@@ -124,12 +154,14 @@ export function BuyerDetailSheet({ buyer, open, onOpenChange }: BuyerDetailSheet
             </div>
           </div>
           {buyer.is_active && (
-            <Button 
-              className="mt-3 w-full" 
-              onClick={() => setShowSendSheet(true)}
+            <Button
+              className="mt-3 w-full"
+              onClick={() => sendReactivationMutation.mutate()}
+              disabled={sendReactivationMutation.isPending || !buyer.email}
+              title={!buyer.email ? "Este buyer no tiene email registrado" : "Enviar email de reactivación profesional"}
             >
               <Send className="h-4 w-4 mr-2" />
-              Enviar Deal Packages
+              {sendReactivationMutation.isPending ? "Enviando…" : "Enviar Deal Package"}
             </Button>
           )}
         </SheetHeader>
@@ -368,12 +400,6 @@ export function BuyerDetailSheet({ buyer, open, onOpenChange }: BuyerDetailSheet
         </ScrollArea>
       </SheetContent>
 
-      {/* Send Deal Packages Sheet */}
-      <SendToBuyerSheet
-        buyer={buyer}
-        open={showSendSheet}
-        onOpenChange={setShowSendSheet}
-      />
     </Sheet>
   );
 }
