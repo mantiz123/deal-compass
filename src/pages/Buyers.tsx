@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useServerPagination } from "@/hooks/useServerPagination";
 import { DataPagination } from "@/components/ui/data-pagination";
 import { Layout } from "@/components/layout/Layout";
@@ -42,6 +45,7 @@ import {
   Droplets,
   RefreshCw,
   TrendingUp,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +66,35 @@ const Buyers = () => {
 
   const { data: stats } = useBuyerStats();
   const recalculateLiquidity = useRecalculateAllBuyerLiquidity();
+
+  const reactivateMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reactivate-buyers`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error ?? "Error activating buyers");
+      return result as { sent: number; failed: number; total: number };
+    },
+    onSuccess: (data) => {
+      toast.success(
+        `Red activada — ${data.sent} emails enviados${data.failed ? ` (${data.failed} fallaron)` : ""}`,
+        { duration: 6000 }
+      );
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
   const pagination = useServerPagination(24);
 
   const { data: result, isLoading, error } = useBuyers({
@@ -122,6 +155,19 @@ const Buyers = () => {
                 recalculateLiquidity.isPending && "animate-spin"
               )} />
               Recalcular
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-primary/40 text-primary hover:bg-primary/10"
+              onClick={() => {
+                if (!reactivateMutation.isPending) reactivateMutation.mutate();
+              }}
+              disabled={reactivateMutation.isPending}
+              title="Envía email de reactivación a todos los buyers activos con email"
+            >
+              <Send className={cn("mr-2 h-4 w-4", reactivateMutation.isPending && "animate-pulse")} />
+              {reactivateMutation.isPending ? "Enviando…" : "Activar Red de Buyers"}
             </Button>
             <Button size="sm" onClick={() => setShowNewDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
