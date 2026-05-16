@@ -31,7 +31,8 @@ NEGOTIATION RULES:
 - If seller says "do not call me again" or similar, call mark_dnc immediately and end politely.
 
 CONVERSATION FLOW:
-1. Warm intro: confirm you're talking to {{owner_name}}, mention property
+1. Warm intro: confirm you're talking to {{owner_name}}, then adapt this situation hook naturally — don't read it verbatim, make it feel like a real conversation opener:
+   SITUATION: {{situation_type}} — Hook: "{{opening_hook}}"
 2. Discovery: "How are things with the property right now?" (let them talk)
 3. Identify pain: condition, repairs needed, urgency, life situation
 4. Position cash offer: "We buy as-is, close in 14 days, no fees, no agents"
@@ -57,7 +58,8 @@ NEGOTIATION RULES:
 - If seller says "stop calling": call mark_dnc and end.
 
 STYLE:
-- Cut to the point in 30 seconds: "I'm a cash buyer, looking at your property, what would it take?"
+- Lead with the situation hook ({{situation_type}}): "{{opening_hook}}"
+- Cut to the point in 30 seconds after the hook: "What would it take to make a sale happen?"
 - If they're not motivated, thank them and end the call. Don't chase tire-kickers.
 - If interested: lock in a number range and schedule human follow-up.
 
@@ -72,6 +74,7 @@ KEY CONTEXT (do not reveal these numbers to the seller):
 - Distress signals we detected: {{distress_signals}}
 
 YOUR GOAL:
+0. Opening hook — use this naturally as your intro ({{situation_type}}): "{{opening_hook}}"
 1. Confirm property details (beds/baths/condition)
 2. Understand owner's situation (still living there? renting? inherited? behind on payments?)
 3. Gauge timeline ("If the right offer came along, would you consider selling this year?")
@@ -92,6 +95,76 @@ const FIRST_MESSAGES = {
   mike: "Hey {{owner_name}}, this is Mike. I'm a local cash buyer looking at {{property_address}}. Got 60 seconds?",
   discovery: "Hi {{owner_name}}, this is Alex with KLOSE. I'm doing some research on properties in your area, including {{property_address}}. Is now an okay time for a couple of quick questions?",
 };
+
+// ============================================================
+// Opening hook factory — distress-specific first 10 seconds
+// ============================================================
+function buildOpeningHook(signals: string[], ownerName: string, address: string): { hook: string; situationType: string } {
+  if (signals.includes("PRE-FORECLOSURE")) {
+    return {
+      situationType: "Foreclosure",
+      hook: `${ownerName}, I'm reaching out because I saw there may be a foreclosure notice on ${address}. We work with homeowners every week to help them avoid that — get cash in hand and move on with dignity. I wanted to see if there's any way we could help your situation.`,
+    };
+  }
+  if (signals.includes("TAX-DELINQUENT")) {
+    return {
+      situationType: "Tax Delinquent",
+      hook: `${ownerName}, I noticed there are some overdue taxes on ${address}. We work with owners in this exact situation all the time — we can close fast and handle the back taxes so they don't follow you. Wanted to see if a quick cash sale would make sense.`,
+    };
+  }
+  if (signals.includes("ABSENTEE-OWNER")) {
+    return {
+      situationType: "Absentee Owner",
+      hook: `${ownerName}, I'm calling about ${address} — looks like you're managing it from out of the area. A lot of owners I talk to find that a headache, especially with repairs or bad tenants. Wanted to see if you'd ever considered simplifying things with a clean cash sale.`,
+    };
+  }
+  if (signals.includes("VACANT")) {
+    return {
+      situationType: "Vacant Property",
+      hook: `${ownerName}, I'm reaching out about ${address} — I noticed the property has been sitting vacant. Vacant homes can get costly fast between insurance, taxes, and maintenance. We buy them as-is, no repairs, no showings, and we close in 2-3 weeks. Worth a quick conversation?`,
+    };
+  }
+  if (signals.includes("PROBATE")) {
+    return {
+      situationType: "Probate",
+      hook: `${ownerName}, I understand you may be handling the estate for ${address}. We work with families going through probate regularly and try to make the property side as painless as possible — one clean transaction, no repairs, no agents. Just wanted to introduce myself in case it's helpful.`,
+    };
+  }
+  // Generic fallback
+  return {
+    situationType: "General",
+    hook: `${ownerName}, I'm calling because we're actively buying properties in the ${address.split(",").slice(-1)[0]?.trim() || "area"} area. We buy houses as-is for cash and close fast — no agents, no repairs. Just wanted to see if you'd ever considered selling, even if it's not something you're actively thinking about right now.`,
+  };
+}
+
+// ============================================================
+// Build a lead-specific briefing for the training simulator
+// ============================================================
+function buildPracticeSystemPrompt(property: any, lead: any, signals: string[], mao: number, arv: number): string {
+  return `You are a SIMULATED REAL ESTATE SELLER for training purposes.
+
+PROPERTY: ${property.address}, ${property.city}, ${property.state}
+OWNER NAME: ${property.owner_name || "the owner"}
+SITUATION: ${signals.length ? signals.join(", ") : "General homeowner"}
+ARV (market value): $${arv.toLocaleString()}
+INVESTOR MAX OFFER (MAO): $${mao.toLocaleString()} — the trainee should NOT exceed this
+K-Score: ${lead.piw_score || "unknown"}/100
+
+Play the role of ${property.owner_name || "the owner"} based on the SITUATION above:
+- FORECLOSURE: stressed, overwhelmed, somewhat desperate but scared of scams
+- TAX-DELINQUENT: embarrassed about the situation, open if you can solve the tax problem
+- ABSENTEE-OWNER: tired of managing remotely, open to selling if price is fair
+- VACANT: holding costs piling up, motivated but not desperate
+- PROBATE: emotionally attached (family home), cautious about value
+
+RULES:
+- Your asking price should be 15-25% ABOVE MAO. Start high, negotiate down.
+- At the END of the call, emit this exact tag:
+  [TRAINING_RESULT: {"persona":"${signals[0] || "GENERAL_SELLER"}","outcome":"<outcome>","agent_score":<0-100>,"strengths":["..."],"weaknesses":["..."],"final_offer":<number or null>,"would_close":<true/false>}]
+- Score the trainee on: rapport, discovery questions, objection handling, pricing discipline (stayed near MAO), and closing.
+
+Speak naturally. Be realistic. Create at least 2-3 genuine objections.`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -130,9 +203,49 @@ Deno.serve(async (req) => {
     const mode = (body.mode || "live") as "live" | "training";
 
     // ============================================================
-    // TRAINING MODE: Seller Simulator (no lead context needed)
+    // TRAINING MODE: Seller Simulator
+    // Optional: pass practice_lead_id to brief simulator on a real lead
     // ============================================================
     if (mode === "training") {
+      const practiceLeadId = body.practice_lead_id as string | undefined;
+      let trainingOverrides: Record<string, unknown> | undefined;
+      let trainingDynVars: Record<string, string | number> | undefined;
+      let trainingNegotiation: { mao: number; arv: number } | undefined;
+
+      if (practiceLeadId) {
+        const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: practiceLead } = await adminClient
+          .from("leads")
+          .select("*, properties(*)")
+          .eq("id", practiceLeadId)
+          .single();
+
+        if (practiceLead?.properties) {
+          const prop = practiceLead.properties;
+          const pArv = Number(prop.arv || 0);
+          const pMao = Number(practiceLead.offer_amount || prop.mao || Math.round(pArv * 0.65));
+          const pSignals: string[] = [];
+          if (prop.is_foreclosure) pSignals.push("PRE-FORECLOSURE");
+          if (prop.is_vacant) pSignals.push("VACANT");
+          if (prop.tax_delinquent) pSignals.push("TAX-DELINQUENT");
+          if (prop.is_absentee_owner) pSignals.push("ABSENTEE-OWNER");
+          if (prop.is_probate) pSignals.push("PROBATE");
+
+          const practicePrompt = buildPracticeSystemPrompt(prop, practiceLead, pSignals, pMao, pArv);
+          trainingOverrides = {
+            agent: {
+              prompt: { prompt: practicePrompt },
+              firstMessage: `Hello? Who is this?`,
+            },
+          };
+          trainingDynVars = {
+            property_address: `${prop.address}, ${prop.city}`,
+            owner_name: prop.owner_name || "the owner",
+          };
+          trainingNegotiation = { mao: pMao, arv: pArv };
+        }
+      }
+
       const tokenRes = await fetch(
         `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${SELLER_SIMULATOR_AGENT_ID}`,
         { headers: { "xi-api-key": ELEVENLABS_API_KEY } }
@@ -151,6 +264,9 @@ Deno.serve(async (req) => {
           token,
           agent_id: SELLER_SIMULATOR_AGENT_ID,
           mode: "training",
+          ...(trainingOverrides ? { overrides: trainingOverrides } : {}),
+          ...(trainingDynVars ? { dynamic_variables: trainingDynVars } : {}),
+          ...(trainingNegotiation ? { negotiation: { ...trainingNegotiation, min_offer: Math.round(trainingNegotiation.mao * 0.85) } } : {}),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -201,17 +317,25 @@ Deno.serve(async (req) => {
 
     // Compute negotiation range
     const arv = Number(property.arv || 0);
-    const mao = Number(lead.offer_amount || property.mao || Math.round(arv * 0.7));
+    // Alabama: 65% rule (70% is national standard — AL is a deeper discount market)
+    const mao = Number(lead.offer_amount || property.mao || Math.round(arv * 0.65));
     const minOffer = Math.round(mao * 0.85);
 
+    // Build situation-specific opening hook
+    const ownerName = property.owner_name || "the owner";
+    const fullAddress = `${property.address}, ${property.city}`;
+    const { hook: openingHook, situationType } = buildOpeningHook(signals, ownerName, fullAddress);
+
     const dynamicVariables: Record<string, string | number> = {
-      owner_name: property.owner_name || "the owner",
+      owner_name: ownerName,
       property_address: `${property.address}, ${property.city}, ${property.state}`,
       k_score: lead.piw_score || 0,
       arv: arv.toLocaleString(),
       mortgage_balance: Number(property.mortgage_balance || 0).toLocaleString(),
       equity_percent: property.equity_percent || 0,
       distress_signals: distressStr,
+      situation_type: situationType,
+      opening_hook: openingHook,
       last_contact: lead.last_contact_at
         ? new Date(lead.last_contact_at).toLocaleDateString()
         : "never",

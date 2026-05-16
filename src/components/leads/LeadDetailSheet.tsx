@@ -76,6 +76,7 @@ import {
   UserSearch,
   Handshake,
   Pencil,
+  GraduationCap,
 } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -111,6 +112,7 @@ export function LeadDetailSheet({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSkipTrace, setShowSkipTrace] = useState(false);
   const [showVoiceAgent, setShowVoiceAgent] = useState(false);
+  const [showVoicePractice, setShowVoicePractice] = useState(false);
   const [showEditProperty, setShowEditProperty] = useState(false);
   const [showKCFY, setShowKCFY] = useState(false);
   const { data: kcfyRequest } = useKCFYRequestForLead(lead?.id);
@@ -150,10 +152,10 @@ export function LeadDetailSheet({
     ? sqft * parseFloat(medianPriceSqft) 
     : currentArv;
   
-  // Calculate MAO: ARV × 70% - Repair Cost
+  // Calculate MAO: ARV × 65% - Repair Cost (Alabama standard)
   const repairCostNum = parseFloat(repairCost) || 0;
-  const calculatedMao = calculatedArv > 0 
-    ? Math.round(calculatedArv * 0.7 - repairCostNum)
+  const calculatedMao = calculatedArv > 0
+    ? Math.round(calculatedArv * 0.65 - repairCostNum)
     : 0;
 
   const handleSaveFinancials = async () => {
@@ -257,6 +259,16 @@ export function LeadDetailSheet({
                 >
                   <Sparkles className="mr-2 h-4 w-4" />
                   AI Agent
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowVoicePractice(true)}
+                  size="sm"
+                  className="bg-primary/10 border-primary/30 hover:bg-primary/20"
+                  title="Practica este deal con un seller simulado antes de llamar al real"
+                >
+                  <GraduationCap className="mr-2 h-4 w-4" />
+                  Practicar
                 </Button>
                 <Button 
                   variant="outline" 
@@ -520,7 +532,7 @@ export function LeadDetailSheet({
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">MAO <span className="text-[10px]">(ARV×70% - Repairs)</span></p>
+                      <p className="text-muted-foreground">MAO <span className="text-[10px]">(ARV×65% AL - Repairs)</span></p>
                       <p className="font-medium text-lg text-success">
                         {calculatedMao > 0 ? `$${calculatedMao.toLocaleString()}` : 'N/A'}
                       </p>
@@ -648,10 +660,10 @@ export function LeadDetailSheet({
                     {calculatedArv > 0 && (
                       <Card className="p-3 bg-success/10 border-success/30">
                         <div className="text-xs text-muted-foreground mb-1">
-                          Fórmula MAO: ARV × 70% - Reparaciones
+                          Fórmula MAO: ARV × 65% (Alabama) - Reparaciones
                         </div>
                         <div className="text-sm">
-                          ${Math.round(calculatedArv).toLocaleString()} × 0.70 - ${repairCostNum.toLocaleString()} = 
+                          ${Math.round(calculatedArv).toLocaleString()} × 0.65 - ${repairCostNum.toLocaleString()} =
                           <span className="text-success font-bold text-lg ml-2">
                             ${calculatedMao > 0 ? calculatedMao.toLocaleString() : '0'}
                           </span>
@@ -1045,11 +1057,19 @@ export function LeadDetailSheet({
         propertyAddress={`${property?.address || ''}, ${property?.city || ''}`}
       />
 
-      {/* AI Voice Agent Sheet */}
+      {/* AI Voice Agent Sheet — Live mode */}
       <VoiceAgentSheet
         lead={lead}
         open={showVoiceAgent}
         onOpenChange={setShowVoiceAgent}
+      />
+
+      {/* AI Voice Agent Sheet — Practice mode (training with this lead's context) */}
+      <VoiceAgentSheet
+        lead={lead}
+        open={showVoicePractice}
+        onOpenChange={setShowVoicePractice}
+        defaultTrainingMode={true}
       />
 
       {/* KCFY Request Dialog */}

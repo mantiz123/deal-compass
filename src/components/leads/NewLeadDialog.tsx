@@ -160,7 +160,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
       
       const arvNum = arv ? parseFloat(arv) : undefined;
       const repairNum = repairCost ? parseFloat(repairCost) : undefined;
-      const mao = arvNum && repairNum ? (arvNum * 0.7) - repairNum : undefined;
+      const mao = arvNum && repairNum ? (arvNum * 0.65) - repairNum : undefined;
 
       await createLead.mutateAsync({
         property: {
@@ -796,9 +796,9 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
 
             {arv && repairCost && (
               <div className="bg-success/10 border border-success/30 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">MAO Calculado (70% Rule)</p>
+                <p className="text-sm text-muted-foreground">MAO Calculado (65% — Alabama)</p>
                 <p className="text-2xl font-bold text-success">
-                  ${((parseFloat(arv) * 0.7) - parseFloat(repairCost)).toLocaleString()}
+                  ${((parseFloat(arv) * 0.65) - parseFloat(repairCost)).toLocaleString()}
                 </p>
               </div>
             )}

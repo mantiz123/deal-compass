@@ -205,7 +205,7 @@ const Leads = () => {
                    const headers = ['Nombre', 'Dirección', 'Teléfono', 'K-Score', 'ARV', 'MAO', 'Spread', 'Estado', 'Días sin actividad'];
                   const rows = exportLeads.map(lead => {
                     const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
-                    const mao = lead.property?.mao ? Number(lead.property.mao) : (arv > 0 ? Math.round(arv * 0.7 - (Number(lead.property?.repair_cost) || 0)) : 0);
+                    const mao = lead.property?.mao ? Number(lead.property.mao) : (arv > 0 ? Math.round(arv * 0.65 - (Number(lead.property?.repair_cost) || 0)) : 0);
                     const offerAmt = Number(lead.offer_amount) || 0;
                     const spread = mao > 0 && offerAmt > 0 ? mao - offerAmt : 0;
                     const statusLabel = statusConfig[lead.status]?.label || lead.status;
@@ -533,7 +533,7 @@ const Leads = () => {
                         </TooltipTrigger>
                         <TooltipContent className="max-w-[250px]">
                           <p className="text-xs">
-                            <strong>Maximum Allowable Offer</strong>: Oferta máxima permitida calculada como ARV × 70% - Costo de Reparaciones. Precio máximo a pagar para mantener margen.
+                            <strong>Maximum Allowable Offer</strong>: Oferta máxima permitida calculada como ARV × 65% (estándar Alabama) - Costo de Reparaciones. Precio máximo a pagar para mantener margen.
                           </p>
                         </TooltipContent>
                       </Tooltip>
@@ -720,7 +720,7 @@ const Leads = () => {
                             const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
                             const repairCost = lead.property?.repair_cost ? Number(lead.property.repair_cost) : 0;
                             const savedMao = lead.property?.mao ? Number(lead.property.mao) : 0;
-                            const calculatedMao = arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0;
+                            const calculatedMao = arv > 0 ? Math.round(arv * 0.65 - repairCost) : 0;
                             const displayMao = savedMao || calculatedMao;
                             const isCalculated = !savedMao && calculatedMao > 0;
                             
@@ -735,7 +735,7 @@ const Leads = () => {
                                 <TooltipContent>
                                   <p className="max-w-[200px] text-xs">
                                     {isCalculated 
-                                      ? `Estimado: ARV ($${arv.toLocaleString()}) × 70% - Reparaciones ($${repairCost.toLocaleString()})`
+                                      ? `Estimado: ARV ($${arv.toLocaleString()}) × 65% (AL) - Reparaciones ($${repairCost.toLocaleString()})`
                                       : 'MAO guardado en la propiedad'
                                     }
                                   </p>
@@ -751,10 +751,10 @@ const Leads = () => {
                             const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
                             const repairCost = lead.property?.repair_cost ? Number(lead.property.repair_cost) : 0;
                             const savedMao = lead.property?.mao ? Number(lead.property.mao) : 0;
-                            const mao = savedMao || (arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0);
-                            
+                            const mao = savedMao || (arv > 0 ? Math.round(arv * 0.65 - repairCost) : 0);
+
                             const offerAmount = lead.offer_amount ? Number(lead.offer_amount) : 0;
-                            
+
                             if (mao > 0 && offerAmount === 0) {
                               return (
                                 <Tooltip>
@@ -840,7 +840,7 @@ const Leads = () => {
                             const arv = lead.property?.arv ? Number(lead.property.arv) : 0;
                             const repairCost = lead.property?.repair_cost ? Number(lead.property.repair_cost) : 0;
                             const savedMao = lead.property?.mao ? Number(lead.property.mao) : 0;
-                            const mao = savedMao || (arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0);
+                            const mao = savedMao || (arv > 0 ? Math.round(arv * 0.65 - repairCost) : 0);
                             const offerAmount = lead.offer_amount ? Number(lead.offer_amount) : 0;
                             const spread = mao > 0 && offerAmount > 0 ? mao - offerAmount : 0;
                             

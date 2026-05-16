@@ -178,7 +178,8 @@ serve(async (req) => {
 
     const arv = Number(property?.arv) || 0;
     const repairCost = Number(property?.repair_cost) || 0;
-    const mao = property?.mao ? Number(property.mao) : (arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0);
+    // Alabama uses 65% rule (deeper discount market vs 70% national standard)
+    const mao = property?.mao ? Number(property.mao) : (arv > 0 ? Math.round(arv * 0.65 - repairCost) : 0);
     const mortgageBalance = Number(property?.mortgage_balance) || 0;
     const netEquity = arv > 0 && mortgageBalance > 0 ? arv - mortgageBalance : 0;
     const equityPct = property?.equity_percent ? Number(property.equity_percent) : 0;
@@ -200,7 +201,7 @@ serve(async (req) => {
     const finData = [
       { label: "ARV", value: arv > 0 ? `$${arv.toLocaleString()}` : "TBD" },
       { label: "Repairs", value: repairCost > 0 ? `$${repairCost.toLocaleString()}` : "TBD" },
-      { label: "MAO (70%)", value: mao > 0 ? `$${mao.toLocaleString()}` : "TBD" },
+      { label: "MAO (65% AL)", value: mao > 0 ? `$${mao.toLocaleString()}` : "TBD" },
       { label: "Mortgage", value: mortgageBalance > 0 ? `$${mortgageBalance.toLocaleString()}` : "N/A" },
       { label: "Net Equity", value: netEquity > 0 ? `$${netEquity.toLocaleString()}` : "N/A" },
       { label: "Equity %", value: equityPct > 0 ? `${equityPct}%` : "N/A" },
@@ -372,7 +373,7 @@ serve(async (req) => {
 
     const breakdownItems = [
       { label: "After Repair Value (ARV)", value: arv > 0 ? `$${arv.toLocaleString()}` : "TBD", note: "Estimated market value after full rehab" },
-      { label: "x 70% Rule", value: arv > 0 ? `$${Math.round(arv * 0.7).toLocaleString()}` : "TBD", note: "Standard investor discount" },
+      { label: "x 65% Rule (AL)", value: arv > 0 ? `$${Math.round(arv * 0.65).toLocaleString()}` : "TBD", note: "Alabama investor standard (70% national)" },
       { label: "- Repair Cost", value: repairCost > 0 ? `$${repairCost.toLocaleString()}` : "TBD", note: "Estimated rehab budget" },
       { label: "= MAO", value: mao > 0 ? `$${mao.toLocaleString()}` : "TBD", note: "Maximum Allowable Offer" },
       { label: "- Our Offer", value: acqCost > 0 ? `$${acqCost.toLocaleString()}` : "Pending", note: "Your contract price with seller" },

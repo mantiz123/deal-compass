@@ -24,7 +24,7 @@ Scoring rubric:
 - Rapport & empathy (25)
 - Discovery / pain identification (20)
 - Objection handling (20)
-- Pricing discipline (stayed near MAO, didn't overpay) (20)
+- Pricing discipline (stayed near MAO = ARV × 65% Alabama rule, didn't overpay) (20)
 - Close & next-step clarity (15)
 
 If the transcript is too short (<6 turns), return agent_score 0 and outcome "insufficient_data".

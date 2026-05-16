@@ -51,7 +51,7 @@ export const LeadsDelDia = () => {
       const arv = Number(property?.arv) || 0;
       const repairCost = Number(property?.repair_cost) || 0;
       const savedMao = Number(property?.mao) || 0;
-      const mao = savedMao || (arv > 0 ? Math.round(arv * 0.7 - repairCost) : 0);
+      const mao = savedMao || (arv > 0 ? Math.round(arv * 0.65 - repairCost) : 0);
       const acquisitionCost = Number(lead.offer_amount) || Number(lead.listing_price) || Number(property?.last_sale_price) || 0;
       const spread = mao > 0 && acquisitionCost > 0 ? mao - acquisitionCost : 0;
       const mortgageBalance = Number((property as any)?.mortgage_balance) || 0;

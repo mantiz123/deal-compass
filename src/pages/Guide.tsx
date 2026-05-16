@@ -305,7 +305,7 @@ const keyMetrics = [
   { 
     name: "MAO", 
     description: "Maximum Allowable Offer", 
-    interpretation: "ARV × 70% - Repair Cost",
+    interpretation: "ARV × 65% (Alabama) - Repair Cost",
     icon: Calculator
   },
   { 

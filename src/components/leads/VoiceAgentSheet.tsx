@@ -29,6 +29,8 @@ interface VoiceAgentSheetProps {
   lead: Lead | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Pre-select training mode when sheet opens (e.g. from "Practicar este lead" button) */
+  defaultTrainingMode?: boolean;
 }
 
 type Personality = 'sarah' | 'mike' | 'discovery';
@@ -51,10 +53,10 @@ const PERSONALITY_INFO: Record<Personality, { label: string; desc: string; emoji
   discovery: { label: 'Alex — Discovery', desc: 'Solo pregunta, no ofrece. Para qualify inicial', emoji: '🔍' },
 };
 
-function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps) {
+function VoiceAgentSheetInner({ lead, open, onOpenChange, defaultTrainingMode }: VoiceAgentSheetProps) {
   const { toast } = useToast();
   const [personality, setPersonality] = useState<Personality>('sarah');
-  const [trainingMode, setTrainingMode] = useState(false);
+  const [trainingMode, setTrainingMode] = useState(defaultTrainingMode ?? false);
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>('medium');
   const [isStarting, setIsStarting] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -171,8 +173,18 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     let deep: DeepAnalysisResult | null = null;
     if (entries.length >= 4) {
       setIsAnalyzingDeep(true);
+      const currentLead = leadRef.current;
+      const leadCtx = currentLead?.property ? {
+        mao: currentLead.property.mao ? Number(currentLead.property.mao) : undefined,
+        arv: currentLead.property.arv ? Number(currentLead.property.arv) : undefined,
+        distress: [
+          currentLead.property.is_foreclosure && 'PRE-FORECLOSURE',
+          (currentLead.property as any)?.is_vacant && 'VACANT',
+          (currentLead.property as any)?.tax_delinquent && 'TAX-DELINQUENT',
+        ].filter(Boolean).join(', ') || undefined,
+      } : undefined;
       try {
-        deep = await deepAnalyzeTraining(fullText, result.persona, currentDifficulty);
+        deep = await deepAnalyzeTraining(fullText, result.persona, currentDifficulty, leadCtx);
         if (deep) setDeepAnalysis(deep);
       } catch (e) {
         console.error('Deep analysis error:', e);
@@ -303,7 +315,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
     }
   }, [transcript]);
 
-  // Reset state when sheet closes
+  // Reset state when sheet closes; sync defaultTrainingMode on open
   useEffect(() => {
     if (!open) {
       setTranscript([]);
@@ -312,8 +324,10 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
       setTrainingResult(null);
       setDeepAnalysis(null);
       setIsAnalyzingDeep(false);
+    } else if (defaultTrainingMode !== undefined) {
+      setTrainingMode(defaultTrainingMode);
     }
-  }, [open]);
+  }, [open, defaultTrainingMode]);
 
   const startCall = useCallback(async () => {
     // In training mode lead is optional
@@ -325,7 +339,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
       const invokeBody = trainingMode
-        ? { mode: 'training', difficulty }
+        ? { mode: 'training', difficulty, ...(lead ? { practice_lead_id: lead.id } : {}) }
         : { mode: 'live', lead_id: lead!.id, personality };
 
       const { data, error } = await supabase.functions.invoke('elevenlabs-conversation-token', {
@@ -533,8 +547,8 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
             </div>
           )}
 
-          {/* Negotiation range (live mode, during call) */}
-          {isConnected && !trainingMode && negotiationCtx && (
+          {/* Negotiation range (live mode OR lead-practice training, during call) */}
+          {isConnected && negotiationCtx && (trainingMode ? !!lead : true) && (
             <Card variant="glass" className="p-3">
               <p className="text-xs font-medium text-muted-foreground mb-2">RANGO AUTORIZADO</p>
               <div className="grid grid-cols-3 gap-2 text-sm">
@@ -679,7 +693,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange }: VoiceAgentSheetProps
 
 export function VoiceAgentSheet(props: VoiceAgentSheetProps) {
   return (
-    <ConversationProvider>
+    <ConversationProvider key={props.open ? 'open' : 'closed'}>
       <VoiceAgentSheetInner {...props} />
     </ConversationProvider>
   );

@@ -127,10 +127,10 @@ export function SubToCalculator({ compact = false }: SubToCalculatorProps) {
     const equityCaptured = arv - totalAcquisitionCost;
     const equityPercent = arv > 0 ? (equityCaptured / arv) * 100 : 0;
 
-    // MAO (Maximum Allowable Offer) — para comparación con cash deal
-    // Fórmula estándar: MAO = (ARV * 0.70) - Repairs
-    const mao70 = arv * 0.7 - repairCost;
-    // En Sub-To podemos pagar más porque no necesitamos descuento de cash
+    // MAO para comparación con cash deal
+    // Alabama: 65% (mercado de mayor descuento vs 70% estándar nacional)
+    const mao70 = arv * 0.65 - repairCost;
+    // Sub-To: podemos pagar más porque no necesitamos descuento de cash
     // MAO Sub-To = ARV * 0.85 - Repairs (margen más estrecho aceptable)
     const maoSubTo = arv * 0.85 - repairCost;
 
@@ -231,7 +231,7 @@ export function SubToCalculator({ compact = false }: SubToCalculatorProps) {
                 <NumberField
                   id="repairCost"
                   label="Repairs"
-                  hint="Costo estimado de rehab. Para Alabama promedio: $15-25/sqft cosmético, $40-60/sqft full rehab."
+                  hint="Costo estimado de rehab. Birmingham, AL: $15-25/sqft cosmético, $35-50/sqft full rehab."
                   value={inputs.repairCost}
                   onChange={update}
                 />
@@ -354,7 +354,7 @@ export function SubToCalculator({ compact = false }: SubToCalculatorProps) {
               </span>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-xs text-muted-foreground">Cash (70% rule)</p>
+                  <p className="text-xs text-muted-foreground">Cash (65% — Alabama)</p>
                   <p className="font-bold text-foreground">{fmt(calc.mao70)}</p>
                 </div>
                 <div>

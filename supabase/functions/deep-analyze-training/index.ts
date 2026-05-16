@@ -6,8 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM = `You are an elite real-estate wholesaling sales coach.
+const SYSTEM = `You are an elite real-estate wholesaling sales coach specializing in the Alabama market.
 You evaluate a TRAINEE (AGENTE) practicing against a SIMULATED SELLER.
+
+ALABAMA MARKET CONTEXT: MAO = ARV × 65% - repair costs (NOT 70% — Alabama requires deeper discounts).
+If the agent offered above MAO or above ARV × 65%, penalize pricing_discipline heavily.
 
 Return STRICT JSON (no markdown, no prose) with this exact shape:
 {
@@ -19,20 +22,22 @@ Return STRICT JSON (no markdown, no prose) with this exact shape:
     "closing": 0-100
   },
   "overall_score": 0-100,
-  "coaching_summary": "3-5 sentence actionable coaching feedback in Spanish. Tone: warm, direct, expert. No fluff. Mention 1 specific thing the agent did well + 2 concrete improvements with example phrasing.",
-  "best_moment": "1 sentence quoting or paraphrasing the agent's strongest line",
-  "worst_moment": "1 sentence quoting or paraphrasing the agent's weakest line or missed opportunity",
-  "next_drill": "1 sentence recommending what skill to practice next (e.g. 'Practica anclaje de precio bajo ARV antes de mencionar repairs')"
+  "coaching_summary": "3-5 sentence actionable coaching feedback in Spanish. Tone: warm, direct, expert. Reference Alabama market specifics. Mention 1 specific thing the agent did well + 2 concrete improvements WITH example phrasing the agent should use next time.",
+  "best_moment": "1 sentence quoting or paraphrasing the agent's strongest line or tactic",
+  "worst_moment": "1 sentence describing the agent's weakest moment or biggest missed opportunity",
+  "next_drill": "1 sentence recommending the specific skill to drill next (e.g. 'Practica anclar el precio con la fórmula ARV × 65% antes de revelar tu oferta')"
 }
 
 Rubric per skill (0-100):
-- rapport: empathy, tone matching, building trust early
-- discovery: open questions, uncovered timeline/motivation/condition/title issues
-- objection_handling: reframed pushback without being defensive
-- pricing_discipline: stayed near MAO (70% ARV - repairs - fee), didn't overpay
-- closing: clear next steps, soft commitment, follow-up scheduled
+- rapport: empathy, natural tone, built trust BEFORE mentioning numbers, matched energy of seller
+- discovery: asked open questions, uncovered timeline / motivation / condition / title issues / true pain
+- objection_handling: reframed pushback (price too low, need to think, have another offer) without being defensive or panicking
+- pricing_discipline: offered at or below MAO (Alabama: ARV × 65% - repairs), didn't panic-bid up when seller pushed back, maintained anchor
+- closing: proposed a clear concrete next step (schedule walkthrough, send paperwork, callback with date/time), got a soft commitment
 
-overall_score = weighted avg: rapport*0.20 + discovery*0.20 + objection_handling*0.20 + pricing_discipline*0.25 + closing*0.15
+overall_score = weighted avg: rapport×0.20 + discovery×0.20 + objection_handling×0.20 + pricing_discipline×0.25 + closing×0.15
+
+Difficulty adjustment: if difficulty is "hard", a score of 65+ is excellent. For "easy", expect 75+ for a good performance.
 
 If transcript <8 turns, return overall_score 0 and coaching_summary "Transcripción demasiado corta para analizar. Practica una llamada completa de al menos 3-5 minutos."
 
@@ -47,7 +52,7 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { transcript, persona, difficulty } = await req.json();
+    const { transcript, persona, difficulty, lead_context } = await req.json();
     if (!transcript || typeof transcript !== "string" || transcript.length < 50) {
       return new Response(
         JSON.stringify({ error: "Transcript too short" }),
@@ -58,9 +63,17 @@ Deno.serve(async (req) => {
       );
     }
 
+    const leadCtxLine = lead_context
+      ? `LEAD CONTEXT (use for pricing_discipline scoring):
+  ARV: ${lead_context.arv ? `$${Number(lead_context.arv).toLocaleString()}` : "unknown"}
+  MAO (65% AL): ${lead_context.mao ? `$${Number(lead_context.mao).toLocaleString()}` : "unknown"}
+  Distress: ${lead_context.distress || "none"}
+`
+      : "";
+
     const userMsg = `PERSONA: ${persona ?? "UNKNOWN"}
 DIFFICULTY: ${difficulty ?? "medium"}
-
+${leadCtxLine}
 TRANSCRIPT:
 
 ${transcript}`;

@@ -234,10 +234,11 @@ export async function deepAnalyzeTraining(
   transcriptText: string,
   persona: TrainingPersona,
   difficulty: TrainingDifficulty,
+  leadContext?: { mao?: number; arv?: number; distress?: string },
 ): Promise<DeepAnalysisResult | null> {
   try {
     const { data, error } = await supabase.functions.invoke('deep-analyze-training', {
-      body: { transcript: transcriptText, persona, difficulty },
+      body: { transcript: transcriptText, persona, difficulty, lead_context: leadContext ?? null },
     });
     if (error || !data || data.error) {
       console.error('Deep analysis failed:', error || data?.error);

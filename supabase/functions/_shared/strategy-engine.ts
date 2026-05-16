@@ -42,13 +42,51 @@ const STRATEGY_LABELS: Record<StrategyCode, string> = {
 // Helper: clamp 0-100
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
-// Helper: traditional cash MAO formula
-// MAO = ARV * 0.70 - Repairs (the classic 70% rule)
+// Helper: cash MAO formula — Alabama uses 65% (deeper discount market vs 70% national)
+// MAO = ARV * 0.65 - Repairs
 function calcCashMAO(arv: number | null, repairs: number | null): number | null {
   if (!arv || arv <= 0) return null;
   const r = repairs && repairs > 0 ? repairs : 0;
-  const mao = arv * 0.70 - r;
+  const mao = arv * 0.65 - r;
   return mao > 0 ? Math.round(mao) : null;
+}
+
+// Helper: Birmingham, AL ARV estimate when no ARV is stored
+// Uses sqft + condition to approximate FMV (conservative per-sqft ranges)
+export function estimateBirminghamARV(sqft: number | null, condition?: string | null): number | null {
+  if (!sqft || sqft <= 0) return null;
+  const c = (condition || '').toUpperCase();
+  let pricePerSqft: number;
+  if (c.includes('GOOD') || c.includes('EXCELLENT') || c.includes('UPDATED') || c.includes('RENOVATED')) {
+    pricePerSqft = 75; // $70-80/sqft
+  } else if (c.includes('FAIR') || c.includes('NEEDS') || c.includes('POOR') || c.includes('DISTRESSED')) {
+    pricePerSqft = 45; // $40-50/sqft
+  } else {
+    pricePerSqft = 60; // $55-65/sqft — average/unknown condition
+  }
+  return Math.round(sqft * pricePerSqft);
+}
+
+// Helper: Deal viability score for Alabama wholesale
+// Returns 'green' | 'yellow' | 'red' and the estimated assignment fee
+export function getDealViability(
+  mao: number | null,
+  offerAmount: number | null,
+  arv: number | null,
+): { color: 'green' | 'yellow' | 'red'; assignmentFee: number | null; label: string } {
+  if (!mao || mao <= 0) return { color: 'red', assignmentFee: null, label: 'Sin MAO — no se puede evaluar' };
+  const feeMax = arv ? Math.min(mao * 0.10, arv * 0.10) : mao * 0.10; // cap at 10% ARV
+  if (offerAmount && offerAmount > 0) {
+    const fee = mao - offerAmount;
+    if (fee >= 8000) return { color: 'green', assignmentFee: Math.round(fee), label: `Verde — $${Math.round(fee).toLocaleString()} fee` };
+    if (fee >= 5000) return { color: 'yellow', assignmentFee: Math.round(fee), label: `Amarillo — $${Math.round(fee).toLocaleString()} fee (negociar)` };
+    return { color: 'red', assignmentFee: Math.round(fee), label: `Rojo — $${Math.round(fee).toLocaleString()} fee (descartar)` };
+  }
+  // No offer yet — show potential range
+  const potentialFee = Math.min(mao * 0.15, feeMax > 0 ? feeMax : mao * 0.10);
+  if (potentialFee >= 8000) return { color: 'green', assignmentFee: null, label: `Verde potencial — MAO $${Math.round(mao).toLocaleString()}` };
+  if (potentialFee >= 5000) return { color: 'yellow', assignmentFee: null, label: `Amarillo potencial — MAO $${Math.round(mao).toLocaleString()}` };
+  return { color: 'red', assignmentFee: null, label: `Rojo — MAO bajo ($${Math.round(mao).toLocaleString()})` };
 }
 
 // Helper: Sub-To MAO ≈ Mortgage Balance + Equity Capture target + Arrears
