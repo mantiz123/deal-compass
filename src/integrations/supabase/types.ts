@@ -2507,6 +2507,76 @@ export type Database = {
           },
         ]
       }
+      sms_outreach_log: {
+        Row: {
+          direction: string
+          dnc_checked_at: string | null
+          enrollment_id: string | null
+          error: string | null
+          id: string
+          lead_id: string | null
+          message: string
+          sent_at: string
+          sent_by: string | null
+          sequence_id: string | null
+          status: string
+          to_phone: string
+          twilio_sid: string | null
+        }
+        Insert: {
+          direction?: string
+          dnc_checked_at?: string | null
+          enrollment_id?: string | null
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          message: string
+          sent_at?: string
+          sent_by?: string | null
+          sequence_id?: string | null
+          status?: string
+          to_phone: string
+          twilio_sid?: string | null
+        }
+        Update: {
+          direction?: string
+          dnc_checked_at?: string | null
+          enrollment_id?: string | null
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          message?: string
+          sent_at?: string
+          sent_by?: string | null
+          sequence_id?: string | null
+          status?: string
+          to_phone?: string
+          twilio_sid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_outreach_log_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_outreach_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_outreach_log_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       state_waitlist: {
         Row: {
           id: string
