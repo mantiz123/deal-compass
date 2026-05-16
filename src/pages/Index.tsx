@@ -9,6 +9,7 @@ import { BuyerLiquidityWidget } from "@/components/dashboard/BuyerLiquidityWidge
 import { HotLeadsWidget } from "@/components/dashboard/HotLeadsWidget";
 import { CriticalActionsWidget } from "@/components/dashboard/CriticalActionsWidget";
 import { StaleLeadsAlert } from "@/components/dashboard/StaleLeadsAlert";
+import { SMSFollowupAlert } from "@/components/dashboard/SMSFollowupAlert";
 import { PipelineHygieneWidget } from "@/components/dashboard/PipelineHygieneWidget";
 import { PayoutScheduleWidget } from "@/components/dashboard/PayoutScheduleWidget";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
@@ -129,6 +130,11 @@ const Index = () => {
       {/* Stale Leads Alert */}
       <div className="mb-6">
         <StaleLeadsAlert />
+      </div>
+
+      {/* SMS Followup Alert — leads in contacto with no SMS in last 3 days */}
+      <div className="mb-6">
+        <SMSFollowupAlert />
       </div>
 
       {/* Hot Leads + Critical Actions side by side */}

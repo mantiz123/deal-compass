@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NewCampaignDialog } from '@/components/campaigns/NewCampaignDialog';
-import { 
-  useCampaigns, 
-  useCampaignStats, 
+import {
+  useCampaigns,
+  useCampaignStats,
   useToggleCampaign,
-  type DripCampaign 
+  useSMSStats,
+  useProcessSMSQueue,
+  type DripCampaign
 } from '@/hooks/useCampaigns';
 import {
   Plus,
@@ -24,6 +26,11 @@ import {
   MoreHorizontal,
   AlertCircle,
   Megaphone,
+  CheckCircle2,
+  XCircle,
+  TrendingUp,
+  PlayCircle,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,7 +45,9 @@ const statusLabels: Record<string, string> = {
 const Campaigns = () => {
   const { data: campaigns, isLoading, error } = useCampaigns();
   const { data: stats } = useCampaignStats();
+  const { data: smsStats } = useSMSStats();
   const toggleCampaign = useToggleCampaign();
+  const processQueue = useProcessSMSQueue();
   const [showNewDialog, setShowNewDialog] = useState(false);
 
   const handleToggle = (campaign: DripCampaign) => {
@@ -70,10 +79,23 @@ const Campaigns = () => {
               Automatiza secuencias de emails y SMS para nutrir tus leads
             </p>
           </div>
-          <Button onClick={() => setShowNewDialog(true)} className="w-full sm:w-auto">
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Campaña
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={() => processQueue.mutate()}
+              disabled={processQueue.isPending}
+              className="flex-1 sm:flex-none"
+            >
+              {processQueue.isPending
+                ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                : <PlayCircle className="mr-2 h-4 w-4" />}
+              Procesar Cola SMS
+            </Button>
+            <Button onClick={() => setShowNewDialog(true)} className="flex-1 sm:flex-none">
+              <Plus className="mr-2 h-4 w-4" />
+              Nueva Campaña
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -133,18 +155,50 @@ const Campaigns = () => {
         </Card>
       </div>
 
-      {/* Info Banner */}
-      <Card className="mb-6 p-4 bg-warning/10 border-warning/30">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
-          <div>
-            <p className="font-medium text-warning">Integraciones Pendientes</p>
-            <p className="text-sm text-muted-foreground">
-              Para enviar mensajes reales, configura las API keys de <strong>Twilio</strong> (SMS) y <strong>Resend</strong> (Email). 
-              Por ahora puedes crear y diseñar tus campañas.
-            </p>
+      {/* SMS Metrics Panel */}
+      <Card className="mb-6 p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-success" />
+            <span className="font-semibold">SMS via Twilio</span>
+            {(smsStats?.totalSent ?? 0) > 0
+              ? <span className="text-xs px-2 py-0.5 rounded-full bg-success/10 text-success font-medium">Activo</span>
+              : <span className="text-xs px-2 py-0.5 rounded-full bg-warning/10 text-warning font-medium">Sin envíos aún</span>
+            }
+          </div>
+          <div className="grid grid-cols-4 gap-4 text-sm">
+            <div className="text-center">
+              <p className="text-2xl font-bold">{smsStats?.totalSent ?? 0}</p>
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                <Send className="h-3 w-3" /> Enviados
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-success">{smsStats?.delivered ?? 0}</p>
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-success" /> Entregados
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-destructive">{smsStats?.failed ?? 0}</p>
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                <XCircle className="h-3 w-3 text-destructive" /> Fallidos
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold">{smsStats?.deliveryRate ?? 0}%</p>
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                <TrendingUp className="h-3 w-3" /> Delivery
+              </p>
+            </div>
           </div>
         </div>
+        {(smsStats?.stops ?? 0) > 0 && (
+          <div className="mt-3 pt-3 border-t text-xs text-muted-foreground flex items-center gap-2">
+            <AlertCircle className="h-3 w-3 text-orange-500" />
+            <span><strong>{smsStats?.stops}</strong> seller{smsStats?.stops !== 1 ? 's' : ''} respondieron STOP — DNC aplicado automáticamente.</span>
+          </div>
+        )}
       </Card>
 
       {/* Loading State */}

@@ -3,6 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { Tables } from '@/integrations/supabase/types';
 
+export interface SMSStats {
+  totalSent: number;
+  delivered: number;
+  failed: number;
+  stops: number;
+  deliveryRate: number;
+}
+
 type LeadStatus = 'captacion' | 'contacto' | 'bajo_contrato' | 'cesion' | 'cerrado';
 
 export interface DripCampaign {
@@ -236,6 +244,67 @@ export function useToggleCampaign() {
       console.error('Error toggling campaign:', error);
     },
   });
+}
+
+export function useSMSStats() {
+  return useQuery({
+    queryKey: ['sms-stats'],
+    queryFn: async (): Promise<SMSStats> => {
+      const [sentRes, deliveredRes, failedRes, stopsRes] = await Promise.all([
+        supabase
+          .from('sms_outreach_log')
+          .select('id', { count: 'exact', head: true })
+          .eq('direction', 'outbound'),
+        supabase
+          .from('sms_outreach_log')
+          .select('id', { count: 'exact', head: true })
+          .eq('direction', 'outbound')
+          .eq('status', 'delivered'),
+        supabase
+          .from('sms_outreach_log')
+          .select('id', { count: 'exact', head: true })
+          .eq('direction', 'outbound')
+          .in('status', ['failed', 'undelivered']),
+        supabase
+          .from('sms_outreach_log')
+          .select('id', { count: 'exact', head: true })
+          .eq('direction', 'inbound'),
+      ])
+
+      const totalSent = sentRes.count ?? 0
+      const delivered = deliveredRes.count ?? 0
+      const failed = failedRes.count ?? 0
+      const stops = stopsRes.count ?? 0
+      const deliveryRate = totalSent > 0 ? Math.round((delivered / totalSent) * 100) : 0
+
+      return { totalSent, delivered, failed, stops, deliveryRate }
+    },
+  })
+}
+
+export function useProcessSMSQueue() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('process-sms-sequences')
+      if (error) throw error
+      return data as { processed: number; sent: number; skipped_dnc: number; skipped_no_phone: number; failed: number; completed: number }
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['sms-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['campaign-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] })
+      const msg = data.sent > 0
+        ? `${data.sent} SMS enviados${data.skipped_dnc > 0 ? `, ${data.skipped_dnc} bloqueados por DNC` : ''}`
+        : 'No hay SMS pendientes en cola'
+      toast({ title: 'Cola SMS procesada', description: msg })
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error al procesar cola SMS', description: error?.message ?? 'Error desconocido', variant: 'destructive' })
+    },
+  })
 }
 
 export function useCampaignEnrollments(campaignId: string) {

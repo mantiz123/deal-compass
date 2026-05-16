@@ -69,6 +69,7 @@ Deno.serve(async (req) => {
       archived_expired_auctions: 0,
       archived_stale: 0,
       permanently_deleted: 0,
+      sms_sequences_sent: 0,
       errors: [] as string[],
     };
 
@@ -185,6 +186,23 @@ Deno.serve(async (req) => {
           results.permanently_deleted++;
         }
       }
+    }
+
+    // ── STEP 3: Process pending SMS campaign sequences ──────────────────────
+    try {
+      const smsRes = await fetch(`${supabaseUrl}/functions/v1/process-sms-sequences`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      });
+      const smsData = await smsRes.json().catch(() => ({}));
+      results.sms_sequences_sent = smsData.sent ?? 0;
+      if (smsData.error) results.errors.push(`SMS sequences: ${smsData.error}`);
+    } catch (err) {
+      results.errors.push(`SMS scheduler: ${String(err)}`);
     }
 
     console.log(`Cleanup complete:`, results);

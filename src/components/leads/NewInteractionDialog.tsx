@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -50,22 +51,30 @@ export function NewInteractionDialog({ leadId, open, onOpenChange }: NewInteract
   const [direction, setDirection] = useState('outgoing');
   const [sentiment, setSentiment] = useState('neutral');
   const [content, setContent] = useState('');
+  const [smsPhone, setSmsPhone] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // For SMS, prepend the phone number to content so it's visible in the timeline
+    let finalContent = content || null;
+    if (type === 'sms' && smsPhone.trim()) {
+      finalContent = `[SMS] To: ${smsPhone.trim()}\n\n${content}`.trim();
+    }
+
     await createInteraction.mutateAsync({
       lead_id: leadId,
       interaction_type: type,
       direction,
       sentiment,
-      content: content || null,
+      content: finalContent,
     });
 
     setType('call');
     setDirection('outgoing');
     setSentiment('neutral');
     setContent('');
+    setSmsPhone('');
     onOpenChange(false);
   };
 
@@ -133,11 +142,23 @@ export function NewInteractionDialog({ leadId, open, onOpenChange }: NewInteract
             </Select>
           </div>
 
+          {/* SMS phone field — only shown when SMS type is selected */}
+          {type === 'sms' && (
+            <div className="space-y-2">
+              <Label>Teléfono</Label>
+              <Input
+                placeholder="Ej: (555) 123-4567"
+                value={smsPhone}
+                onChange={(e) => setSmsPhone(e.target.value)}
+              />
+            </div>
+          )}
+
           {/* Content */}
           <div className="space-y-2">
             <Label>Notas / Contenido</Label>
             <Textarea
-              placeholder="Describe la interacción..."
+              placeholder={type === 'sms' ? 'Mensaje enviado o recibido...' : 'Describe la interacción...'}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={4}

@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash2, Mail, MessageSquare, GripVertical } from 'lucide-react';
+import { Loader2, Plus, Trash2, Mail, MessageSquare, GripVertical, ShieldCheck } from 'lucide-react';
 import { useCreateCampaign, type CampaignSequence } from '@/hooks/useCampaigns';
 
 interface NewCampaignDialogProps {
@@ -230,9 +230,15 @@ export function NewCampaignDialog({ open, onOpenChange }: NewCampaignDialogProps
                       required
                     />
                     {seq.channel === 'sms' && (
-                      <p className="text-xs text-muted-foreground text-right">
-                        {seq.content.length}/160 caracteres
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground text-right">
+                          {seq.content.length}/160 caracteres
+                        </p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <ShieldCheck className="h-3 w-3 text-green-500 shrink-0" />
+                          Solo se envía a teléfonos sin DNC. Respuestas STOP desuscriben al lead automáticamente.
+                        </p>
+                      </div>
                     )}
                   </div>
                 </Card>
@@ -243,8 +249,10 @@ export function NewCampaignDialog({ open, onOpenChange }: NewCampaignDialogProps
           {/* Info Banner */}
           <Card className="p-4 bg-info/10 border-info/30">
             <p className="text-sm text-info">
-              <strong>Nota:</strong> Para enviar mensajes reales, necesitarás configurar las API keys de Twilio (SMS) y Resend (Email) en la configuración. 
-              Por ahora, los mensajes quedarán en cola pendientes de envío.
+              <strong>Nota:</strong> Los emails se envían vía Resend (límite 50/día). Los SMS se envían vía Twilio —
+              requiere configurar <code>TWILIO_ACCOUNT_SID</code>, <code>TWILIO_AUTH_TOKEN</code> y{' '}
+              <code>TWILIO_PHONE_NUMBER</code> en Supabase Secrets.
+              Los leads con DNC activo son excluidos automáticamente al momento del envío.
             </p>
           </Card>
 

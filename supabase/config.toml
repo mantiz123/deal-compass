@@ -36,3 +36,12 @@ verify_jwt = true
 [functions.send-outreach-email]
 verify_jwt = true
 
+[functions.send-campaign-sms]
+verify_jwt = true
+
+[functions.twilio-webhook]
+verify_jwt = false
+
+[functions.process-sms-sequences]
+verify_jwt = false
+

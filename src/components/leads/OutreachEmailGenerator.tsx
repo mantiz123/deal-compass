@@ -16,9 +16,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useICAGuard } from '@/hooks/useICAGuard';
 import { useAuth } from '@/contexts/AuthContext';
-import { Mail, Sparkles, Copy, Check, Loader2, Send, DollarSign, Info, Zap, AlertTriangle } from 'lucide-react';
+import { Mail, Sparkles, Copy, Check, Loader2, Send, DollarSign, Info, Zap, AlertTriangle, ShieldOff, PhoneOff, Lock, TrendingDown } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { Lead } from '@/hooks/useLeads';
+import { useDNCCheck } from '@/hooks/useDNCCheck';
 
 const DUPLICATE_WARNING_DAYS = 7;
 
@@ -54,6 +55,19 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
 
   const property = lead.property;
   const isForeclosure = property?.is_foreclosure;
+  const dncStatus = useDNCCheck(property);
+
+  // Quality gate: leads already in contract or closed don't need seller outreach
+  const BLOCKED_STATUSES = ['bajo_contrato', 'cesion', 'cerrado'] as const;
+  const isStatusBlocked = BLOCKED_STATUSES.includes(lead.status as typeof BLOCKED_STATUSES[number]);
+  const statusBlockReason: Record<string, string> = {
+    bajo_contrato: 'Este lead ya está Bajo Contrato — el seller ya firmó.',
+    cesion: 'Este lead está en fase de Cesión — no se necesita outreach al seller.',
+    cerrado: 'Este deal está Cerrado — outreach innecesario.',
+  };
+
+  const isAnyHardBlocked = dncStatus.isHardBlocked || isStatusBlocked;
+  const PIW_WARNING_THRESHOLD = 30;
 
   // Anti-duplicate: previous sends to this lead in last N days
   const [previousSends, setPreviousSends] = useState<PreviousSend[]>([]);
@@ -84,6 +98,13 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
 
   const handleGenerate = async () => {
     if (!requireICA("enviar outreach a sellers")) return;
+    if (isAnyHardBlocked) {
+      const reason = dncStatus.isHardBlocked
+        ? (dncStatus.reason ?? 'Este lead está en lista Do Not Contact.')
+        : (statusBlockReason[lead.status] ?? 'Estado del lead no permite outreach.');
+      toast({ title: 'Outreach bloqueado', description: reason, variant: 'destructive' });
+      return;
+    }
     setIsGenerating(true);
     setGeneratedEmail('');
     try {
@@ -173,6 +194,13 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
 
   const handleSend = async () => {
     if (!requireICA("enviar outreach a sellers")) return;
+    if (isAnyHardBlocked) {
+      const reason = dncStatus.isHardBlocked
+        ? (dncStatus.reason ?? 'Este lead está en lista Do Not Contact.')
+        : (statusBlockReason[lead.status] ?? 'Estado del lead no permite outreach.');
+      toast({ title: 'Envío bloqueado', description: reason, variant: 'destructive' });
+      return;
+    }
     const to = (recipientEmail || property?.owner_email || '').trim();
     if (!to) {
       toast({ title: 'Falta destinatario', description: 'Ingresa el email del seller.', variant: 'destructive' });
@@ -198,6 +226,52 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
           <Badge variant="glow" className="text-xs">IA</Badge>
         </h3>
       </div>
+
+      {/* ── Status block (bajo_contrato / cesion / cerrado) ── */}
+      {isStatusBlocked && (
+        <Alert variant="destructive">
+          <Lock className="h-4 w-4" />
+          <AlertTitle>Outreach no necesario</AlertTitle>
+          <AlertDescription className="text-xs mt-1">
+            {statusBlockReason[lead.status]}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* ── DNC hard block ── */}
+      {!isStatusBlocked && dncStatus.isHardBlocked && (
+        <Alert variant="destructive">
+          <ShieldOff className="h-4 w-4" />
+          <AlertTitle>Outreach bloqueado — DNC</AlertTitle>
+          <AlertDescription className="text-xs mt-1">
+            {dncStatus.reason}. No se puede generar ni enviar email a este lead.
+            Para desbloquear, edita la propiedad y desmarca "Do Not Contact" / "Litigator".
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* ── Low PIW warning (soft) ── */}
+      {!isAnyHardBlocked && lead.piw_score != null && lead.piw_score < PIW_WARNING_THRESHOLD && (
+        <Alert className="border-yellow-500/50 bg-yellow-500/10">
+          <TrendingDown className="h-4 w-4 text-yellow-600" />
+          <AlertTitle className="text-yellow-700">K-Score bajo ({lead.piw_score})</AlertTitle>
+          <AlertDescription className="text-xs mt-1 text-yellow-700">
+            Este lead tiene un score de probabilidad bajo. Considera priorizar leads con score mayor a {PIW_WARNING_THRESHOLD} antes de usar tu cuota diaria de emails.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* ── DNC phone warning (soft) ── */}
+      {!isStatusBlocked && !dncStatus.isHardBlocked && dncStatus.hasDncPhones && (
+        <Alert className="border-orange-500/50 bg-orange-500/10">
+          <PhoneOff className="h-4 w-4 text-orange-500" />
+          <AlertTitle className="text-orange-600">Teléfonos en lista DNC</AlertTitle>
+          <AlertDescription className="text-xs mt-1 text-orange-700">
+            {dncStatus.dncPhones.join(', ')} — SMS bloqueado para estos números.
+            El email todavía puede enviarse.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {matchingPrevious && (
         <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10">
@@ -318,7 +392,7 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
 
         <Button
           onClick={handleGenerate}
-          disabled={isGenerating || (templateType === 'foreclosure_offer' && !offerAmount)}
+          disabled={isGenerating || isAnyHardBlocked || (templateType === 'foreclosure_offer' && !offerAmount)}
           className="w-full"
         >
           {isGenerating ? (
@@ -432,7 +506,7 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
             </div>
             <Button
               onClick={handleSend}
-              disabled={isSending || !generatedEmail || !subjectLine}
+              disabled={isSending || !generatedEmail || !subjectLine || isAnyHardBlocked}
               className="w-full"
               variant="default"
             >
