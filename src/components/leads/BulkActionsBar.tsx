@@ -29,7 +29,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Archive, ChevronDown, UserPlus, Tag, X, Loader2 } from 'lucide-react';
+import { Archive, ChevronDown, UserPlus, Tag, X, Loader2, Send } from 'lucide-react';
+import { BulkOutreachSheet } from './BulkOutreachSheet';
 import {
   useBulkUpdateStatus,
   useBulkAssignAgent,
@@ -61,6 +62,7 @@ export function BulkActionsBar({ selectedIds, onClear }: BulkActionsBarProps) {
 
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [bulkOutreachOpen, setBulkOutreachOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string>('unassigned');
   const [archiveReason, setArchiveReason] = useState<ArchiveReason>('not_motivated');
   const [archiveNotes, setArchiveNotes] = useState('');
@@ -132,6 +134,17 @@ export function BulkActionsBar({ selectedIds, onClear }: BulkActionsBarProps) {
               size="sm"
               variant="outline"
               disabled={isPending}
+              onClick={() => setBulkOutreachOpen(true)}
+              className="border-primary/40 text-primary hover:bg-primary/10"
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Envío Masivo
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isPending}
               onClick={() => setAssignDialogOpen(true)}
             >
               <UserPlus className="mr-2 h-4 w-4" />
@@ -157,6 +170,14 @@ export function BulkActionsBar({ selectedIds, onClear }: BulkActionsBarProps) {
           </div>
         </div>
       </div>
+
+      {/* Bulk Outreach Sheet */}
+      <BulkOutreachSheet
+        selectedIds={selectedIds}
+        open={bulkOutreachOpen}
+        onOpenChange={setBulkOutreachOpen}
+        onClear={onClear}
+      />
 
       {/* Assign Agent Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>

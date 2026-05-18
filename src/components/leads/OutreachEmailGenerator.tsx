@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +57,23 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
   const isForeclosure = property?.is_foreclosure;
   const dncStatus = useDNCCheck(property);
 
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const allPropertyEmails = useMemo(() => {
+    return [
+      property?.owner_email,
+      property?.owner_email_2,
+      property?.owner_email_3,
+      property?.owner_email_4,
+    ].filter((e): e is string => !!e && emailRe.test(e));
+  }, [property?.owner_email, property?.owner_email_2, property?.owner_email_3, property?.owner_email_4]);
+
+  // Active recipients: override if user typed one, else all detected property emails
+  const activeRecipients = useMemo(() => {
+    const override = recipientEmail.trim();
+    if (override && emailRe.test(override)) return [override];
+    return allPropertyEmails;
+  }, [recipientEmail, allPropertyEmails]);
+
   // Quality gate: leads already in contract or closed don't need seller outreach
   const BLOCKED_STATUSES = ['bajo_contrato', 'cesion', 'cerrado'] as const;
   const isStatusBlocked = BLOCKED_STATUSES.includes(lead.status as typeof BLOCKED_STATUSES[number]);
@@ -91,9 +108,9 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
   }, [lead.id]);
 
   const matchingPrevious = (() => {
-    const target = (recipientEmail || property?.owner_email || '').trim().toLowerCase();
-    if (!target) return null;
-    return previousSends.find(p => p.recipient_email.toLowerCase() === target) || null;
+    if (activeRecipients.length === 0) return null;
+    const targets = activeRecipients.map(e => e.toLowerCase());
+    return previousSends.find(p => targets.includes(p.recipient_email.toLowerCase())) || null;
   })();
 
   const handleGenerate = async () => {
@@ -123,7 +140,7 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
 
       setGeneratedEmail(data.email);
       setSubjectLine(data.subject);
-      if (!recipientEmail) setRecipientEmail(property?.owner_email || '');
+      // Don't auto-fill override — multi-email chips show all detected addresses
       toast({
         title: 'Email generado',
         description: 'El email ha sido generado exitosamente. Cópialo para enviarlo.',
@@ -157,39 +174,55 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
   };
 
   const performSend = async () => {
-    const to = (recipientEmail || property?.owner_email || '').trim();
+    const targets = activeRecipients;
+    if (targets.length === 0) {
+      toast({ title: 'Sin destinatarios', description: 'Este lead no tiene email registrado.', variant: 'destructive' });
+      return;
+    }
     setIsSending(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-outreach-email', {
-        body: {
-          leadId: lead.id,
-          to,
-          subject: subjectLine,
-          bodyText: generatedEmail,
-          bcc: bccEmail.trim() || undefined,
-        },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
+    let sent = 0;
+    let failed = 0;
+    let remaining: number | null = null;
+
+    for (const emailAddr of targets) {
+      try {
+        const { data, error } = await supabase.functions.invoke('send-outreach-email', {
+          body: {
+            leadId: lead.id,
+            to: emailAddr,
+            subject: subjectLine,
+            bodyText: generatedEmail,
+            bcc: bccEmail.trim() || undefined,
+          },
+        });
+        if (error) throw error;
+        if ((data as any)?.error) throw new Error((data as any).error);
+        sent++;
+        if ((data as any)?.remainingToday !== undefined) remaining = (data as any).remainingToday;
+      } catch (err: any) {
+        console.error('Send error to', emailAddr, err);
+        failed++;
+      }
+    }
+
+    if (sent > 0) {
       toast({
-        title: '✅ Email enviado',
-        description: `Enviado a ${to}${(data as any)?.bcc ? ` · BCC a ${(data as any).bcc}` : ''}. Restantes hoy: ${(data as any)?.remainingToday ?? '—'}`,
+        title: `✅ ${sent} email${sent > 1 ? 's' : ''} enviado${sent > 1 ? 's' : ''}`,
+        description: `Destinatarios: ${targets.slice(0, sent).join(', ')}${remaining !== null ? ` · Restantes hoy: ${remaining}` : ''}`,
       });
-      // Refresh previous sends so the warning updates immediately
       setPreviousSends(prev => [
-        { recipient_email: to, subject: subjectLine, sent_at: new Date().toISOString() },
+        ...targets.slice(0, sent).map(e => ({ recipient_email: e, subject: subjectLine, sent_at: new Date().toISOString() })),
         ...prev,
       ]);
-    } catch (err: any) {
-      console.error('Send error:', err);
+    }
+    if (failed > 0) {
       toast({
-        title: 'Error al enviar',
-        description: err.message || 'No se pudo enviar el email',
+        title: `${failed} email${failed > 1 ? 's' : ''} fallaron`,
+        description: 'Revisa el log de errores o intenta de nuevo.',
         variant: 'destructive',
       });
-    } finally {
-      setIsSending(false);
     }
+    setIsSending(false);
   };
 
   const handleSend = async () => {
@@ -201,9 +234,8 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
       toast({ title: 'Envío bloqueado', description: reason, variant: 'destructive' });
       return;
     }
-    const to = (recipientEmail || property?.owner_email || '').trim();
-    if (!to) {
-      toast({ title: 'Falta destinatario', description: 'Ingresa el email del seller.', variant: 'destructive' });
+    if (activeRecipients.length === 0) {
+      toast({ title: 'Falta destinatario', description: 'Ingresa el email del seller o agrégalo a la propiedad.', variant: 'destructive' });
       return;
     }
     if (!subjectLine.trim() || !generatedEmail.trim()) {
@@ -470,16 +502,44 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
 
           {/* Send via Resend */}
           <div className="space-y-3 border-t pt-3">
+            {/* Detected emails */}
+            {allPropertyEmails.length > 0 && (
+              <div className="rounded-md bg-muted/40 border p-2.5 space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  {allPropertyEmails.length > 1
+                    ? `${allPropertyEmails.length} emails detectados — se enviará a todos`
+                    : 'Destinatario detectado'}
+                </p>
+                {allPropertyEmails.map((email, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      {i === 0 ? 'Principal' : `Email ${i + 1}`}
+                    </Badge>
+                    <span className="font-mono">{email}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs flex items-center gap-1">
-                  Para (seller) *
+                  Override (enviar solo a este)
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">Si dejas este campo vacío, se enviará a todos los emails detectados arriba. Si escribes aquí, solo se envía a esta dirección.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </Label>
                 <Input
                   type="email"
                   value={recipientEmail}
                   onChange={(e) => setRecipientEmail(e.target.value)}
-                  placeholder="seller@example.com"
+                  placeholder="Dejar vacío = todos los emails"
                   className="text-sm"
                 />
               </div>
@@ -513,11 +573,13 @@ export function OutreachEmailGenerator({ lead }: OutreachEmailGeneratorProps) {
               {isSending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
               ) : (
-                <><Zap className="h-4 w-4 mr-2" /> Enviar email ahora (límite 50/día)</>
+                <><Zap className="h-4 w-4 mr-2" />
+                  Enviar a {activeRecipients.length > 1 ? `${activeRecipients.length} emails` : 'destinatario'} (límite 50/día)
+                </>
               )}
             </Button>
             <p className="text-[11px] text-muted-foreground text-center">
-              Envío vía Resend desde <code>outreach@klosellc.com</code>. Recibes copia oculta en tu correo. Reply-to apunta a ti.
+              Envío vía Resend desde <code>sergio@goklose.com</code>. Recibes copia oculta. Reply-to apunta a ti.
             </p>
           </div>
         </Card>

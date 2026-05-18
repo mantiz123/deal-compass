@@ -52,12 +52,12 @@ const propertyTypeLabels: Record<string, string> = {
 };
 
 export function BuyerDetailSheet({ buyer, open, onOpenChange }: BuyerDetailSheetProps) {
-  const sendReactivationMutation = useMutation({
+  const sendDealPackageMutation = useMutation({
     mutationFn: async () => {
       if (!buyer?.id) throw new Error("No buyer selected");
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reactivate-buyers`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-buyer-deal-package`,
         {
           method: "POST",
           headers: {
@@ -69,14 +69,10 @@ export function BuyerDetailSheet({ buyer, open, onOpenChange }: BuyerDetailSheet
       );
       const result = await res.json();
       if (!res.ok) throw new Error(result.error ?? "Send failed");
-      return result as { sent: number; failed: number };
+      return result as { success: boolean; to: string };
     },
     onSuccess: (data) => {
-      if (data.sent > 0) {
-        toast.success(`Email enviado a ${buyer?.contact_name ?? "buyer"}`);
-      } else {
-        toast.error("No se pudo enviar — verifica que el buyer tenga email");
-      }
+      toast.success(`Deal package enviado a ${data.to}`);
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -156,12 +152,12 @@ export function BuyerDetailSheet({ buyer, open, onOpenChange }: BuyerDetailSheet
           {buyer.is_active && (
             <Button
               className="mt-3 w-full"
-              onClick={() => sendReactivationMutation.mutate()}
-              disabled={sendReactivationMutation.isPending || !buyer.email}
-              title={!buyer.email ? "Este buyer no tiene email registrado" : "Enviar email de reactivación profesional"}
+              onClick={() => sendDealPackageMutation.mutate()}
+              disabled={sendDealPackageMutation.isPending || !buyer.email}
+              title={!buyer.email ? "Este buyer no tiene email registrado" : "Enviar email de off-market opportunities"}
             >
               <Send className="h-4 w-4 mr-2" />
-              {sendReactivationMutation.isPending ? "Enviando…" : "Enviar Deal Package"}
+              {sendDealPackageMutation.isPending ? "Enviando…" : "Enviar Deal Package"}
             </Button>
           )}
         </SheetHeader>
