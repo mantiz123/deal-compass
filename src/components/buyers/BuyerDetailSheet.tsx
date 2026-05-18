@@ -54,22 +54,46 @@ const propertyTypeLabels: Record<string, string> = {
 export function BuyerDetailSheet({ buyer, open, onOpenChange }: BuyerDetailSheetProps) {
   const sendDealPackageMutation = useMutation({
     mutationFn: async () => {
-      if (!buyer?.id) throw new Error("No buyer selected");
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-buyer-deal-package`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({ buyer_id: buyer.id }),
-        }
-      );
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error ?? "Send failed");
-      return result as { success: boolean; to: string };
+      if (!buyer?.email) throw new Error("Este buyer no tiene email registrado");
+
+      const firstName = buyer.contact_name?.split(' ')[0] || buyer.contact_name || 'there';
+      const company = buyer.company_name || 'your company';
+
+      const subject = 'Exclusive Off-Market Opportunities — Birmingham, AL | Klose LLC';
+      const bodyText = `Dear ${firstName},
+
+At Klose LLC, we have been building one of the most comprehensive off-market property pipelines in Birmingham, Alabama. Our proprietary acquisition system identifies distressed assets and high-equity properties before they reach the open market.
+
+We are preparing to release a curated selection of investment-grade properties and want to ensure ${company} has first access.
+
+Please confirm your current acquisition parameters:
+• Target markets and preferred zip codes
+• Price range and ARV thresholds
+• Investment strategy (fix & flip / buy & hold)
+• Preferred closing timeline
+
+Reply to this email and you will be among the first to receive our upcoming deal flow. We move quickly — properties go under contract within 48–72 hours of release.
+
+Best regards,
+Sergio Mantilla
+Managing Director — Klose LLC
+(205) 660-2117
+sergio@goklose.com
+goklose.com`;
+
+      const { data, error } = await supabase.functions.invoke('send-outreach-email', {
+        body: {
+          to: buyer.email,
+          subject,
+          bodyText,
+          bcc: 'sergio@goklose.com',
+          replyTo: 'sergio@goklose.com',
+        },
+      });
+
+      if (error) throw new Error(error.message);
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return { to: buyer.email };
     },
     onSuccess: (data) => {
       toast.success(`Deal package enviado a ${data.to}`);
