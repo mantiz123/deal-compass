@@ -112,7 +112,12 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
           <SheetTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
             Detalle del Contrato
-            <Badge className={contract.contract_type === 'AB' ? 'bg-blue-500/20 text-blue-400' : contract.contract_type === 'BC' ? 'bg-purple-500/20 text-purple-400' : 'bg-orange-500/20 text-orange-400'}>
+            <Badge className={
+              contract.contract_type === 'AB' ? 'bg-blue-500/20 text-blue-400' :
+              contract.contract_type === 'BC' ? 'bg-purple-500/20 text-purple-400' :
+              contract.contract_type === 'DC' ? 'bg-teal-500/20 text-teal-400' :
+              'bg-orange-500/20 text-orange-400'
+            }>
               {contract.contract_type}
             </Badge>
             <Badge className={
@@ -191,7 +196,7 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
                 { label: 'Oferta',      emoji: '💡', done: true,                                    date: contract.created_at },
                 { label: 'Contrato',    emoji: '📋', done: contract.status !== 'draft',              date: contract.sent_at || null },
                 { label: 'Firma',       emoji: '✍️', done: !!contract.signed_at,                    date: contract.signed_at },
-                { label: 'Asignación',  emoji: '📤', done: contract.contract_type === 'BC' && !!contract.signed_at, date: null },
+                { label: 'Asignación',  emoji: '📤', done: (contract.contract_type === 'BC' || contract.contract_type === 'DC') && !!contract.signed_at, date: null },
                 { label: 'Cierre',      emoji: '🎉', done: (lead?.status === 'cerrado'),            date: null },
               ];
               return (
@@ -318,7 +323,7 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
                       {sellerSigs.length > 0 && (
                         <div>
                           <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                            ✍️ Firmas del Seller
+                            ✍️ Firmas del {contract.contract_type === 'BC' ? 'Buyer' : contract.contract_type === 'DC' ? 'End Buyer' : 'Seller'}
                             <Badge variant="outline" className="text-xs">{sellerSigs.length}</Badge>
                           </h3>
                           {sellerSigs.map((sig) => (
@@ -351,12 +356,14 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
           {/* Actions */}
           <div className="flex flex-col gap-2">
             {/* Auto-update lead status from contract */}
-            {contract.lead_id && (contract.contract_type === 'AB' || contract.contract_type === 'BC') && (
+            {contract.lead_id && (contract.contract_type === 'AB' || contract.contract_type === 'BC' || contract.contract_type === 'DC') && (
               <Button
                 variant="outline"
                 className={contract.contract_type === 'AB'
                   ? 'border-accent/50 text-accent hover:bg-accent/10'
-                  : 'border-purple-500/50 text-purple-400 hover:bg-purple-500/10'}
+                  : contract.contract_type === 'DC'
+                    ? 'border-teal-500/50 text-teal-400 hover:bg-teal-500/10'
+                    : 'border-purple-500/50 text-purple-400 hover:bg-purple-500/10'}
                 onClick={() => updateLeadStatus.mutate({ leadId: contract.lead_id, contractType: contract.contract_type })}
                 disabled={updateLeadStatus.isPending}
               >
@@ -365,7 +372,11 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
                 ) : (
                   <TrendingUp className="h-4 w-4 mr-2" />
                 )}
-                {contract.contract_type === 'AB' ? '→ Marcar Lead como Bajo Contrato' : '→ Marcar Lead como Cesión'}
+                {contract.contract_type === 'AB'
+                  ? '→ Marcar Lead como Bajo Contrato'
+                  : contract.contract_type === 'DC'
+                    ? '→ Marcar Lead como Cesión (Double Close)'
+                    : '→ Marcar Lead como Cesión'}
               </Button>
             )}
 

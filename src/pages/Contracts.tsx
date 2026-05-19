@@ -30,6 +30,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 const typeConfig: Record<string, { label: string; color: string }> = {
   AB: { label: 'AB', color: 'bg-blue-500/20 text-blue-400' },
   BC: { label: 'BC', color: 'bg-purple-500/20 text-purple-400' },
+  DC: { label: 'DC', color: 'bg-teal-500/20 text-teal-400' },
   AMENDMENT: { label: 'AMD', color: 'bg-orange-500/20 text-orange-400' },
 };
 
@@ -73,6 +74,7 @@ export default function Contracts() {
   // Split contracts by type
   const abContracts = useMemo(() => contracts.filter(c => c.contract_type === 'AB'), [contracts]);
   const bcContracts = useMemo(() => contracts.filter(c => c.contract_type === 'BC'), [contracts]);
+  const dcContracts = useMemo(() => contracts.filter(c => c.contract_type === 'DC'), [contracts]);
   const amdContracts = useMemo(() => contracts.filter(c => c.contract_type === 'AMENDMENT'), [contracts]);
 
   // Critical date alerts: BC contracts closing within 7 days, AB contracts approaching closing
@@ -86,11 +88,11 @@ export default function Contracts() {
       const property = (c.lead as any)?.property;
       const address = property?.address || 'Propiedad sin dirección';
 
-      if (c.contract_type === 'BC' && cd.closing_date) {
+      if ((c.contract_type === 'BC' || c.contract_type === 'DC') && cd.closing_date) {
         const closingMs = new Date(cd.closing_date).getTime();
         const daysLeft = Math.ceil((closingMs - now) / 86400000);
         if (daysLeft >= 0 && daysLeft <= 7 && c.status !== 'completed') {
-          alerts.push({ contractId: c.id, address, label: 'Cierre BC', daysLeft });
+          alerts.push({ contractId: c.id, address, label: c.contract_type === 'DC' ? 'Cierre DC' : 'Cierre BC', daysLeft });
         }
       }
       if (c.contract_type === 'AB' && c.sent_at && cd.closing_days) {
@@ -209,7 +211,9 @@ export default function Contracts() {
                 const cData = (contract as any).contract_data as Record<string, string> | null;
                 const recipientName = contract.contract_type === 'BC'
                   ? (cData?.assignee_name || 'N/A')
-                  : (property?.owner_name || 'N/A');
+                  : contract.contract_type === 'DC'
+                    ? (cData?.buyer_name || 'N/A')
+                    : (property?.owner_name || 'N/A');
 
                 return (
                   <TableRow
@@ -417,23 +421,29 @@ export default function Contracts() {
           </CardContent>
         </Card>
 
-        {/* Tabs: AB / BC / Amendments */}
+        {/* Tabs: AB / BC / DC / Amendments */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
-            <TabsTrigger value="AB" className="gap-2">
+          <TabsList className="grid w-full grid-cols-4 max-w-xl">
+            <TabsTrigger value="AB" className="gap-1.5">
               AB — Seller
               {abContracts.length > 0 && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{abContracts.length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="BC" className="gap-2">
+            <TabsTrigger value="BC" className="gap-1.5">
               BC — Buyer
               {bcContracts.length > 0 && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{bcContracts.length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="AMENDMENT" className="gap-2">
-              Amendments
+            <TabsTrigger value="DC" className="gap-1.5">
+              DC — Doble
+              {dcContracts.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{dcContracts.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="AMENDMENT" className="gap-1.5">
+              Amends
               {amdContracts.length > 0 && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{amdContracts.length}</Badge>
               )}
@@ -446,6 +456,10 @@ export default function Contracts() {
 
           <TabsContent value="BC" className="mt-4">
             {renderTable(bcContracts, 'Buyer/Assignee')}
+          </TabsContent>
+
+          <TabsContent value="DC" className="mt-4">
+            {renderTable(dcContracts, 'End Buyer')}
           </TabsContent>
 
           <TabsContent value="AMENDMENT" className="mt-4">

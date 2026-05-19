@@ -32,6 +32,27 @@ function getABChecks(data: Record<string, any>): RiskCheck[] {
   ];
 }
 
+function getDCChecks(data: Record<string, any>): RiskCheck[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const closingDate = data.closing_date ? new Date(data.closing_date) : null;
+  const closingPast = closingDate ? closingDate < today : false;
+  return [
+    { label: 'Nombre del Seller',         ok: !!data.seller_name,                                    critical: true },
+    { label: 'Dirección propiedad',        ok: !!data.property_address,                               critical: true },
+    { label: 'A→B Price (Confidencial)',   ok: !!data.ab_price && Number(data.ab_price) > 0,          critical: true },
+    { label: 'Nombre del End Buyer',       ok: !!data.buyer_name,                                     critical: true },
+    { label: 'B→C Price (Buyer paga)',     ok: !!data.bc_price && Number(data.bc_price) > 0,          critical: true },
+    { label: 'Fecha de Cierre Simultáneo', ok: !!data.closing_date && !closingPast,                    critical: true },
+    { label: 'Compañía de Título',         ok: !!data.title_company,                                  critical: false },
+    { label: 'Email del End Buyer',        ok: !!data.buyer_email,                                    critical: false },
+    { label: 'Fuente Funding A→B',         ok: !!data.transactional_funding,                          critical: false },
+    { label: '✅ Doble Cierre Simultáneo',  ok: true,                                                  critical: false },
+    { label: '✅ Confidencialidad A→B',     ok: true,                                                  critical: false },
+    { label: '✅ Investor Disclosure',      ok: true,                                                  critical: false },
+  ];
+}
+
 function getBCChecks(data: Record<string, any>): RiskCheck[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -69,6 +90,7 @@ export function ContractPreviewCard({ contract }: ContractPreviewCardProps) {
   const checks = useMemo(() => {
     if (contract.contract_type === 'AB') return getABChecks(data);
     if (contract.contract_type === 'BC') return getBCChecks(data);
+    if (contract.contract_type === 'DC') return getDCChecks(data);
     return [];
   }, [contract.contract_type, data]);
 
@@ -88,6 +110,11 @@ export function ContractPreviewCard({ contract }: ContractPreviewCardProps) {
 
   // For BC: assignment fee = totalAssignment - salePrice (if both known)
   const assignmentFee = totalAssignment > 0 && salePrice > 0 ? totalAssignment - salePrice : null;
+
+  // For DC: profit = bc_price - ab_price
+  const abPrice = Number(data.ab_price || 0);
+  const bcPrice = Number(data.bc_price || 0);
+  const dcProfit = abPrice > 0 && bcPrice > 0 ? bcPrice - abPrice : null;
 
   return (
     <div className="space-y-3">
@@ -224,6 +251,63 @@ export function ContractPreviewCard({ contract }: ContractPreviewCardProps) {
                   {(new Date(data.closing_date).getTime() - Date.now()) < 7 * 86400000 && new Date(data.closing_date) > new Date() && ' ⚠️ <7 días'}
                   {new Date(data.closing_date) < new Date() && ' 🔴 VENCIDA'}
                 </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Financial Calculator (DC) ── */}
+      {contract.contract_type === 'DC' && (abPrice > 0 || bcPrice > 0) && (
+        <Card className="border-teal-500/20">
+          <CardContent className="p-3 space-y-1.5">
+            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 mb-2">
+              <DollarSign className="h-3.5 w-3.5 text-teal-400" />
+              Calculadora Double Close (A→B / B→C)
+            </p>
+            {abPrice > 0 && (
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">A→B Price (Klose paga al Seller) — CONFIDENCIAL</span>
+                <span className="text-destructive">- ${abPrice.toLocaleString()}</span>
+              </div>
+            )}
+            {bcPrice > 0 && (
+              <div className="flex justify-between text-sm font-medium">
+                <span>B→C Price (End Buyer paga a Klose)</span>
+                <span className="text-primary">${bcPrice.toLocaleString()}</span>
+              </div>
+            )}
+            {dcProfit !== null && (
+              <>
+                <Separator />
+                <div className="flex justify-between text-sm font-bold">
+                  <span>Ganancia Klose (Spread DC)</span>
+                  <span className={dcProfit >= 5000 ? 'text-success' : dcProfit >= 0 ? 'text-warning' : 'text-destructive'}>
+                    {dcProfit >= 0 ? '+' : ''}${dcProfit.toLocaleString()}
+                  </span>
+                </div>
+              </>
+            )}
+            {data.closing_date && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Cierre Simultáneo</span>
+                <span className={
+                  new Date(data.closing_date) < new Date()
+                    ? 'text-destructive font-medium'
+                    : (new Date(data.closing_date).getTime() - Date.now()) < 7 * 86400000
+                      ? 'text-warning font-medium'
+                      : ''
+                }>
+                  {new Date(data.closing_date).toLocaleDateString('es-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {(new Date(data.closing_date).getTime() - Date.now()) < 7 * 86400000 && new Date(data.closing_date) > new Date() && ' ⚠️ <7 días'}
+                  {new Date(data.closing_date) < new Date() && ' 🔴 VENCIDA'}
+                </span>
+              </div>
+            )}
+            {data.transactional_funding && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Funding A→B</span>
+                <span>{data.transactional_funding}</span>
               </div>
             )}
           </CardContent>

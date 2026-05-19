@@ -9,7 +9,7 @@ export interface KloseSignatureData {
 }
 
 interface ContractPageViewerProps {
-  contractType: 'AB' | 'BC' | 'AMENDMENT';
+  contractType: 'AB' | 'BC' | 'AMENDMENT' | 'DC';
   data: Record<string, string>;
   mode?: 'view' | 'signing';
 }
@@ -177,6 +177,117 @@ export function getAmendmentKloseSignablePages(): SignablePageInfo[] {
   ];
 }
 
+export function getDCSignablePages(): SignablePageInfo[] {
+  return [
+    { pageNum: 1, title: 'Double Close — Overview & A→B Agreement', requiresSignature: false, signatureLabel: '' },
+    { pageNum: 2, title: 'Double Close — B→C Agreement & Terms', requiresSignature: false, signatureLabel: '' },
+    { pageNum: 3, title: 'Double Close — Seller Signature (A→B leg)', requiresSignature: true, signatureLabel: 'Seller Signature — A→B Purchase Agreement' },
+    { pageNum: 4, title: 'Double Close — Buyer Disclosures & Signature (B→C leg)', requiresSignature: true, signatureLabel: 'End Buyer Signature — B→C Purchase Agreement' },
+  ];
+}
+
+export function getDCKloseSignablePages(): SignablePageInfo[] {
+  return [
+    { pageNum: 3, title: 'Double Close — A→B (Klose as Buyer)', requiresSignature: true, signatureLabel: 'Buyer (Klose LLC) Signature — A→B Agreement' },
+    { pageNum: 4, title: 'Double Close — B→C (Klose as Seller)', requiresSignature: true, signatureLabel: 'Seller (Klose LLC) Signature — B→C Agreement' },
+  ];
+}
+
+// ─── DC single page renderer ───
+function DCPageSingle({ pageNum, d, mode = 'view', kloseSignature }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; kloseSignature?: KloseSignatureData }) {
+  const totalPages = 4;
+  const fullAddr = [d.property_address, d.property_city, d.property_state].filter(Boolean).join(', ');
+  switch (pageNum) {
+    case 1: return (
+      <PageWrapper pageNum={1} total={totalPages}>
+        <PageHeader title="DOUBLE CLOSE AGREEMENT" />
+        <p className="text-center text-sm italic text-muted-foreground mb-4">Simultaneous A→B / B→C Transaction</p>
+        <h4 className="font-bold mt-2 mb-2">1. TRANSACTION OVERVIEW:</h4>
+        <p className="text-sm leading-relaxed">This agreement documents a simultaneous double close (double escrow) transaction for the property described below. Two separate closings will occur on the same date: (A→B) <V k="seller_name" data={d} /> sells the Property to Klose LLC; (B→C) Klose LLC sells the Property to <V k="buyer_name" data={d} />. Both closings will be handled through <V k="title_company" data={d} /> on a simultaneous basis.</p>
+        <h4 className="font-bold mt-4 mb-2">2. PARTIES:</h4>
+        <p className="text-sm leading-relaxed"><strong>A→B Leg:</strong> Seller: <V k="seller_name" data={d} /> / Buyer: Klose LLC, a Wyoming Limited Liability Company</p>
+        <p className="text-sm leading-relaxed mt-1"><strong>B→C Leg:</strong> Seller: Klose LLC, a Wyoming Limited Liability Company / End Buyer: <V k="buyer_name" data={d} /></p>
+        <h4 className="font-bold mt-4 mb-2">3. PROPERTY:</h4>
+        <p className="text-sm leading-relaxed"><V k="property_address" data={d} fallback={fullAddr} />, <V k="property_city" data={d} />, <V k="property_county" data={d} />, <V k="property_state" data={d} />. Including all fixtures, appliances, other permanently installed equipment.</p>
+        <h4 className="font-bold mt-4 mb-2">4. A→B PURCHASE PRICE — CONFIDENTIAL:</h4>
+        <p className="text-sm leading-relaxed">The purchase price for the A→B transaction (Seller to Klose LLC) is confidential and shall not be disclosed to the End Buyer. All proceeds shall be handled and disbursed by <V k="title_company" data={d} /> per simultaneous closing instructions.</p>
+        <h4 className="font-bold mt-4 mb-2">5. B→C PURCHASE PRICE:</h4>
+        <p className="text-sm leading-relaxed">The End Buyer shall purchase the Property from Klose LLC for: <strong>$ <V k="bc_price" data={d} /></strong></p>
+        <h4 className="font-bold mt-4 mb-2">6. NON-FINANCING / ALL CASH (A→B LEG):</h4>
+        <p className="text-sm leading-relaxed">The A→B transaction is an all-cash transaction. Klose LLC shall use transactional/bridge funding or its own funds to fund the A→B closing. Funding source: <V k="transactional_funding" data={d} />.</p>
+        <h4 className="font-bold mt-4 mb-2">7. CLOSING:</h4>
+        <p className="text-sm leading-relaxed">Both the A→B and B→C transactions shall close simultaneously on or before <V k="closing_date" data={d} />, within <V k="closing_days" data={d} fallback="30" /> business days from execution, at <V k="title_company" data={d} />.</p>
+      </PageWrapper>
+    );
+    case 2: return (
+      <PageWrapper pageNum={2} total={totalPages}>
+        <h4 className="font-bold mt-2 mb-2">8. PROPERTY CONDITION — AS-IS:</h4>
+        <p className="text-sm leading-relaxed">Both transactions are as-is. The End Buyer acknowledges purchasing the Property in its present physical condition. Klose LLC makes no warranties regarding the condition of the Property.</p>
+        <h4 className="font-bold mt-4 mb-2">9. TRANSACTIONAL FUNDING:</h4>
+        <p className="text-sm leading-relaxed">Klose LLC may utilize transactional or bridge funding to fund the A→B leg of this transaction. The End Buyer's funds from the B→C leg may be used by the Title Company to simultaneously fund and close the A→B leg. This is a lawful and accepted simultaneous closing practice.</p>
+        <h4 className="font-bold mt-4 mb-2">10. CONFIDENTIALITY:</h4>
+        <p className="text-sm leading-relaxed">The A→B purchase price is strictly confidential between the Seller and Klose LLC. Klose LLC's profit is derived from the difference between the A→B and B→C prices. The End Buyer acknowledges this arrangement and agrees not to seek disclosure of the A→B price as a condition of closing.</p>
+        <h4 className="font-bold mt-4 mb-2">11. TITLE POLICY:</h4>
+        <p className="text-sm leading-relaxed">Seller shall cause <V k="title_company" data={d} /> to issue an Owner's Policy of Title Insurance to the End Buyer in the amount of the B→C Purchase Price, at or after simultaneous closing.</p>
+        <h4 className="font-bold mt-4 mb-2">12. POSSESSION:</h4>
+        <p className="text-sm leading-relaxed">Possession shall be delivered to the End Buyer at simultaneous closing. Seller shall vacate the Property prior to the closing date.</p>
+        <h4 className="font-bold mt-4 mb-2">13. DEFAULT:</h4>
+        <p className="text-sm leading-relaxed">If Seller fails to perform the A→B closing, Klose LLC may seek specific performance or terminate. If End Buyer fails to perform the B→C closing, Klose LLC may terminate and retain any earnest money or option fees paid.</p>
+        <h4 className="font-bold mt-4 mb-2">14. RESALE ACKNOWLEDGMENT:</h4>
+        <p className="text-sm leading-relaxed">Seller acknowledges and consents that Klose LLC will simultaneously resell the Property and retains all profit derived from the B→C transaction. Seller understands Klose LLC is a real estate investor.</p>
+        <h4 className="font-bold mt-4 mb-2">15. ENTIRE AGREEMENT:</h4>
+        <p className="text-sm leading-relaxed">This contract contains the entire agreement of the parties and cannot be changed except by their written agreement.</p>
+        <h4 className="font-bold mt-4 mb-2">16. SPECIAL PROVISIONS:</h4>
+        <p className="text-sm leading-relaxed">{d.special_provisions || '______________________________________________________________________'}</p>
+      </PageWrapper>
+    );
+    case 3: return (
+      <PageWrapper pageNum={3} total={totalPages}>
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg px-4 py-2 mb-4 text-center">
+          <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide">A→B Leg — Seller Signature Block</p>
+          <p className="text-xs text-muted-foreground">Seller acknowledges and agrees to sell the Property to Klose LLC per the terms above</p>
+        </div>
+        <div className="text-sm space-y-2 mb-4">
+          <p><strong>Seller:</strong> <V k="seller_name" data={d} /></p>
+          <p><strong>Property:</strong> <V k="property_address" data={d} /></p>
+          <p><strong>Title Company:</strong> <V k="title_company" data={d} /></p>
+          <p><strong>Simultaneous Closing Date:</strong> <V k="closing_date" data={d} /></p>
+        </div>
+        <p className="text-sm leading-relaxed mb-4">I/We, the Seller, have read and understood this Double Close Agreement and agree to sell the Property to Klose LLC per the terms stated herein. I/We understand that Klose LLC will simultaneously resell the Property and acknowledge the confidentiality of the A→B purchase price.</p>
+        <DualSignatureMarker leftLabel="Seller Signature" rightLabel="Buyer Signature (Klose LLC)" leftPrint="Seller Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} kloseSignature={kloseSignature} />
+      </PageWrapper>
+    );
+    case 4: return (
+      <PageWrapper pageNum={4} total={totalPages}>
+        <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg px-4 py-2 mb-4 text-center">
+          <p className="text-xs font-semibold text-purple-400 uppercase tracking-wide">B→C Leg — End Buyer Signature Block</p>
+          <p className="text-xs text-muted-foreground">End Buyer disclosures and signature for the B→C purchase</p>
+        </div>
+        <h4 className="font-bold mb-2">INVESTOR DISCLOSURE</h4>
+        <ol className="list-decimal ml-6 text-sm space-y-1 mb-4">
+          <li>Klose LLC is a real estate investor and is NOT a licensed real estate broker or agent.</li>
+          <li>This is a simultaneous double close. Klose LLC acquires title from the Seller and simultaneously transfers it to End Buyer.</li>
+          <li>Klose LLC's profit is the spread between the two transactions and is confidential.</li>
+          <li>The parties agree to use <V k="title_company" data={d} /> as the Title Company for both closings.</li>
+          <li>This property is sold as-is, where-is. Klose LLC makes no warranties regarding condition.</li>
+          <li>The undersigned is encouraged to seek independent legal counsel prior to closing.</li>
+        </ol>
+        <h4 className="font-bold mb-2">NOTICE OF NON-REPRESENTATION</h4>
+        <p className="text-sm leading-relaxed mb-3">Klose LLC does not represent the End Buyer as a real estate broker or agent. End Buyer should seek independent representation.</p>
+        <h4 className="font-bold mb-2">FAIR HOUSING STATEMENT</h4>
+        <p className="text-sm leading-relaxed mb-4">It is illegal discrimination under the Federal Fair Housing Law, 42 U.S.C.A. 3601, to take any actions based on race, color, religion, sex, disability, familial status, or national origin.</p>
+        <div className="text-sm space-y-1 mb-4">
+          <p><strong>End Buyer:</strong> <V k="buyer_name" data={d} /></p>
+          <p><strong>B→C Purchase Price:</strong> $ <V k="bc_price" data={d} /></p>
+        </div>
+        <p className="text-sm leading-relaxed mb-4">By signing below, End Buyer acknowledges receipt of all disclosures, agrees to the B→C purchase terms, and understands the double close structure of this transaction.</p>
+        <DualSignatureMarker leftLabel="End Buyer Signature" rightLabel="Seller Signature (Klose LLC)" leftPrint="End Buyer Printed Name" rightPrint="Klose LLC / Authorized Signatory" mode={mode} kloseSignature={kloseSignature} />
+      </PageWrapper>
+    );
+    default: return null;
+  }
+}
+
 // ─── BC single page renderer ───
 function BCPageSingle({ pageNum, d, mode = 'view', kloseSignature }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; kloseSignature?: KloseSignatureData }) {
   const totalPages = 6;
@@ -303,10 +414,11 @@ function AmendmentPageSingle({ pageNum, d, mode = 'view', kloseSignature }: { pa
 }
 
 // ─── Individual page renderers for wizard mode ───
-export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB', kloseSignatures = [] }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; contractType?: 'AB' | 'BC' | 'AMENDMENT'; kloseSignatures?: KloseSignatureData[] }) {
+export function ABPage({ pageNum, d, mode = 'view', contractType = 'AB', kloseSignatures = [] }: { pageNum: number; d: Record<string, string>; mode?: 'view' | 'signing'; contractType?: 'AB' | 'BC' | 'AMENDMENT' | 'DC'; kloseSignatures?: KloseSignatureData[] }) {
   const kloseForPage = kloseSignatures.find(s => s.pageNum === pageNum);
   if (contractType === 'BC') return <BCPageSingle pageNum={pageNum} d={d} mode={mode} kloseSignature={kloseForPage} />;
   if (contractType === 'AMENDMENT') return <AmendmentPageSingle pageNum={pageNum} d={d} mode={mode} kloseSignature={kloseForPage} />;
+  if (contractType === 'DC') return <DCPageSingle pageNum={pageNum} d={d} mode={mode} kloseSignature={kloseForPage} />;
   const totalPages = 11;
 
   switch (pageNum) {
@@ -652,6 +764,17 @@ function BCPages({ d, mode }: { d: Record<string, string>; mode?: 'view' | 'sign
   );
 }
 
+// ─── DC CONTRACT PAGES ───
+function DCPages({ d, mode }: { d: Record<string, string>; mode?: 'view' | 'signing' }) {
+  return (
+    <>
+      {Array.from({ length: 4 }, (_, i) => (
+        <DCPageSingle key={i + 1} pageNum={i + 1} d={d} mode={mode} />
+      ))}
+    </>
+  );
+}
+
 // ─── AMENDMENT PAGES ───
 function AmendmentPages({ d, mode }: { d: Record<string, string>; mode?: 'view' | 'signing' }) {
   const totalPages = 2;
@@ -689,6 +812,7 @@ export default function ContractPageViewer({ contractType, data, mode = 'view' }
     <div className="space-y-6">
       {contractType === 'AB' && <ABPages d={data} mode={mode} />}
       {contractType === 'BC' && <BCPages d={data} mode={mode} />}
+      {contractType === 'DC' && <DCPages d={data} mode={mode} />}
       {contractType === 'AMENDMENT' && <AmendmentPages d={data} mode={mode} />}
     </div>
   );

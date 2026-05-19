@@ -74,6 +74,8 @@ Deno.serve(async (req) => {
       buildABPdf(ctx)
     } else if (contractType === 'BC') {
       buildBCPdf(ctx)
+    } else if (contractType === 'DC') {
+      buildDCPdf(ctx)
     } else {
       buildAmendmentPdf(ctx)
     }
@@ -544,6 +546,99 @@ function buildReleaseAuthPage(ctx: PdfCtx) {
   c.y -= 30
   c = drawParagraph(ctx, c, `Seller Printed Name: ${v(ctx.data,'seller_name')}`, 9)
   c = drawParagraph(ctx, c, 'Date: ____________', 9)
+}
+
+// ─── Double Close ────────────────────────────────────────────────────
+
+function buildDCPdf(ctx: PdfCtx) {
+  const d = ctx.data
+  const fullAddr = [d.property_address, d.property_city, d.property_state].filter(Boolean).join(', ')
+
+  // Page 1: Overview + A→B Agreement
+  let c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c.y -= 10
+  c = drawCenteredText(ctx, c, 'DOUBLE CLOSE AGREEMENT', 14)
+  c = drawCenteredText(ctx, c, 'Simultaneous A→B / B→C Transaction', 10, ctx.fontItalic)
+  c.y -= 5
+
+  c = drawClause(ctx, c, '1', 'TRANSACTION OVERVIEW', `This agreement documents a simultaneous double close (double escrow) for the property described below. Two separate closings will occur on the same date: (A→B) ${v(d,'seller_name')} sells the Property to Klose LLC; (B→C) Klose LLC sells the Property to ${v(d,'buyer_name')}. Both closings will be handled through ${v(d,'title_company')} on a simultaneous basis.`)
+
+  c = drawClause(ctx, c, '2', 'PARTIES', `A→B Leg: Seller: ${v(d,'seller_name')} / Buyer: Klose LLC, a Wyoming Limited Liability Company. B→C Leg: Seller: Klose LLC / End Buyer: ${v(d,'buyer_name')}.`)
+
+  c = drawClause(ctx, c, '3', 'PROPERTY', `${fullAddr || v(d,'property_address')}, including all fixtures, appliances, and permanently installed equipment.`)
+
+  c = drawClause(ctx, c, '4', 'A→B PURCHASE PRICE — CONFIDENTIAL', `The purchase price for the A→B transaction (Seller to Klose LLC) is confidential and shall not be disclosed to the End Buyer. All proceeds shall be handled and disbursed by ${v(d,'title_company')} per simultaneous closing instructions.`)
+
+  c = drawClause(ctx, c, '5', 'B→C PURCHASE PRICE', `The End Buyer shall purchase the Property from Klose LLC for: $ ${money(d.bc_price)}.`)
+
+  c = drawClause(ctx, c, '6', 'NON-FINANCING / ALL CASH (A→B LEG)', `The A→B transaction is an all-cash transaction. Klose LLC shall use transactional/bridge funding or its own funds. Funding source: ${v(d,'transactional_funding','Self-funded / Hard Money')}.`)
+
+  c = drawClause(ctx, c, '7', 'CLOSING', `Both transactions shall close simultaneously on or before ${v(d,'closing_date')}, within ${v(d,'closing_days','30')} business days from execution, at ${v(d,'title_company')}.`)
+
+  // Page 2: Terms
+  c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c.y -= 10
+
+  c = drawClause(ctx, c, '8', 'PROPERTY CONDITION — AS-IS', 'Both transactions are as-is. The End Buyer acknowledges purchasing the Property in its present physical condition. Klose LLC makes no warranties regarding the condition of the Property.')
+
+  c = drawClause(ctx, c, '9', 'TRANSACTIONAL FUNDING', 'Klose LLC may utilize transactional or bridge funding to fund the A→B leg. The End Buyer\'s funds from the B→C leg may be used by the Title Company to simultaneously fund and close the A→B leg. This is a lawful and accepted simultaneous closing practice.')
+
+  c = drawClause(ctx, c, '10', 'CONFIDENTIALITY', 'The A→B purchase price is strictly confidential between the Seller and Klose LLC. Klose LLC\'s profit is derived from the difference between the two transaction prices. The End Buyer acknowledges this arrangement and agrees not to seek disclosure of the A→B price as a condition of closing.')
+
+  c = drawClause(ctx, c, '11', 'TITLE POLICY', `Seller shall cause ${v(d,'title_company')} to issue an Owner\'s Policy of Title Insurance to the End Buyer in the amount of the B→C Purchase Price at or after simultaneous closing.`)
+
+  c = drawClause(ctx, c, '12', 'POSSESSION', 'Possession shall be delivered to the End Buyer at simultaneous closing. Seller shall vacate the Property prior to the closing date.')
+
+  c = drawClause(ctx, c, '13', 'DEFAULT', 'If Seller fails to perform the A→B closing, Klose LLC may seek specific performance or terminate. If End Buyer fails to perform the B→C closing, Klose LLC may terminate and retain any earnest money or option fees paid.')
+
+  c = drawClause(ctx, c, '14', 'RESALE ACKNOWLEDGMENT', 'Seller acknowledges and consents that Klose LLC will simultaneously resell the Property and retains all profit from the B→C transaction. Seller understands Klose LLC is a real estate investor.')
+
+  c = drawClause(ctx, c, '15', 'ENTIRE AGREEMENT', 'This contract contains the entire agreement of the parties and cannot be changed except by their written agreement.')
+
+  c = drawClause(ctx, c, '16', 'SPECIAL PROVISIONS', v(d,'special_provisions','None'))
+
+  // Page 3: Seller Signature (A→B leg)
+  c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c.y -= 10
+  c = drawCenteredText(ctx, c, 'A→B LEG — SELLER ACKNOWLEDGEMENT & SIGNATURE', 13)
+  c.y -= 5
+
+  c = drawParagraph(ctx, c, `Seller: ${v(d,'seller_name')}`)
+  c = drawParagraph(ctx, c, `Property: ${v(d,'property_address')}`)
+  c = drawParagraph(ctx, c, `Title Company: ${v(d,'title_company')}`)
+  c = drawParagraph(ctx, c, `Simultaneous Closing Date: ${v(d,'closing_date')}`)
+  c.y -= 10
+
+  c = drawParagraph(ctx, c, 'I/We, the Seller, have read and understood this Double Close Agreement and agree to sell the Property to Klose LLC per the terms stated herein. I/We understand that Klose LLC will simultaneously resell the Property and acknowledge the confidentiality of the A→B purchase price.')
+  c.y -= 10
+  c = drawSignatureBlock(ctx, c, 'Seller Signature', v(d,'seller_name','_________________'), 'Buyer Signature', 'Klose LLC / Authorized Signatory')
+
+  // Page 4: End Buyer Disclosures + B→C Signature
+  buildInvestorDisclosurePage(ctx, 'End Buyer')
+
+  // Override the last sig block for the DC B→C leg
+  c = addPage(ctx)
+  c = drawHeader(ctx, c)
+  c.y -= 10
+  c = drawCenteredText(ctx, c, 'B→C LEG — END BUYER SIGNATURE', 13)
+  c.y -= 5
+
+  c = drawParagraph(ctx, c, 'NOTICE OF NON-REPRESENTATION')
+  c = drawParagraph(ctx, c, 'Klose LLC does not represent the End Buyer as a real estate broker or agent. End Buyer should seek independent representation prior to closing.')
+  c.y -= 5
+  c = drawCenteredText(ctx, c, 'FAIR HOUSING STATEMENT', 11)
+  c = drawParagraph(ctx, c, 'It is illegal discrimination under the Federal Fair Housing Law, 42 U.S.C.A. 3601, to take any actions based on race, color, religion, sex, disability, familial status, or national origin.', 9)
+  c.y -= 10
+
+  c = drawParagraph(ctx, c, `End Buyer: ${v(d,'buyer_name')}`)
+  c = drawParagraph(ctx, c, `B→C Purchase Price: $ ${money(d.bc_price)}`)
+  c.y -= 5
+  c = drawParagraph(ctx, c, 'By signing below, End Buyer acknowledges receipt of all disclosures, agrees to the B→C purchase terms, and understands the double close structure of this transaction.')
+  c.y -= 10
+  c = drawSignatureBlock(ctx, c, 'End Buyer Signature', v(d,'buyer_name','_________________'), 'Seller Signature', 'Klose LLC / Authorized Signatory')
 }
 
 function buildSellerResponsibilityPage(ctx: PdfCtx) {

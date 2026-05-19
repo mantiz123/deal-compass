@@ -13,6 +13,7 @@ import {
   getABKloseSignablePages,
   getBCKloseSignablePages,
   getAmendmentKloseSignablePages,
+  getDCKloseSignablePages,
 } from './ContractPageViewer';
 import type { Contract } from '@/hooks/useContracts';
 
@@ -92,6 +93,7 @@ export function KloseSignDialog({ contract, open, onOpenChange }: KloseSignDialo
   const getKlosePages = () => {
     if (contract.contract_type === 'AB') return getABKloseSignablePages();
     if (contract.contract_type === 'BC') return getBCKloseSignablePages();
+    if (contract.contract_type === 'DC') return getDCKloseSignablePages();
     return getAmendmentKloseSignablePages();
   };
 

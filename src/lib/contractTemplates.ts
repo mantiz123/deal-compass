@@ -10,7 +10,7 @@ export interface ContractField {
 }
 
 export interface ContractTemplate {
-  type: 'AB' | 'BC' | 'AMENDMENT';
+  type: 'AB' | 'BC' | 'AMENDMENT' | 'DC';
   name: string;
   description: string;
   icon: string;
@@ -58,6 +58,30 @@ export const BC_CONTRACT_FIELDS: ContractField[] = [
   { key: 'special_provisions', label: 'Special Provisions', source: 'manual', type: 'textarea' },
 ];
 
+export const DC_CONTRACT_FIELDS: ContractField[] = [
+  // Property (auto-filled from lead)
+  { key: 'seller_name', label: 'Seller Name', source: 'auto', autoField: 'property.owner_name', required: true },
+  { key: 'property_address', label: 'Property Address', source: 'auto', autoField: 'property.address', required: true },
+  { key: 'property_city', label: 'City', source: 'auto', autoField: 'property.city' },
+  { key: 'property_county', label: 'County', source: 'auto', autoField: 'property.county' },
+  { key: 'property_state', label: 'State', source: 'auto', autoField: 'property.state' },
+  // A→B Leg (Seller → Klose) — CONFIDENTIAL
+  { key: 'ab_price', label: 'A→B Price (Klose pays Seller) — CONFIDENTIAL', source: 'auto', autoField: 'property.mao', type: 'number', required: true },
+  { key: 'closing_days', label: 'Days to Close (A→B leg)', source: 'manual', defaultValue: '30', type: 'number' },
+  { key: 'seller_phone', label: 'Seller Phone', source: 'auto', autoField: 'property.owner_phone' },
+  { key: 'seller_email', label: 'Seller Email', source: 'auto', autoField: 'property.owner_email' },
+  // B→C Leg (Klose → End Buyer)
+  { key: 'buyer_name', label: 'End Buyer Name', source: 'manual', required: true },
+  { key: 'buyer_email', label: 'End Buyer Email', source: 'manual', type: 'text', required: true },
+  { key: 'buyer_phone', label: 'End Buyer Phone', source: 'manual', type: 'text' },
+  { key: 'bc_price', label: 'B→C Price (Buyer pays Klose)', source: 'manual', type: 'number', required: true },
+  { key: 'closing_date', label: 'Simultaneous Closing Date', source: 'manual', type: 'date', required: true },
+  // Shared
+  { key: 'title_company', label: 'Title Company', source: 'manual', required: true },
+  { key: 'transactional_funding', label: 'Transactional Funding Source', source: 'manual', defaultValue: 'Self-funded / Hard Money' },
+  { key: 'special_provisions', label: 'Special Provisions', source: 'manual', type: 'textarea' },
+];
+
 export const AMENDMENT_FIELDS: ContractField[] = [
   { key: 'seller_name', label: 'Seller Name', source: 'auto', autoField: 'property.owner_name', required: true },
   { key: 'property_address', label: 'Property Address (full)', source: 'auto', autoField: 'property.address', required: true },
@@ -76,22 +100,29 @@ export const CONTRACT_TEMPLATES: ContractTemplate[] = [
     fields: AB_CONTRACT_FIELDS,
   },
   {
-    type: 'AMENDMENT',
-    name: 'Amendment',
-    description: 'Modifica precio, fecha de cierre o terminos de un AB Contract existente',
-    icon: '🔄',
-    fields: AMENDMENT_FIELDS,
-  },
-  {
     type: 'BC',
     name: 'BC Contract (Assignment)',
     description: 'Use when assigning to a buyer — Assignment of Purchase Agreement',
     icon: '📤',
     fields: BC_CONTRACT_FIELDS,
   },
+  {
+    type: 'DC',
+    name: 'Double Close (A→B / B→C)',
+    description: 'Simultaneous double close — Klose buys from Seller and sells to Buyer same day. A→B price stays private.',
+    icon: '🔄',
+    fields: DC_CONTRACT_FIELDS,
+  },
+  {
+    type: 'AMENDMENT',
+    name: 'Amendment',
+    description: 'Modifica precio, fecha de cierre o terminos de un AB Contract existente',
+    icon: '✏️',
+    fields: AMENDMENT_FIELDS,
+  },
 ];
 
-export function getFieldsForType(type: 'AB' | 'BC' | 'AMENDMENT'): ContractField[] {
+export function getFieldsForType(type: 'AB' | 'BC' | 'AMENDMENT' | 'DC'): ContractField[] {
   const template = CONTRACT_TEMPLATES.find(t => t.type === type);
   return template?.fields || [];
 }

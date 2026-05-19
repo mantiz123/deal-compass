@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 
-export type ContractType = 'AB' | 'BC' | 'AMENDMENT';
+export type ContractType = 'AB' | 'BC' | 'AMENDMENT' | 'DC';
 export type ContractStatus = 'draft' | 'sent' | 'viewed' | 'signed' | 'completed';
 
 export interface Contract {
@@ -205,7 +205,7 @@ export function useUpdateLeadStatusFromContract() {
 
   return useMutation({
     mutationFn: async ({ leadId, contractType }: { leadId: string; contractType: ContractType }) => {
-      const newStatus = contractType === 'AB' ? 'bajo_contrato' : contractType === 'BC' ? 'cesion' : null;
+      const newStatus = contractType === 'AB' ? 'bajo_contrato' : (contractType === 'BC' || contractType === 'DC') ? 'cesion' : null;
       if (!newStatus) throw new Error('Este tipo de contrato no actualiza el estado automáticamente');
       const { data, error } = await supabase
         .from('leads')
@@ -218,7 +218,7 @@ export function useUpdateLeadStatusFromContract() {
     },
     onSuccess: (_, { contractType }) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
-      const label = contractType === 'AB' ? 'Bajo Contrato' : 'Cesión';
+      const label = contractType === 'AB' ? 'Bajo Contrato' : contractType === 'DC' ? 'Cesión (Double Close)' : 'Cesión';
       toast({ title: `✅ Lead actualizado a "${label}"` });
     },
     onError: (error: any) => {

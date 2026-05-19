@@ -2852,7 +2852,7 @@ export type Database = {
         | "creative_finance"
         | "master"
       contract_status: "draft" | "sent" | "viewed" | "signed" | "completed"
-      contract_type: "AB" | "BC" | "AMENDMENT"
+      contract_type: "AB" | "BC" | "AMENDMENT" | "DC"
       kcfy_priority: "low" | "normal" | "high" | "urgent"
       kcfy_stage:
         | "submitted"
@@ -3061,7 +3061,7 @@ export const Constants = {
         "master",
       ],
       contract_status: ["draft", "sent", "viewed", "signed", "completed"],
-      contract_type: ["AB", "BC", "AMENDMENT"],
+      contract_type: ["AB", "BC", "AMENDMENT", "DC"],
       kcfy_priority: ["low", "normal", "high", "urgent"],
       kcfy_stage: [
         "submitted",

@@ -25,6 +25,7 @@ import {
   getABKloseSignablePages,
   getBCKloseSignablePages,
   getAmendmentKloseSignablePages,
+  getDCKloseSignablePages,
 } from '@/components/contracts/ContractPageViewer';
 
 type Step = 'select' | 'select_parent' | 'fill' | 'klose_sign' | 'send';
@@ -37,7 +38,7 @@ export default function ContractNew() {
   const { data: profile } = useProfile();
 
   const [step, setStep] = useState<Step>('select');
-  const [contractType, setContractType] = useState<'AB' | 'BC' | 'AMENDMENT' | null>(null);
+  const [contractType, setContractType] = useState<'AB' | 'BC' | 'AMENDMENT' | 'DC' | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [lead, setLead] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +63,8 @@ export default function ContractNew() {
   );
 
   const isBC = contractType === 'BC';
-  const recipientLabel = isBC ? 'Buyer' : 'Seller';
+  const isDC = contractType === 'DC';
+  const recipientLabel = (isBC || isDC) ? 'Buyer' : 'Seller';
 
   // Load lead data
   useEffect(() => {
@@ -96,7 +98,7 @@ export default function ContractNew() {
     }
   }, [profile]);
 
-  const handleSelectType = (type: 'AB' | 'BC' | 'AMENDMENT') => {
+  const handleSelectType = (type: 'AB' | 'BC' | 'AMENDMENT' | 'DC') => {
     setContractType(type);
     setFormValues({});
     setSelectedParentContract(null);
@@ -130,8 +132,8 @@ export default function ContractNew() {
   };
 
   // Get the recipient email depending on contract type
-  const getRecipientEmail = () => isBC ? formValues.buyer_email : formValues.seller_email;
-  const getRecipientPhone = () => isBC ? formValues.buyer_phone : formValues.seller_phone;
+  const getRecipientEmail = () => (isBC || isDC) ? formValues.buyer_email : formValues.seller_email;
+  const getRecipientPhone = () => (isBC || isDC) ? formValues.buyer_phone : formValues.seller_phone;
 
   const handleGenerate = async () => {
     if (!contractType || !leadId) return;
@@ -212,7 +214,9 @@ export default function ContractNew() {
       ? getABKloseSignablePages()
       : contractType === 'BC'
         ? getBCKloseSignablePages()
-        : getAmendmentKloseSignablePages();
+        : contractType === 'DC'
+          ? getDCKloseSignablePages()
+          : getAmendmentKloseSignablePages();
 
     return pageInfos.map(info => ({
       pageNum: info.pageNum,
@@ -394,6 +398,11 @@ export default function ContractNew() {
                 {isBC && (
                   <CardDescription className="text-purple-400">
                     Este contrato se envía al Buyer/Assignee para que firme. Klose actúa como Assignor.
+                  </CardDescription>
+                )}
+                {isDC && (
+                  <CardDescription className="text-teal-400">
+                    Double Close: dos cierres simultáneos el mismo día. A→B: Seller vende a Klose (precio CONFIDENCIAL). B→C: Klose vende al End Buyer. El documento se envía al End Buyer para firmar.
                   </CardDescription>
                 )}
                 {contractType === 'AMENDMENT' && (
@@ -589,8 +598,8 @@ export default function ContractNew() {
                     <Label>Email del {recipientLabel}</Label>
                     <Input
                       type="email"
-                      value={isBC ? (formValues.buyer_email || '') : (formValues.seller_email || '')}
-                      onChange={(e) => handleFieldChange(isBC ? 'buyer_email' : 'seller_email', e.target.value)}
+                      value={(isBC || isDC) ? (formValues.buyer_email || '') : (formValues.seller_email || '')}
+                      onChange={(e) => handleFieldChange((isBC || isDC) ? 'buyer_email' : 'seller_email', e.target.value)}
                       placeholder="email@ejemplo.com"
                     />
                   </div>
@@ -598,8 +607,8 @@ export default function ContractNew() {
                     <Label>Teléfono del {recipientLabel}</Label>
                     <Input
                       type="tel"
-                      value={isBC ? (formValues.buyer_phone || '') : (formValues.seller_phone || '')}
-                      onChange={(e) => handleFieldChange(isBC ? 'buyer_phone' : 'seller_phone', e.target.value)}
+                      value={(isBC || isDC) ? (formValues.buyer_phone || '') : (formValues.seller_phone || '')}
+                      onChange={(e) => handleFieldChange((isBC || isDC) ? 'buyer_phone' : 'seller_phone', e.target.value)}
                       placeholder="+1 (555) 000-0000"
                     />
                   </div>
