@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useContracts, type Contract } from '@/hooks/useContracts';
 import { ContractDetailSheet } from '@/components/contracts/ContractDetailSheet';
-import { Search, Download, Eye, CheckCircle2, FileText, AlertCircle, DollarSign } from 'lucide-react';
+import { Search, Download, Eye, CheckCircle2, FileText, AlertCircle, DollarSign, Clock, AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -74,6 +74,36 @@ export default function Contracts() {
   const abContracts = useMemo(() => contracts.filter(c => c.contract_type === 'AB'), [contracts]);
   const bcContracts = useMemo(() => contracts.filter(c => c.contract_type === 'BC'), [contracts]);
   const amdContracts = useMemo(() => contracts.filter(c => c.contract_type === 'AMENDMENT'), [contracts]);
+
+  // Critical date alerts: BC contracts closing within 7 days, AB contracts approaching closing
+  const criticalAlerts = useMemo(() => {
+    const now = Date.now();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    const alerts: { contractId: string; address: string; label: string; daysLeft: number }[] = [];
+
+    allContracts.forEach(c => {
+      const cd = (c as any).contract_data || {};
+      const property = (c.lead as any)?.property;
+      const address = property?.address || 'Propiedad sin dirección';
+
+      if (c.contract_type === 'BC' && cd.closing_date) {
+        const closingMs = new Date(cd.closing_date).getTime();
+        const daysLeft = Math.ceil((closingMs - now) / 86400000);
+        if (daysLeft >= 0 && daysLeft <= 7 && c.status !== 'completed') {
+          alerts.push({ contractId: c.id, address, label: 'Cierre BC', daysLeft });
+        }
+      }
+      if (c.contract_type === 'AB' && c.sent_at && cd.closing_days) {
+        const closingMs = new Date(c.sent_at).getTime() + Number(cd.closing_days) * 24 * 60 * 60 * 1000;
+        const daysLeft = Math.ceil((closingMs - now) / 86400000);
+        if (daysLeft >= 0 && daysLeft <= 7 && c.status !== 'completed' && c.status !== 'signed') {
+          alerts.push({ contractId: c.id, address, label: 'Cierre AB', daysLeft });
+        }
+      }
+    });
+
+    return alerts.sort((a, b) => a.daysLeft - b.daysLeft);
+  }, [allContracts]);
 
   // KPIs calculated on ALL contracts (not filtered) for true overview
   const kpis = useMemo(() => {
@@ -317,6 +347,35 @@ export default function Contracts() {
             </CardContent>
           </Card>
         </div>
+
+        {/* ── Critical Date Alerts ── */}
+        {criticalAlerts.length > 0 && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/8 p-3 space-y-1.5">
+            <p className="text-sm font-semibold text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              {criticalAlerts.length} contrato{criticalAlerts.length > 1 ? 's' : ''} con fecha crítica en los próximos 7 días
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {criticalAlerts.map(alert => (
+                <button
+                  key={alert.contractId}
+                  className="flex items-center gap-1.5 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs hover:bg-destructive/20 transition-colors cursor-pointer"
+                  onClick={() => {
+                    const contract = allContracts.find(c => c.id === alert.contractId);
+                    if (contract) { setSelectedContract(contract); setDetailOpen(true); }
+                  }}
+                >
+                  <Clock className="h-3 w-3 text-destructive" />
+                  <span className="font-medium">{alert.label}</span>
+                  <span className="text-muted-foreground truncate max-w-[120px]">{alert.address}</span>
+                  <Badge variant="destructive" className="text-[9px] px-1 py-0">
+                    {alert.daysLeft === 0 ? 'HOY' : `${alert.daysLeft}d`}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <Card variant="glass">

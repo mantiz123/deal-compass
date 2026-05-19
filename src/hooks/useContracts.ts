@@ -199,6 +199,34 @@ export function useUpdateContract() {
   });
 }
 
+export function useUpdateLeadStatusFromContract() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ leadId, contractType }: { leadId: string; contractType: ContractType }) => {
+      const newStatus = contractType === 'AB' ? 'bajo_contrato' : contractType === 'BC' ? 'cesion' : null;
+      if (!newStatus) throw new Error('Este tipo de contrato no actualiza el estado automáticamente');
+      const { data, error } = await supabase
+        .from('leads')
+        .update({ status: newStatus as any })
+        .eq('id', leadId)
+        .select('id, status')
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, { contractType }) => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      const label = contractType === 'AB' ? 'Bajo Contrato' : 'Cesión';
+      toast({ title: `✅ Lead actualizado a "${label}"` });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
 export function useContractsForLead(leadId: string | undefined) {
   return useQuery({
     queryKey: ['contracts', 'lead', leadId],

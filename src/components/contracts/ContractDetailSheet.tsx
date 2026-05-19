@@ -4,13 +4,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { useContractSignatures, type Contract } from '@/hooks/useContracts';
-import { Download, Eye, Send, FileText, Clock, MapPin, Loader2, ExternalLink, Maximize2, Building2 } from 'lucide-react';
+import { useContractSignatures, useUpdateLeadStatusFromContract, type Contract } from '@/hooks/useContracts';
+import { Download, Eye, Send, FileText, Clock, MapPin, Loader2, Maximize2, Building2, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { KloseSignDialog } from './KloseSignDialog';
+import { ContractPreviewCard } from './ContractPreviewCard';
 
 interface ContractDetailSheetProps {
   contract: Contract | null;
@@ -23,6 +24,7 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
   const [kloseSignOpen, setKloseSignOpen] = useState(false);
+  const updateLeadStatus = useUpdateLeadStatusFromContract();
 
   const handleDownloadPdf = async (url: string, filename: string) => {
     setDownloading(true);
@@ -167,6 +169,58 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
 
           <Separator />
 
+          {/* ── Contract Preview Card (risk semaphore + calculator) ── */}
+          {contract.contract_type !== 'AMENDMENT' && (
+            <>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1">
+                  <TrendingUp className="h-4 w-4" />
+                  Análisis del Contrato
+                </h3>
+                <ContractPreviewCard contract={contract} />
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* ── Deal Pipeline Timeline ── */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Pipeline Wholesale</h3>
+            {(() => {
+              const stages = [
+                { label: 'Oferta',      emoji: '💡', done: true,                                    date: contract.created_at },
+                { label: 'Contrato',    emoji: '📋', done: contract.status !== 'draft',              date: contract.sent_at || null },
+                { label: 'Firma',       emoji: '✍️', done: !!contract.signed_at,                    date: contract.signed_at },
+                { label: 'Asignación',  emoji: '📤', done: contract.contract_type === 'BC' && !!contract.signed_at, date: null },
+                { label: 'Cierre',      emoji: '🎉', done: (lead?.status === 'cerrado'),            date: null },
+              ];
+              return (
+                <div className="flex items-start gap-1 overflow-x-auto pb-1">
+                  {stages.map((stage, i) => (
+                    <div key={i} className="flex items-center min-w-0">
+                      <div className={`flex flex-col items-center gap-1 min-w-[60px] text-center ${stage.done ? 'opacity-100' : 'opacity-40'}`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 ${stage.done ? 'border-primary bg-primary/10' : 'border-border bg-muted'}`}>
+                          {stage.emoji}
+                        </div>
+                        <span className="text-[10px] font-medium leading-tight">{stage.label}</span>
+                        {stage.date && stage.done && (
+                          <span className="text-[9px] text-muted-foreground">
+                            {format(new Date(stage.date), 'd MMM', { locale: es })}
+                          </span>
+                        )}
+                      </div>
+                      {i < stages.length - 1 && (
+                        <div className={`h-0.5 w-4 mx-0.5 mb-4 flex-shrink-0 ${stages[i+1].done ? 'bg-primary' : 'bg-border'}`} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+
+          <Separator />
+
 
           {/* Audit Trail */}
           <div>
@@ -296,6 +350,25 @@ export function ContractDetailSheet({ contract, open, onOpenChange }: ContractDe
 
           {/* Actions */}
           <div className="flex flex-col gap-2">
+            {/* Auto-update lead status from contract */}
+            {contract.lead_id && (contract.contract_type === 'AB' || contract.contract_type === 'BC') && (
+              <Button
+                variant="outline"
+                className={contract.contract_type === 'AB'
+                  ? 'border-accent/50 text-accent hover:bg-accent/10'
+                  : 'border-purple-500/50 text-purple-400 hover:bg-purple-500/10'}
+                onClick={() => updateLeadStatus.mutate({ leadId: contract.lead_id, contractType: contract.contract_type })}
+                disabled={updateLeadStatus.isPending}
+              >
+                {updateLeadStatus.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                )}
+                {contract.contract_type === 'AB' ? '→ Marcar Lead como Bajo Contrato' : '→ Marcar Lead como Cesión'}
+              </Button>
+            )}
+
             {(() => {
               const kloseSigsCount = signatures.filter(s => s.user_agent?.includes('Klose Rep')).length;
               const kloseAlreadySigned = kloseSigsCount > 0;
