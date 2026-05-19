@@ -292,7 +292,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange, defaultTrainingMode }:
           return 'Training mode: DNC noted but not persisted.';
         }
         const currentLead = leadRef.current;
-        const propertyId = (currentLead as any)?.properties?.id ?? (currentLead as any)?.property_id;
+        const propertyId = (currentLead as any)?.property?.id ?? (currentLead as any)?.property_id;
         if (propertyId) {
           try {
             await supabase
@@ -335,34 +335,63 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange, defaultTrainingMode }:
     setIsStarting(true);
     setTrainingResult(null);
     setDeepAnalysis(null);
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
 
+    const withTimeout = <T>(promise: Promise<T>, ms: number, timeoutMsg: string): Promise<T> =>
+      Promise.race([promise, new Promise<never>((_, r) => setTimeout(() => r(new Error(timeoutMsg)), ms))]);
+
+    try {
+      // 1. Microphone permission
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch {
+        throw new Error('Micrófono denegado. Permite el acceso al micrófono en tu navegador y vuelve a intentar.');
+      }
+
+      // 2. Fetch ElevenLabs token from edge function (20s timeout)
       const invokeBody = trainingMode
         ? { mode: 'training', difficulty, ...(lead ? { practice_lead_id: lead.id } : {}) }
         : { mode: 'live', lead_id: lead!.id, personality };
 
-      const { data, error } = await supabase.functions.invoke('elevenlabs-conversation-token', {
-        body: invokeBody,
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke('elevenlabs-conversation-token', { body: invokeBody }),
+        20000,
+        'La función de voz tardó demasiado (>20s). Verifica que esté desplegada en Supabase.'
+      );
 
-      if (error || !data?.token) {
-        throw new Error(error?.message || 'No token received');
+      if (error) {
+        const errMsg = String(error?.message || error);
+        if (errMsg.includes('404') || errMsg.toLowerCase().includes('not found')) {
+          throw new Error('Función no desplegada. Ejecuta: supabase functions deploy elevenlabs-conversation-token');
+        }
+        if (errMsg.includes('401') || errMsg.toLowerCase().includes('auth')) {
+          throw new Error('Error de autenticación al llamar la función. Cierra sesión y vuelve a entrar.');
+        }
+        throw new Error(errMsg);
+      }
+
+      if (!data?.token) {
+        const serverErr = data?.error || '';
+        if (serverErr.includes('ELEVENLABS_API_KEY') || serverErr.includes('not configured')) {
+          throw new Error('ElevenLabs API Key no configurada en Supabase. Contacta al administrador.');
+        }
+        throw new Error(serverErr || 'No se recibió token de ElevenLabs. Revisa los logs de la función.');
       }
 
       if (!trainingMode) {
         setNegotiationCtx(data.negotiation);
       }
 
-      const baseConfig: any = {
-        conversationToken: data.token,
-      };
+      const baseConfig: any = { conversationToken: data.token };
       if (data.dynamic_variables) baseConfig.dynamicVariables = data.dynamic_variables;
       if (data.overrides) baseConfig.overrides = data.overrides;
 
-      // Try WebRTC first, fall back to WebSocket on connection errors (e.g. 1006)
+      // 3. Connect — try WebRTC (15s timeout) then fall back to WebSocket (20s timeout)
       try {
-        await conversation.startSession({ ...baseConfig, connectionType: 'webrtc' });
+        await withTimeout(
+          conversation.startSession({ ...baseConfig, connectionType: 'webrtc' }),
+          15000,
+          'Tiempo de espera WebRTC agotado (15s). Cambiando a WebSocket...'
+        );
       } catch (webrtcErr: any) {
         const msg = String(webrtcErr?.message || webrtcErr || '');
         const shouldFallback =
@@ -370,20 +399,39 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange, defaultTrainingMode }:
           msg.toLowerCase().includes('webrtc') ||
           msg.toLowerCase().includes('livekit') ||
           msg.toLowerCase().includes('transport') ||
-          msg.toLowerCase().includes('connect');
+          msg.toLowerCase().includes('connect') ||
+          msg.toLowerCase().includes('tiempo de espera webrtc');
 
         if (!shouldFallback) throw webrtcErr;
 
         console.warn('[VoiceAgent] WebRTC failed, retrying with WebSocket:', msg);
-        toast({
-          title: 'Reintentando vía WebSocket…',
-          description: 'WebRTC no disponible, cambiando de transporte',
-        });
-        await conversation.startSession({ ...baseConfig, connectionType: 'websocket' });
+        toast({ title: 'Reintentando vía WebSocket…', description: 'WebRTC no disponible, cambiando de transporte' });
+        await withTimeout(
+          conversation.startSession({ ...baseConfig, connectionType: 'websocket' }),
+          20000,
+          'Tiempo de espera WebSocket agotado (20s). Verifica tu conexión a internet.'
+        );
       }
     } catch (err: any) {
-      console.error('Failed to start:', err);
-      toast({ variant: 'destructive', title: 'No se pudo iniciar', description: err.message });
+      console.error('[VoiceAgent] startCall failed:', err);
+      const msg = err?.message || String(err) || 'Error desconocido';
+      let title = 'No se pudo iniciar la llamada';
+
+      if (msg.toLowerCase().includes('micrófono')) {
+        title = 'Micrófono denegado';
+      } else if (msg.toLowerCase().includes('no desplegada') || msg.toLowerCase().includes('deploy')) {
+        title = 'Función no desplegada';
+      } else if (msg.toLowerCase().includes('api key') || msg.toLowerCase().includes('elevenlabs')) {
+        title = 'Servicio no configurado';
+      } else if (msg.toLowerCase().includes('autenticación')) {
+        title = 'Error de autenticación';
+      } else if (msg.toLowerCase().includes('webrtc') || msg.toLowerCase().includes('websocket') || msg.toLowerCase().includes('tiempo de espera')) {
+        title = 'Error de conexión';
+      } else if (msg.toLowerCase().includes('tardó demasiado') || msg.toLowerCase().includes('>20s')) {
+        title = 'Tiempo agotado';
+      }
+
+      toast({ variant: 'destructive', title, description: msg });
     } finally {
       setIsStarting(false);
     }
@@ -414,7 +462,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange, defaultTrainingMode }:
   };
 
   const isConnected = conversation.status === 'connected';
-  const property = (lead as any)?.properties;
+  const property = (lead as any)?.property;
   const canStartCall = trainingMode || !!lead;
 
   return (
