@@ -359,3 +359,88 @@ export function useCampaignStats() {
     },
   });
 }
+
+export function useLeadEnrollments(leadId: string) {
+  return useQuery({
+    queryKey: ['lead-enrollments', leadId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('campaign_enrollments')
+        .select('*, campaign:drip_campaigns(id, name, trigger_status, is_active)')
+        .eq('lead_id', leadId)
+        .order('enrolled_at', { ascending: false });
+      if (error) throw error;
+      return data as (CampaignEnrollment & { campaign: Pick<DripCampaign, 'id' | 'name' | 'trigger_status' | 'is_active'> })[];
+    },
+    enabled: !!leadId,
+  });
+}
+
+export function useEnrollLeadInCampaign() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ leadId, campaignId }: { leadId: string; campaignId: string }) => {
+      // Check for existing active enrollment
+      const { data: existing } = await supabase
+        .from('campaign_enrollments')
+        .select('id, status')
+        .eq('lead_id', leadId)
+        .eq('campaign_id', campaignId)
+        .single();
+
+      if (existing) {
+        if (existing.status === 'active') throw new Error('Este lead ya está enrolado en esta campaña.');
+        // Reactivate if paused/completed/unsubscribed
+        const { error } = await supabase
+          .from('campaign_enrollments')
+          .update({ status: 'active', completed_at: null, next_send_at: new Date().toISOString() })
+          .eq('id', existing.id);
+        if (error) throw error;
+        return;
+      }
+
+      const { error } = await supabase.from('campaign_enrollments').insert({
+        lead_id: leadId,
+        campaign_id: campaignId,
+        current_sequence: 1,
+        status: 'active',
+        next_send_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['lead-enrollments', variables.leadId] });
+      queryClient.invalidateQueries({ queryKey: ['campaign-enrollments', variables.campaignId] });
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+      toast({ title: 'Lead enrolado', description: 'El lead comenzará a recibir los mensajes de la campaña.' });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Error', description: err.message || 'No se pudo enrolar el lead.', variant: 'destructive' });
+    },
+  });
+}
+
+export function useUnenrollLeadFromCampaign() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ enrollmentId, leadId }: { enrollmentId: string; leadId: string }) => {
+      const { error } = await supabase
+        .from('campaign_enrollments')
+        .update({ status: 'paused' })
+        .eq('id', enrollmentId);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['lead-enrollments', variables.leadId] });
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+      toast({ title: 'Enrollment pausado', description: 'El lead no recibirá más mensajes de esta campaña.' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'No se pudo pausar el enrollment.', variant: 'destructive' });
+    },
+  });
+}

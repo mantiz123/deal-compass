@@ -384,3 +384,33 @@ export function useBatchRecalculatePIW() {
     },
   });
 }
+
+export function useBulkUpdateLeadStatus() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: LeadStatus }) => {
+      const { error } = await supabase
+        .from('leads')
+        .update({ status })
+        .in('id', ids);
+      if (error) throw error;
+      return ids.length;
+    },
+    onSuccess: (count, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      const statusLabels: Record<string, string> = {
+        captacion: 'Captación', contacto: 'Contacto', bajo_contrato: 'Bajo Contrato',
+        cesion: 'Cesión', cerrado: 'Cerrado',
+      };
+      toast({
+        title: `${count} leads movidos`,
+        description: `Todos movidos a "${statusLabels[status] ?? status}"`,
+      });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'No se pudo mover los leads.', variant: 'destructive' });
+    },
+  });
+}

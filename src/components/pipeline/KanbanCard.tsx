@@ -5,13 +5,15 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { KScoreGauge } from '@/components/dashboard/KScoreGauge';
 import { LeadDetailSheet } from '@/components/leads/LeadDetailSheet';
-import { Phone, MoreHorizontal, DollarSign, GripVertical, MapPin, Eye } from 'lucide-react';
+import { Phone, MoreHorizontal, DollarSign, GripVertical, MapPin, Eye, CheckSquare, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Lead } from '@/hooks/useLeads';
 
 interface KanbanCardProps {
   lead: Lead;
   isDragOverlay?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
 // Presentational component for the card content
@@ -126,7 +128,7 @@ export function KanbanCardOverlay({ lead }: { lead: Lead }) {
 }
 
 // Main sortable version
-export function KanbanCard({ lead, isDragOverlay = false }: KanbanCardProps) {
+export function KanbanCard({ lead, isDragOverlay = false, isSelected = false, onToggleSelect }: KanbanCardProps) {
   const [showDetail, setShowDetail] = useState(false);
   
   const {
@@ -158,16 +160,30 @@ export function KanbanCard({ lead, isDragOverlay = false }: KanbanCardProps) {
           variant="interactive"
           className={cn(
             'p-4 transition-all duration-200',
-            isDragging && 'opacity-50 shadow-lg scale-105 rotate-1 z-50'
+            isDragging && 'opacity-50 shadow-lg scale-105 rotate-1 z-50',
+            isSelected && 'ring-2 ring-primary/60 bg-primary/5'
           )}
         >
           <div className="space-y-3">
             {/* Header with grip handle */}
             <div className="flex items-start gap-2">
+              {onToggleSelect && (
+                <button
+                  className="p-1 -ml-2 rounded hover:bg-secondary/50 shrink-0"
+                  onClick={(e) => { e.stopPropagation(); onToggleSelect(lead.id); }}
+                >
+                  {isSelected
+                    ? <CheckSquare className="h-4 w-4 text-primary" />
+                    : <Square className="h-4 w-4 text-muted-foreground" />}
+                </button>
+              )}
               <div
                 {...attributes}
                 {...listeners}
-                className="cursor-grab active:cursor-grabbing p-1 -ml-2 rounded hover:bg-secondary/50 touch-none"
+                className={cn(
+                  'cursor-grab active:cursor-grabbing p-1 rounded hover:bg-secondary/50 touch-none',
+                  !onToggleSelect && '-ml-2'
+                )}
               >
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
               </div>

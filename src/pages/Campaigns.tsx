@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NewCampaignDialog } from '@/components/campaigns/NewCampaignDialog';
+import { CampaignDetailSheet } from '@/components/campaigns/CampaignDetailSheet';
 import {
   useCampaigns,
   useCampaignStats,
@@ -49,6 +50,8 @@ const Campaigns = () => {
   const toggleCampaign = useToggleCampaign();
   const processQueue = useProcessSMSQueue();
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<DripCampaign | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const handleToggle = (campaign: DripCampaign) => {
     toggleCampaign.mutate({ id: campaign.id, is_active: !campaign.is_active });
@@ -284,7 +287,13 @@ const Campaigns = () => {
                         checked={campaign.is_active}
                         onCheckedChange={() => handleToggle(campaign)}
                       />
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => { setSelectedCampaign(campaign); setDetailOpen(true); }}
+                        title="Ver detalles"
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </div>
@@ -324,7 +333,11 @@ const Campaigns = () => {
                         {campaign.enrollments_count || 0} leads enrolados
                       </span>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setSelectedCampaign(campaign); setDetailOpen(true); }}
+                    >
                       Ver Detalles
                     </Button>
                   </div>
@@ -337,6 +350,14 @@ const Campaigns = () => {
 
       {/* New Campaign Dialog */}
       <NewCampaignDialog open={showNewDialog} onOpenChange={setShowNewDialog} />
+
+      {/* Campaign Detail Sheet */}
+      <CampaignDetailSheet
+        campaign={selectedCampaign}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onDeleted={() => setSelectedCampaign(null)}
+      />
     </Layout>
   );
 };

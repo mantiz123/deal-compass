@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useContracts, type Contract } from '@/hooks/useContracts';
 import { ContractDetailSheet } from '@/components/contracts/ContractDetailSheet';
 import { ContractDemoModal } from '@/components/contracts/ContractDemoModal';
-import { Search, Download, Eye, CheckCircle2, FileText, AlertCircle, DollarSign, Clock, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Download, Eye, CheckCircle2, FileText, AlertCircle, DollarSign, Clock, AlertTriangle, Plus } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -36,6 +37,7 @@ const typeConfig: Record<string, { label: string; color: string }> = {
 };
 
 export default function Contracts() {
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
@@ -53,13 +55,20 @@ export default function Contracts() {
   const { data: kloseSignatures = {} } = useQuery({
     queryKey: ['klose-signatures-map'],
     queryFn: async () => {
+      // Detect both old format ("Klose Rep | Page X") and new JSON format ({"role":"klose",...})
       const { data, error } = await supabase
         .from('contract_signatures')
-        .select('contract_id, signer_name, signed_at')
-        .like('user_agent', 'Klose Rep%');
+        .select('contract_id, signer_name, signed_at, user_agent')
+        .or('user_agent.like.Klose Rep%,user_agent.like.%"role":"klose"%');
       if (error) throw error;
       const map: Record<string, { name: string; signedAt: string }> = {};
-      data?.forEach((s: any) => { map[s.contract_id] = { name: s.signer_name, signedAt: s.signed_at }; });
+      // Use first Klose signature per contract (oldest), not last
+      (data ?? []).sort((a: any, b: any) => a.signed_at < b.signed_at ? -1 : 1)
+        .forEach((s: any) => {
+          if (!map[s.contract_id]) {
+            map[s.contract_id] = { name: s.signer_name, signedAt: s.signed_at };
+          }
+        });
       return map;
     },
   });
@@ -97,11 +106,15 @@ export default function Contracts() {
           alerts.push({ contractId: c.id, address, label: c.contract_type === 'DC' ? 'Cierre DC' : 'Cierre BC', daysLeft });
         }
       }
-      if (c.contract_type === 'AB' && c.sent_at && cd.closing_days) {
-        const closingMs = new Date(c.sent_at).getTime() + Number(cd.closing_days) * 24 * 60 * 60 * 1000;
-        const daysLeft = Math.ceil((closingMs - now) / 86400000);
-        if (daysLeft >= 0 && daysLeft <= 7 && c.status !== 'completed' && c.status !== 'signed') {
-          alerts.push({ contractId: c.id, address, label: 'Cierre AB', daysLeft });
+      if (c.contract_type === 'AB' && cd.closing_days) {
+        // Use signed_at as the start of closing period; fall back to sent_at if not yet signed
+        const startDate = (c as any).signed_at || c.sent_at;
+        if (startDate) {
+          const closingMs = new Date(startDate).getTime() + Number(cd.closing_days) * 86400000;
+          const daysLeft = Math.ceil((closingMs - now) / 86400000);
+          if (daysLeft >= 0 && daysLeft <= 7 && c.status !== 'completed' && c.status !== 'signed') {
+            alerts.push({ contractId: c.id, address, label: 'Cierre AB', daysLeft });
+          }
         }
       }
     });
@@ -134,9 +147,22 @@ export default function Contracts() {
     }
   };
 
+  const getDownloadFilename = (contractId: string) => {
+    const c = allContracts.find(x => x.id === contractId);
+    if (!c) return 'Contrato.pdf';
+    const property = (c.lead as any)?.property;
+    const address = (property?.address || 'Propiedad')
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .slice(0, 40);
+    const date = format(new Date(c.created_at), 'yyyyMMdd');
+    return `${c.contract_type}_${address}_${date}.pdf`;
+  };
+
   const handleDownload = async (url: string | null, contractId: string) => {
     if (!url) return;
     setDownloadingId(contractId);
+    const filename = getDownloadFilename(contractId);
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error('fetch failed');
@@ -144,7 +170,7 @@ export default function Contracts() {
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = 'Contrato.pdf';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -158,7 +184,7 @@ export default function Contracts() {
           const blobUrl = URL.createObjectURL(data);
           const a = document.createElement('a');
           a.href = blobUrl;
-          a.download = 'Contrato.pdf';
+          a.download = filename;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -268,7 +294,14 @@ export default function Contracts() {
                               </span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>{contract.contract_type === 'BC' ? 'Buyer' : 'Seller'} firmó el {format(new Date(contract.signed_at), "dd MMM yyyy 'a las' HH:mm", { locale: es })}</p>
+                              <p>
+                              {contract.contract_type === 'BC'
+                                ? 'Buyer/Assignee'
+                                : contract.contract_type === 'DC'
+                                ? 'End Buyer'
+                                : 'Seller'}{' '}
+                              firmó el {format(new Date(contract.signed_at!), "dd MMM yyyy 'a las' HH:mm", { locale: es })}
+                            </p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -301,14 +334,20 @@ export default function Contracts() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Contratos</h1>
             <p className="text-muted-foreground">Gestión de contratos y firmas electrónicas</p>
           </div>
-          <Button variant="outline" onClick={() => setDemoOpen(true)} className="gap-2">
-            🔍 Ver Demo
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setDemoOpen(true)} className="gap-2">
+              🔍 Ver Demo
+            </Button>
+            <Button onClick={() => navigate('/contracts/new')} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Crear Contrato
+            </Button>
+          </div>
         </div>
 
         {/* KPIs */}

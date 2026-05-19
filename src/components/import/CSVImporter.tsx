@@ -165,6 +165,47 @@ export const CSVImporter = () => {
             </CardContent>
           </Card>
 
+          {/* 5-row data preview */}
+          {rows.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Vista previa — primeros {Math.min(5, rows.length)} registros</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/40">
+                        {mappings
+                          .filter(m => m.propertyField)
+                          .slice(0, 8)
+                          .map(m => (
+                            <th key={m.csvColumn} className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">
+                              {m.propertyField}
+                            </th>
+                          ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {rows.slice(0, 5).map((row, ri) => (
+                        <tr key={ri} className="hover:bg-muted/20">
+                          {mappings
+                            .filter(m => m.propertyField)
+                            .slice(0, 8)
+                            .map(m => (
+                              <td key={m.csvColumn} className="px-3 py-2 text-muted-foreground truncate max-w-[140px]">
+                                {row[m.csvColumn] ?? '—'}
+                              </td>
+                            ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Opciones de Importación</CardTitle>

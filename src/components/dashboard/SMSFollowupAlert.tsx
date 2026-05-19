@@ -27,6 +27,15 @@ function useSMSFollowupLeads() {
     queryKey: ['sms-followup-alert', orgId],
     enabled: !!orgId,
     queryFn: async (): Promise<LeadNeedingSMS[]> => {
+      // If Twilio has never sent a single SMS, the widget would show ALL contacto leads
+      // as needing SMS — which is noise, not signal. Hide the alert until SMS is active.
+      const { count: totalSMSSent } = await supabase
+        .from('sms_outreach_log')
+        .select('id', { count: 'exact', head: true })
+        .eq('direction', 'outbound');
+
+      if (!totalSMSSent) return [];
+
       // 1. All active leads in 'contacto' for this org
       const { data: contactoLeads, error } = await supabase
         .from('leads')
@@ -56,7 +65,7 @@ function useSMSFollowupLeads() {
       // 3. Return leads that have NOT received an SMS recently
       return (contactoLeads as LeadNeedingSMS[]).filter((l) => !recentIds.has(l.id));
     },
-    refetchInterval: 5 * 60 * 1000, // refresh every 5 min
+    refetchInterval: 5 * 60 * 1000,
   });
 }
 

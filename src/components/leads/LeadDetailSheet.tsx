@@ -39,6 +39,7 @@ import { OutreachEmailGenerator } from './OutreachEmailGenerator';
 import { ConversationHistory } from './ConversationHistory';
 import { VoiceAgentSheet } from './VoiceAgentSheet';
 import { RequestKCFYDialog } from './RequestKCFYDialog';
+import { EnrollCampaignDialog } from './EnrollCampaignDialog';
 import { EditPropertyDialog } from '@/components/properties/EditPropertyDialog';
 import { useKCFYRequestForLead } from '@/hooks/useKCFYRequests';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -77,6 +78,7 @@ import {
   Handshake,
   Pencil,
   GraduationCap,
+  Zap,
 } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -115,6 +117,7 @@ export function LeadDetailSheet({
   const [showVoicePractice, setShowVoicePractice] = useState(false);
   const [showEditProperty, setShowEditProperty] = useState(false);
   const [showKCFY, setShowKCFY] = useState(false);
+  const [showEnrollCampaign, setShowEnrollCampaign] = useState(false);
   const { data: kcfyRequest } = useKCFYRequestForLead(lead?.id);
   const { isSuperAdmin } = useOrganization();
   const deleteLead = usePermanentlyDeleteLead();
@@ -299,7 +302,7 @@ export function LeadDetailSheet({
                   <Download className="mr-2 h-4 w-4" />
                   Deal Package
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => { onOpenChange(false); navigate(`/contracts/new?lead_id=${lead.id}`); }}
                   size="sm"
@@ -307,6 +310,15 @@ export function LeadDetailSheet({
                 >
                   <FileText className="mr-2 h-4 w-4" />
                   📄 Contrato
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowEnrollCampaign(true)}
+                  size="sm"
+                  className="bg-success/10 border-success/30 hover:bg-success/20"
+                >
+                  <Zap className="mr-2 h-4 w-4" />
+                  Campaña
                 </Button>
                 {!isSuperAdmin && (
                   <Button
@@ -1085,6 +1097,14 @@ export function LeadDetailSheet({
         property={property as any}
         open={showEditProperty}
         onOpenChange={setShowEditProperty}
+      />
+
+      {/* Campaign Enrollment Dialog */}
+      <EnrollCampaignDialog
+        leadId={lead.id}
+        leadStatus={lead.status}
+        open={showEnrollCampaign}
+        onOpenChange={setShowEnrollCampaign}
       />
 
 

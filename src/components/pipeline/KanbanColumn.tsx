@@ -14,17 +14,17 @@ interface KanbanColumnProps {
   color: string;
   leads: Lead[];
   onAddDeal?: () => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
-export function KanbanColumn({ id, name, color, leads, onAddDeal }: KanbanColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id,
-  });
+export function KanbanColumn({ id, name, color, leads, onAddDeal, selectedIds, onToggleSelect }: KanbanColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
     <div className="min-w-[320px] flex-shrink-0">
-      <Card 
-        variant="glass" 
+      <Card
+        variant="glass"
         className={cn(
           'border-t-4 transition-all duration-200',
           color,
@@ -33,28 +33,32 @@ export function KanbanColumn({ id, name, color, leads, onAddDeal }: KanbanColumn
       >
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold">
-              {name}
-            </CardTitle>
-            <Badge variant="outline">{leads.length}</Badge>
+            <CardTitle className="text-base font-semibold">{name}</CardTitle>
+            <div className="flex items-center gap-1.5">
+              {selectedIds && leads.filter(l => selectedIds.has(l.id)).length > 0 && (
+                <Badge variant="secondary" className="text-[10px]">
+                  {leads.filter(l => selectedIds.has(l.id)).length} sel.
+                </Badge>
+              )}
+              <Badge variant="outline">{leads.length}</Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div
-            ref={setNodeRef}
-            className="space-y-3 min-h-[200px]"
-          >
-            <SortableContext
-              items={leads.map(l => l.id)}
-              strategy={verticalListSortingStrategy}
-            >
+          <div ref={setNodeRef} className="space-y-3 min-h-[200px]">
+            <SortableContext items={leads.map(l => l.id)} strategy={verticalListSortingStrategy}>
               {leads.map((lead) => (
-                <KanbanCard key={lead.id} lead={lead} />
+                <KanbanCard
+                  key={lead.id}
+                  lead={lead}
+                  isSelected={selectedIds?.has(lead.id) ?? false}
+                  onToggleSelect={onToggleSelect}
+                />
               ))}
             </SortableContext>
           </div>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="w-full mt-3 border border-dashed border-border hover:border-primary/50"
             onClick={onAddDeal}
           >

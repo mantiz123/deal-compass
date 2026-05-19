@@ -1,6 +1,4 @@
-import { useState, useMemo } from 'react';
-import { usePagination } from '@/hooks/usePagination';
-import { DataPagination } from '@/components/ui/data-pagination';
+import { useState, useCallback } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,28 +8,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useDeals, useDealStats, Deal } from '@/hooks/useDeals';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useDealsPage, useDealStats, useCreateDealPackage, type Deal } from '@/hooks/useDeals';
 import { useBuyers } from '@/hooks/useBuyers';
+import { useLeads } from '@/hooks/useLeads';
 import { DealDetailSheet } from '@/components/deals/DealDetailSheet';
 import {
-  Search,
-  Filter,
-  FileText,
-  Send,
-  Eye,
-  MousePointerClick,
-  CheckCircle2,
-  XCircle,
-  DollarSign,
-  TrendingUp,
-  Clock,
-  CalendarIcon,
-  MapPin,
-  X,
-  AlertCircle,
+  Search, FileText, Send, Eye, MousePointerClick, CheckCircle2, XCircle,
+  DollarSign, TrendingUp, Clock, CalendarIcon, MapPin, X, AlertCircle,
+  Plus, Loader2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, formatDistanceToNow, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const tierColors: Record<string, string> = {
@@ -42,60 +30,139 @@ const tierColors: Record<string, string> = {
 };
 
 type StatusFilter = 'all' | 'sent' | 'opened' | 'clicked' | 'responded';
+const PAGE_SIZE = 25;
+
+const getStatus = (deal: Deal) => {
+  if (deal.response === 'accepted') return { label: 'Aceptado', color: 'bg-success text-success-foreground', icon: CheckCircle2, key: 'responded' as const };
+  if (deal.response === 'rejected') return { label: 'Rechazado', color: 'bg-destructive text-destructive-foreground', icon: XCircle, key: 'responded' as const };
+  if (deal.clicked_at) return { label: 'Clickeado', color: 'bg-primary text-primary-foreground', icon: MousePointerClick, key: 'clicked' as const };
+  if (deal.opened_at) return { label: 'Abierto', color: 'bg-info text-info-foreground', icon: Eye, key: 'opened' as const };
+  return { label: 'Enviado', color: 'bg-muted text-muted-foreground', icon: Send, key: 'sent' as const };
+};
+
+function SendDealDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const [leadSearch, setLeadSearch] = useState('');
+  const [selectedLeadId, setSelectedLeadId] = useState('');
+  const [selectedBuyerId, setSelectedBuyerId] = useState('');
+
+  const { data: leadsResult } = useLeads({ filters: { search: leadSearch }, from: 0, to: 14 });
+  const { data: buyersResult } = useBuyers();
+  const createDeal = useCreateDealPackage();
+
+  const leads = leadsResult?.data ?? [];
+  const buyers = buyersResult?.data ?? [];
+
+  const handleSend = async () => {
+    if (!selectedLeadId || !selectedBuyerId) return;
+    await createDeal.mutateAsync({ leadId: selectedLeadId, buyerId: selectedBuyerId });
+    setSelectedLeadId('');
+    setSelectedBuyerId('');
+    setLeadSearch('');
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Send className="h-5 w-5 text-primary" />
+            Enviar Deal Package
+          </DialogTitle>
+          <DialogDescription>
+            Selecciona un lead y un comprador para crear el deal package.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          {/* Lead selector */}
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Lead / Propiedad</label>
+            <Input
+              placeholder="Buscar por dirección..."
+              value={leadSearch}
+              onChange={e => setLeadSearch(e.target.value)}
+              className="mb-2"
+            />
+            <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un lead" />
+              </SelectTrigger>
+              <SelectContent>
+                {leads.map(l => (
+                  <SelectItem key={l.id} value={l.id}>
+                    {l.property?.address ?? l.id} — {l.property?.city}
+                  </SelectItem>
+                ))}
+                {leads.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">Sin resultados</div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Buyer selector */}
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Comprador</label>
+            <Select value={selectedBuyerId} onValueChange={setSelectedBuyerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un comprador" />
+              </SelectTrigger>
+              <SelectContent>
+                {buyers.map(b => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.company_name || b.contact_name}
+                    {b.tier && <span className="text-muted-foreground ml-1">({b.tier})</span>}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button
+            onClick={handleSend}
+            disabled={!selectedLeadId || !selectedBuyerId || createDeal.isPending}
+          >
+            {createDeal.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+            Enviar Deal
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const Deals = () => {
-  const { data: deals, isLoading } = useDeals();
-  const { data: stats, isLoading: statsLoading } = useDealStats();
-  const { data: buyersResult } = useBuyers();
-  const buyers = buyersResult?.data;
-  
+  const [page, setPage] = useState(0);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [showSendDeal, setShowSendDeal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [buyerFilter, setBuyerFilter] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
-  const getStatus = (deal: Deal) => {
-    if (deal.response === 'accepted') return { label: 'Aceptado', color: 'bg-success text-success-foreground', icon: CheckCircle2, key: 'responded' as const };
-    if (deal.response === 'rejected') return { label: 'Rechazado', color: 'bg-destructive text-destructive-foreground', icon: XCircle, key: 'responded' as const };
-    if (deal.clicked_at) return { label: 'Clickeado', color: 'bg-primary text-primary-foreground', icon: MousePointerClick, key: 'clicked' as const };
-    if (deal.opened_at) return { label: 'Abierto', color: 'bg-info text-info-foreground', icon: Eye, key: 'opened' as const };
-    return { label: 'Enviado', color: 'bg-muted text-muted-foreground', icon: Send, key: 'sent' as const };
-  };
+  const { data: dealsResult, isLoading } = useDealsPage({
+    page,
+    pageSize: PAGE_SIZE,
+    search: searchTerm,
+    statusFilter,
+    buyerFilter,
+    dateFrom,
+    dateTo,
+  });
+  const { data: stats, isLoading: statsLoading } = useDealStats();
+  const { data: buyersResult } = useBuyers();
+  const buyers = buyersResult?.data;
 
-  const filteredDeals = useMemo(() => {
-    if (!deals) return [];
-    
-    return deals.filter((deal) => {
-      // Search filter
-      if (searchTerm) {
-        const search = searchTerm.toLowerCase();
-        const matchesAddress = deal.lead.property?.address.toLowerCase().includes(search);
-        const matchesBuyer = deal.buyer.contact_name.toLowerCase().includes(search) ||
-          deal.buyer.company_name?.toLowerCase().includes(search);
-        if (!matchesAddress && !matchesBuyer) return false;
-      }
-      
-      // Status filter
-      if (statusFilter !== 'all') {
-        const status = getStatus(deal);
-        if (status.key !== statusFilter) return false;
-      }
-      
-      // Buyer filter
-      if (buyerFilter !== 'all' && deal.buyer_id !== buyerFilter) return false;
-      
-      // Date filters
-      const sentDate = new Date(deal.sent_at);
-      if (dateFrom && isBefore(sentDate, startOfDay(dateFrom))) return false;
-      if (dateTo && isAfter(sentDate, endOfDay(dateTo))) return false;
-      
-      return true;
-    });
-  }, [deals, searchTerm, statusFilter, buyerFilter, dateFrom, dateTo]);
+  const deals = dealsResult?.data ?? [];
+  const totalCount = dealsResult?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  const dealsPagination = usePagination(filteredDeals, { pageSize: 25 });
+  const resetPage = useCallback(() => setPage(0), []);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -103,6 +170,7 @@ const Deals = () => {
     setBuyerFilter('all');
     setDateFrom(undefined);
     setDateTo(undefined);
+    resetPage();
   };
 
   const hasActiveFilters = searchTerm || statusFilter !== 'all' || buyerFilter !== 'all' || dateFrom || dateTo;
@@ -110,106 +178,42 @@ const Deals = () => {
   return (
     <Layout>
       {/* Header */}
-      <div className="mb-8 animate-slide-up">
-        <h1 className="text-2xl sm:text-3xl font-bold">Deal Packages</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">
-          Gestiona todos los deal packages enviados a compradores
-        </p>
+      <div className="mb-8 animate-slide-up flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Deal Packages</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Gestiona todos los deal packages enviados a compradores
+          </p>
+        </div>
+        <Button onClick={() => setShowSendDeal(true)} className="gap-2 shrink-0">
+          <Plus className="h-4 w-4" />
+          Enviar Deal Package
+        </Button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <Card variant="glass">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Total Enviados</p>
-                {statsLoading ? (
-                  <Skeleton className="h-8 w-16 mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold">{stats?.total || 0}</p>
-                )}
+        {[
+          { label: 'Total Enviados', value: stats?.total, icon: Send, color: 'text-primary', bg: 'bg-primary/10' },
+          { label: 'Tasa Apertura', value: `${stats?.openRate ?? 0}%`, icon: Eye, color: 'text-info', bg: 'bg-info/10' },
+          { label: 'Aceptados', value: stats?.accepted, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
+          { label: 'Pendientes', value: stats?.pending, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
+          { label: 'Revenue Potencial', value: `$${(stats?.potentialRevenue ?? 0).toLocaleString()}`, icon: DollarSign, color: 'text-accent', bg: 'bg-accent/10' },
+        ].map(({ label, value, icon: Icon, color, bg }) => (
+          <Card key={label} variant="glass">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  {statsLoading ? <Skeleton className="h-8 w-16 mt-1" /> : <p className={`text-2xl font-bold ${color}`}>{value ?? 0}</p>}
+                </div>
+                <div className={`h-10 w-10 rounded-full ${bg} flex items-center justify-center`}>
+                  <Icon className={`h-5 w-5 ${color}`} />
+                </div>
               </div>
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Send className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card variant="glass">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Tasa Apertura</p>
-                {statsLoading ? (
-                  <Skeleton className="h-8 w-16 mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold text-info">{stats?.openRate || 0}%</p>
-                )}
-              </div>
-              <div className="h-10 w-10 rounded-full bg-info/10 flex items-center justify-center">
-                <Eye className="h-5 w-5 text-info" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card variant="glass">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Aceptados</p>
-                {statsLoading ? (
-                  <Skeleton className="h-8 w-16 mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold text-success">{stats?.accepted || 0}</p>
-                )}
-              </div>
-              <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-success" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card variant="glass">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Pendientes</p>
-                {statsLoading ? (
-                  <Skeleton className="h-8 w-16 mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold text-warning">{stats?.pending || 0}</p>
-                )}
-              </div>
-              <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-warning" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card variant="glass">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Revenue Potencial</p>
-                {statsLoading ? (
-                  <Skeleton className="h-8 w-16 mt-1" />
-                ) : (
-                  <p className="text-2xl font-bold text-accent">
-                    ${(stats?.potentialRevenue || 0).toLocaleString()}
-                  </p>
-                )}
-              </div>
-              <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-accent" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Filters */}
@@ -222,11 +226,11 @@ const Deals = () => {
                 placeholder="Buscar por propiedad o comprador..."
                 className="pl-10 bg-secondary/50"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => { setSearchTerm(e.target.value); resetPage(); }}
               />
             </div>
-            
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as StatusFilter); resetPage(); }}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
@@ -238,8 +242,8 @@ const Deals = () => {
                 <SelectItem value="responded">Respondido</SelectItem>
               </SelectContent>
             </Select>
-            
-            <Select value={buyerFilter} onValueChange={setBuyerFilter}>
+
+            <Select value={buyerFilter} onValueChange={(v) => { setBuyerFilter(v); resetPage(); }}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Comprador" />
               </SelectTrigger>
@@ -252,7 +256,7 @@ const Deals = () => {
                 ))}
               </SelectContent>
             </Select>
-            
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className={cn('w-[130px] justify-start', !dateFrom && 'text-muted-foreground')}>
@@ -261,10 +265,10 @@ const Deals = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className="pointer-events-auto" />
+                <Calendar mode="single" selected={dateFrom} onSelect={(d) => { setDateFrom(d); resetPage(); }} initialFocus className="pointer-events-auto" />
               </PopoverContent>
             </Popover>
-            
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className={cn('w-[130px] justify-start', !dateTo && 'text-muted-foreground')}>
@@ -273,10 +277,10 @@ const Deals = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className="pointer-events-auto" />
+                <Calendar mode="single" selected={dateTo} onSelect={(d) => { setDateTo(d); resetPage(); }} initialFocus className="pointer-events-auto" />
               </PopoverContent>
             </Popover>
-            
+
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <X className="h-4 w-4 mr-1" />
@@ -290,18 +294,14 @@ const Deals = () => {
       {/* Loading State */}
       {isLoading && (
         <Card variant="glass">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-20 w-full" />
-              ))}
-            </div>
+          <CardContent className="p-6 space-y-4">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
           </CardContent>
         </Card>
       )}
 
       {/* Empty State */}
-      {!isLoading && filteredDeals.length === 0 && (
+      {!isLoading && deals.length === 0 && (
         <Card variant="glass">
           <CardContent className="p-12 text-center">
             <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
@@ -309,29 +309,26 @@ const Deals = () => {
               {hasActiveFilters ? 'No hay resultados' : 'No hay deals todavía'}
             </h3>
             <p className="text-muted-foreground mb-6">
-              {hasActiveFilters 
+              {hasActiveFilters
                 ? 'Intenta ajustar los filtros para ver más resultados.'
-                : 'Envía tu primer deal package desde la página de Leads o Buyers.'}
+                : 'Crea tu primer deal package usando el botón "Enviar Deal Package".'}
             </p>
-            {hasActiveFilters && (
-              <Button variant="outline" onClick={clearFilters}>
-                Limpiar filtros
-              </Button>
-            )}
+            {hasActiveFilters
+              ? <Button variant="outline" onClick={clearFilters}>Limpiar filtros</Button>
+              : <Button onClick={() => setShowSendDeal(true)}><Plus className="h-4 w-4 mr-2" />Enviar Deal Package</Button>
+            }
           </CardContent>
         </Card>
       )}
 
       {/* Deals Table */}
-      {!isLoading && filteredDeals.length > 0 && (
+      {!isLoading && deals.length > 0 && (
         <Card variant="glass">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
               Deal Packages
-              {hasActiveFilters && (
-                <Badge variant="secondary">{filteredDeals.length} resultados</Badge>
-              )}
+              <Badge variant="secondary">{totalCount} total</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -348,10 +345,9 @@ const Deals = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {dealsPagination.paginatedItems.map((deal, index) => {
+                  {deals.map((deal, index) => {
                     const status = getStatus(deal);
                     const StatusIcon = status.icon;
-                    
                     return (
                       <tr
                         key={deal.id}
@@ -424,17 +420,45 @@ const Deals = () => {
                 </tbody>
               </table>
             </div>
-            <DataPagination {...dealsPagination} />
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                <p className="text-sm text-muted-foreground">
+                  Mostrando {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} de {totalCount}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Deal Detail Sheet */}
       <DealDetailSheet
         deal={selectedDeal}
         open={!!selectedDeal}
         onOpenChange={(open) => !open && setSelectedDeal(null)}
       />
+
+      <SendDealDialog open={showSendDeal} onOpenChange={setShowSendDeal} />
     </Layout>
   );
 };

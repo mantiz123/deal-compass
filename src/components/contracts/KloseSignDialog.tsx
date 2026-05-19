@@ -115,7 +115,7 @@ export function KloseSignDialog({ contract, open, onOpenChange }: KloseSignDialo
         signer_name: signerName,
         signature_image: signatureImage,
         ip_address: ip,
-        user_agent: `Klose Rep | Page ${p.pageNum}`,
+        user_agent: JSON.stringify({ role: 'klose', page: p.pageNum, rep: signerName }),
       }));
 
       const { error: sigError } = await supabase.from('contract_signatures').insert(inserts);
