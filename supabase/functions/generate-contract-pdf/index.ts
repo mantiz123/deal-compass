@@ -81,6 +81,13 @@ Deno.serve(async (req) => {
     }
 
     const pdfBytes = await pdfDoc.save()
+
+    // Compute SHA-256 document hash — binds this exact document to future signatures
+    const hashBuffer = await crypto.subtle.digest('SHA-256', pdfBytes)
+    const documentHash = Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+
     const fileName = `${contractType}_Contract_${(property?.address || 'property').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
     const filePath = `${contractId}/${fileName}`
 
@@ -95,9 +102,13 @@ Deno.serve(async (req) => {
 
     const { data: urlData } = supabase.storage.from('contracts').getPublicUrl(filePath)
 
+    // Store hash in contracts table for audit trail integrity
+    await supabase.from('contracts').update({ document_hash: documentHash }).eq('id', contractId)
+
     return new Response(JSON.stringify({
       pdfUrl: urlData.publicUrl,
       fileName,
+      documentHash,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

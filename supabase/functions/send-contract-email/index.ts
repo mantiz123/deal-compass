@@ -119,13 +119,16 @@ Deno.serve(async (req) => {
       console.log('Signing URL:', signingUrl)
     }
 
-    // Update contract status
+    // Update contract status + set server-side signing token expiry (30 days)
+    const sentAt = new Date().toISOString()
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     await supabase
       .from('contracts')
       .update({
         status: 'sent',
-        sent_at: new Date().toISOString(),
+        sent_at: sentAt,
         seller_email: sellerEmail,
+        signing_token_expires_at: expiresAt,
       })
       .eq('id', contractId)
 

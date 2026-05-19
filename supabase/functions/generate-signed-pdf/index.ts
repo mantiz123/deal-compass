@@ -33,6 +33,22 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing contractId' }), { status: 400, headers: corsHeaders })
     }
 
+    // Allow internal calls with service role key (from submit-contract-signing)
+    const authHeader = req.headers.get('Authorization')
+    const token = authHeader?.replace('Bearer ', '') || ''
+    if (token !== SUPABASE_SERVICE_KEY) {
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+      }
+      const supabaseAuth = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, {
+        global: { headers: { Authorization: authHeader } },
+      })
+      const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
+      if (userError || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+      }
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
     // Fetch contract
@@ -46,30 +62,50 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Contract not found' }), { status: 404, headers: corsHeaders })
     }
 
-    // Fetch signatures ordered by user_agent (contains page number)
+    // Fetch all signatures ordered chronologically
     const { data: signatures = [] } = await supabase
       .from('contract_signatures')
       .select('*')
       .eq('contract_id', contractId)
       .order('signed_at', { ascending: true })
 
-    // Parse page numbers from user_agent "... | Page X" — separate Klose vs Seller
+    // Parse signatures — handle both JSON format (new) and "Klose Rep | Page X" format (legacy)
     const sellerSigByPage: Record<number, { image: string; name: string; date: string }> = {}
     const kloseSigByPage: Record<number, { image: string; name: string; date: string }> = {}
     for (const sig of signatures) {
-      const match = sig.user_agent?.match(/Page\s+(\d+)/)
-      if (match && sig.signature_image) {
-        const pageNum = parseInt(match[1])
+      // Skip ESIGN consent audit records — they have no signature image
+      if (sig.signature_image === 'CONSENT_GIVEN' || sig.signer_name === 'ESIGN_CONSENT') continue
+      if (!sig.signature_image) continue
+
+      let pageNum: number | null = null
+      let isKlose = false
+
+      if (sig.user_agent) {
+        try {
+          // New JSON format (from submit-contract-signing)
+          const ua = JSON.parse(sig.user_agent)
+          if (typeof ua === 'object' && ua.page !== undefined) {
+            pageNum = Number(ua.page)
+            isKlose = false
+          }
+        } catch {
+          // Legacy format: "Klose Rep | Page 3"
+          const match = sig.user_agent.match(/Page\s+(\d+)/)
+          if (match) {
+            pageNum = parseInt(match[1])
+            isKlose = sig.user_agent.includes('Klose Rep')
+          }
+        }
+      }
+
+      if (pageNum !== null) {
         const entry = {
           image: sig.signature_image,
           name: sig.signer_name,
           date: new Date(sig.signed_at).toLocaleDateString('en-US'),
         }
-        if (sig.user_agent?.includes('Klose Rep')) {
-          kloseSigByPage[pageNum] = entry
-        } else {
-          sellerSigByPage[pageNum] = entry
-        }
+        if (isKlose) kloseSigByPage[pageNum] = entry
+        else sellerSigByPage[pageNum] = entry
       }
     }
 
@@ -88,9 +124,14 @@ Deno.serve(async (req) => {
       await buildABPdf(ctx)
     } else if (contractType === 'BC') {
       await buildBCPdf(ctx)
+    } else if (contractType === 'DC') {
+      await buildDCPdf(ctx)
     } else {
       await buildAmendmentPdf(ctx)
     }
+
+    // Append Certificate of Completion as final pages
+    await buildCertificateOfCompletion(ctx, contractId, contractType, (contract as any).document_hash, signatures)
 
     const pdfBytes = await pdfDoc.save()
     const property = (contract as any).lead?.property
@@ -625,4 +666,147 @@ async function buildSignedSellerResponsibility(ctx: PdfCtx, pageNum: number): Pr
   c = drawParagraph(ctx, c, 'By signing this Acknowledgement, I/we confirm that: (i) I/we have carefully read, fully understand, and agree to all terms and conditions herein; (ii) this Acknowledgement constitutes the entire understanding between me/us and Klose LLC regarding my/our payment obligations associated with selling the property; and (iii) my/our payment obligations for the items outlined above will be deducted from the total purchase price.')
   c.y -= 10
   return await embedSignature(ctx, c, pageNum, 'Seller Signature')
+}
+
+// ─── DC Double Close Contract ────────────────────────────────────────
+
+async function buildDCPdf(ctx: PdfCtx) {
+  const d = ctx.data
+  const sellerName = v(d, 'seller_name')
+  const buyerName = v(d, 'buyer_name')
+  const fullAddr = [d.property_address, d.property_city, d.property_state].filter(Boolean).join(', ')
+
+  // ── Page 1: Overview + A→B Summary ──
+  let c = addPage(ctx, 1)
+  c = drawHeader(ctx, c)
+  c.y -= 10
+  c = drawCenteredText(ctx, c, 'DOUBLE CLOSE AGREEMENT', 14)
+  c = drawCenteredText(ctx, c, 'SIMULTANEOUS TRANSACTION DISCLOSURE', 11)
+  c.y -= 5
+
+  c = drawClause(ctx, c, '1', 'TRANSACTION OVERVIEW', `This document constitutes a Double Close (Simultaneous Close) transaction involving two related transactions: (A) a Purchase and Sale Agreement between ${sellerName} ("Original Seller") and Klose LLC, a Wyoming Limited Liability Company ("Intermediary"); and (B) a purchase between Klose LLC ("Seller/Assignor") and ${buyerName} ("End Buyer"). Both transactions close simultaneously on the same day.`)
+  c = drawClause(ctx, c, '2', 'PROPERTY', `${v(d,'property_address')}, ${v(d,'property_city','')}, ${v(d,'property_county') ? v(d,'property_county') + ' County,' : ''} ${v(d,'property_state','')}`)
+  c = drawClause(ctx, c, '3', 'A→B AGREEMENT SUMMARY', `Klose LLC has entered into a Purchase and Sale Agreement with ${sellerName}. Closing shall occur within ${v(d,'closing_days','30')} business days at ${v(d,'title_company')}.`)
+  c = drawClause(ctx, c, '4', 'TRANSACTIONAL FUNDING', `Klose LLC will utilize: ${v(d,'transactional_funding','Self-funded / Hard Money')} to fund the A-to-B transaction. All funds are processed through ${v(d,'title_company')} simultaneously.`)
+  c = drawClause(ctx, c, '5', 'END BUYER DISCLOSURE', `End Buyer (${buyerName}) acknowledges: (a) Klose LLC acts as intermediary; (b) the A-to-B purchase price is confidential; (c) Klose LLC's profit is the spread between the two transactions; (d) this structure is lawful; (e) End Buyer is purchasing AS-IS.`)
+  c = drawClause(ctx, c, '6', 'SPECIAL PROVISIONS', v(d, 'special_provisions', 'None'))
+
+  // ── Page 2: B→C Terms ──
+  c = addPage(ctx, 2)
+  c = drawHeader(ctx, c)
+  c.y -= 10
+  c = drawCenteredText(ctx, c, 'B TO C PURCHASE TERMS', 14)
+  c = drawCenteredText(ctx, c, 'END BUYER AGREEMENT', 11)
+  c.y -= 5
+
+  c = drawClause(ctx, c, '7', 'PARTIES', `Klose LLC, a Wyoming Limited Liability Company ("Seller"), agrees to sell and ${buyerName} ("End Buyer") agrees to purchase the Property.`)
+  c = drawClause(ctx, c, '8', 'PURCHASE PRICE', `Total B-to-C purchase price: $${money(d.bc_price)}. Method of payment: ${v(d,'payment_method','Cash')}.`)
+  c = drawClause(ctx, c, '9', 'CLOSING', `Closing shall occur on or before ${v(d,'closing_date')} at ${v(d,'title_company')}. All B-to-C closing costs shall be paid by End Buyer.`)
+  c = drawClause(ctx, c, '10', 'PROPERTY CONDITION', `End Buyer is purchasing the Property "AS-IS, WHERE-IS" including all faults, defects, and deficiencies. Klose LLC makes no representations or warranties.`)
+  c = drawClause(ctx, c, '11', 'TITLE POLICY', `Seller shall furnish to End Buyer an Owner's Policy of Title Insurance from ${v(d,'title_company')} in the amount of $${money(d.bc_price)}, dated at or after closing.`)
+  c = drawClause(ctx, c, '12', 'DEFAULT', `If End Buyer fails to close, any deposit or option fee paid shall be forfeited as liquidated damages — Klose LLC's sole and exclusive remedy.`)
+  c = drawClause(ctx, c, '13', 'HOLD HARMLESS', `End Buyer agrees to indemnify and hold harmless Klose LLC from any claims, damages, or liabilities arising from End Buyer's purchase, ownership, or use of the Property.`)
+  c = drawClause(ctx, c, '14', 'ENTIRE AGREEMENT', `This Agreement constitutes the entire understanding between Klose LLC and End Buyer. All prior negotiations are merged herein.`)
+
+  // ── Page 3: Signature Block (Klose + End Buyer acknowledgment) ──
+  c = addPage(ctx, 3)
+  c = drawHeader(ctx, c, false)
+  c.y -= 10
+  c = drawCenteredText(ctx, c, 'SIGNATURE PAGE', 13)
+  c.y -= 5
+  c = drawParagraph(ctx, c, `The undersigned have reviewed and agreed to the Double Close Agreement for the property at ${fullAddr}.`)
+  c.y -= 10
+  c = await embedDualSignature(ctx, c, 3, 'Intermediary — Klose LLC', 'Klose LLC', 'End Buyer Acknowledgment', buyerName)
+
+  // ── Page 4: Investor Disclosure + End Buyer Signature ──
+  await buildSignedInvestorDisclosure(ctx, 'End Buyer', 4)
+}
+
+// ─── Certificate of Completion (Audit Trail) ─────────────────────────
+
+async function buildCertificateOfCompletion(
+  ctx: PdfCtx,
+  contractId: string,
+  contractType: string,
+  documentHash: string | null,
+  signatures: any[]
+) {
+  const certId = `KC-${contractId.substring(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`
+  const certDate = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', dateStyle: 'full', timeStyle: 'long' })
+
+  let c = addPage(ctx, 9001)
+  c = drawHeader(ctx, c)
+  c.y -= 10
+  c = drawCenteredText(ctx, c, 'CERTIFICATE OF COMPLETION', 14)
+  c = drawCenteredText(ctx, c, 'ELECTRONIC SIGNATURE AUDIT TRAIL', 11)
+  c.y -= 8
+
+  c = drawParagraph(ctx, c, `Certificate ID:    ${certId}`)
+  c = drawParagraph(ctx, c, `Contract ID:       ${contractId}`)
+  c = drawParagraph(ctx, c, `Contract Type:     ${contractType}`)
+  c = drawParagraph(ctx, c, `Generated:         ${certDate}`)
+  if (documentHash) {
+    c = drawParagraph(ctx, c, `Document SHA-256:  ${documentHash.substring(0, 32)}...`, 9)
+    c = drawParagraph(ctx, c, `                   ${documentHash.substring(32)}`, 9)
+  }
+
+  c.y -= 8
+  c = drawCenteredText(ctx, c, 'LEGAL COMPLIANCE', 11)
+  c = drawParagraph(ctx, c, 'This certificate documents that the referenced contract was executed using electronic signatures in compliance with:', 10)
+  c = drawParagraph(ctx, c, '  * ESIGN Act — Electronic Signatures in Global and National Commerce Act (15 U.S.C. 7001 et seq.)', 9)
+  c = drawParagraph(ctx, c, '  * UETA — Alabama Uniform Electronic Transactions Act (Alabama Code 8-1A-1 et seq.)', 9)
+  c = drawParagraph(ctx, c, '  * Consumer disclosure and paper alternative notice was provided and accepted before signing.', 9)
+  c = drawParagraph(ctx, c, '  * Signer identity established by: (1) private email link; (2) server-captured IP; (3) device fingerprint.', 9)
+
+  c.y -= 8
+  c = drawCenteredText(ctx, c, 'SIGNATURE EVENTS (CHRONOLOGICAL)', 11)
+  c.y -= 4
+
+  for (const sig of signatures) {
+    c = ensureSpace(ctx, c, 80)
+    const ts = new Date(sig.signed_at).toLocaleString('en-US', { timeZone: 'America/Chicago' })
+
+    if (sig.signature_image === 'CONSENT_GIVEN' || sig.signer_name === 'ESIGN_CONSENT') {
+      let ua: any = {}
+      try { ua = JSON.parse(sig.user_agent || '{}') } catch {}
+      c.page.drawRectangle({ x: MARGIN_L - 5, y: c.y + 2, width: CONTENT_W + 10, height: 14, color: rgb(0, 0.12, 0.08) })
+      c.page.drawText('EVENT: ESIGN/UETA Consent Accepted', { x: MARGIN_L, y: c.y, size: 9, font: ctx.fontBold, color: WHITE })
+      c.y -= 16
+      c = drawParagraph(ctx, c, `  Timestamp:    ${ts} CST`, 8)
+      c = drawParagraph(ctx, c, `  IP (client):  ${ua.clientIp || sig.ip_address || 'N/A'}`, 8)
+      c = drawParagraph(ctx, c, `  IP (server):  ${ua.serverIp || 'N/A'}`, 8)
+      c = drawParagraph(ctx, c, `  ESIGN Act:    ${ua.esign_act ? 'Accepted' : 'N/A'}`, 8)
+      c = drawParagraph(ctx, c, `  UETA Alabama: ${ua.ueta_alabama ? 'Accepted' : 'N/A'}`, 8)
+      const uaStr = (ua.userAgent || '').substring(0, 72)
+      if (uaStr) c = drawParagraph(ctx, c, `  Browser:      ${uaStr}${(ua.userAgent || '').length > 72 ? '...' : ''}`, 8)
+    } else {
+      let ua: any = {}
+      let pageNum = '?'
+      let isKlose = false
+      try {
+        ua = JSON.parse(sig.user_agent || '{}')
+        pageNum = ua.page?.toString() || '?'
+      } catch {
+        const m = sig.user_agent?.match(/Page\s+(\d+)/)
+        if (m) pageNum = m[1]
+        isKlose = sig.user_agent?.includes('Klose Rep') || false
+      }
+      const evtLabel = isKlose ? `Klose LLC Signature — Page ${pageNum}` : `Signer Signature — Page ${pageNum}`
+      c.page.drawRectangle({ x: MARGIN_L - 5, y: c.y + 2, width: CONTENT_W + 10, height: 14, color: rgb(0, 0.08, 0.12) })
+      c.page.drawText(`EVENT: ${evtLabel}`, { x: MARGIN_L, y: c.y, size: 9, font: ctx.fontBold, color: WHITE })
+      c.y -= 16
+      c = drawParagraph(ctx, c, `  Signer:       ${sig.signer_name}`, 8)
+      if (sig.signer_email) c = drawParagraph(ctx, c, `  Email:        ${sig.signer_email}`, 8)
+      c = drawParagraph(ctx, c, `  Timestamp:    ${ts} CST`, 8)
+      c = drawParagraph(ctx, c, `  IP (server):  ${ua.serverIp || sig.ip_address || 'N/A'}`, 8)
+      if (ua.timezone) c = drawParagraph(ctx, c, `  Timezone:     ${ua.timezone}`, 8)
+      if (ua.screenWidth) c = drawParagraph(ctx, c, `  Screen:       ${ua.screenWidth}x${ua.screenHeight}`, 8)
+      if (ua.platform) c = drawParagraph(ctx, c, `  Platform:     ${ua.platform}`, 8)
+    }
+    c.y -= 6
+  }
+
+  c.y -= 10
+  c = ensureSpace(ctx, c, 40)
+  c = drawParagraph(ctx, c, 'This Certificate of Completion is an integral part of the signed contract. It constitutes the electronic signature audit trail required by 15 U.S.C. 7001(d) (ESIGN) and Alabama Code 8-1A-12 (UETA) and may be submitted as evidence in any legal proceeding.', 9)
 }
