@@ -4,8 +4,8 @@
 // and generates personalized English email drafts via Claude Haiku.
 // Saves drafts to lead_email_drafts and optionally emails TC.
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -183,11 +183,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    // Find hot leads: score ≥70, captacion, no recent contact
+    // Find hot leads: score ≥70, captacion or contacto, no recent contact, has organization
     const { data: candidates, error: leadsErr } = await supabase
       .from("leads")
       .select(`
-        id, piw_score, last_contact_at,
+        id, piw_score, last_contact_at, organization_id,
         property:properties(
           address, city, state, zip_code,
           owner_name, owner_email,
@@ -196,8 +196,9 @@ serve(async (req) => {
           is_foreclosure, tax_delinquent, is_absentee_owner, is_vacant, is_probate
         )
       `)
-      .eq("status", "captacion")
+      .in("status", ["captacion", "contacto"])
       .gte("piw_score", 70)
+      .not("organization_id", "is", null)
       .or(`last_contact_at.is.null,last_contact_at.lt.${cutoff}`)
       .order("piw_score", { ascending: false })
       .limit(MAX_DRAFTS_PER_RUN * 2); // fetch extra; we'll filter duplicates below

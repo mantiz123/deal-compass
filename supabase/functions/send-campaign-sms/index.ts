@@ -13,6 +13,7 @@ const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
 const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 
 const DAILY_LIMIT_PER_USER = 200
+const STOP_DISCLOSURE = '\n\nReply STOP to opt out.'
 
 // Normalizes US phone numbers to E.164 (+1XXXXXXXXXX)
 function normalizePhone(phone: string): string | null {
@@ -20,6 +21,25 @@ function normalizePhone(phone: string): string | null {
   if (digits.length === 10) return `+1${digits}`
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`
   return null
+}
+
+// TCPA: SMS allowed 8am-9pm recipient local time (Alabama = US Central Time).
+// CDT = UTC-5 (Mar-Nov), CST = UTC-6 (Nov-Mar). Use DST-aware check.
+function isCentralTimeBusinessHours(): boolean {
+  const now = new Date()
+  const y = now.getUTCFullYear()
+  // DST start: 2nd Sunday in March at 2am
+  const dstStart = new Date(Date.UTC(y, 2, 8, 7)) // March 8 07:00 UTC (2am CST)
+  dstStart.setUTCDate(8 + (7 - dstStart.getUTCDay()) % 7)
+  // DST end: 1st Sunday in November at 2am
+  const dstEnd = new Date(Date.UTC(y, 10, 1, 6)) // Nov 1 06:00 UTC (2am CDT)
+  dstEnd.setUTCDate(1 + (7 - dstEnd.getUTCDay()) % 7)
+
+  const isDST = now >= dstStart && now < dstEnd
+  const ctHour = (now.getUTCHours() - (isDST ? 5 : 6) + 24) % 24
+  const ctMinute = now.getUTCMinutes()
+  const ctTime = ctHour + ctMinute / 60
+  return ctTime >= 8 && ctTime < 21
 }
 
 Deno.serve(async (req) => {
@@ -71,8 +91,15 @@ Deno.serve(async (req) => {
       })
     }
 
+    // ── TIME WINDOW CHECK (TCPA) ──────────────────────────────────────────────
+    if (!isCentralTimeBusinessHours()) {
+      return new Response(JSON.stringify({
+        error: 'Outside allowed hours. TCPA restricts SMS to 8:00 AM – 9:00 PM Central Time (Alabama).',
+        allowed_window: '8:00 AM – 9:00 PM CT',
+      }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     // ── DNC CHECK ─────────────────────────────────────────────────────────────
-    // Blocks sending if the destination phone is flagged on the associated property
     const dnc_checked_at = new Date().toISOString()
 
     if (leadId) {
@@ -135,6 +162,19 @@ Deno.serve(async (req) => {
       }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
+    // ── STOP DISCLOSURE on first ever outbound SMS to this number ─────────────
+    // TCPA requires opt-out instructions in the first message of any campaign.
+    const { count: priorSent } = await supabase
+      .from('sms_outreach_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('to_phone', toPhone)
+      .eq('direction', 'outbound')
+
+    const isFirstMessage = (priorSent ?? 0) === 0
+    const finalMessage = isFirstMessage && !message.toLowerCase().includes('stop')
+      ? `${message}${STOP_DISCLOSURE}`
+      : message
+
     // ── SEND VIA TWILIO ───────────────────────────────────────────────────────
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`
     const twilioAuth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)
@@ -145,7 +185,7 @@ Deno.serve(async (req) => {
         'Authorization': `Basic ${twilioAuth}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({ From: TWILIO_PHONE_NUMBER, To: toPhone, Body: message }).toString(),
+      body: new URLSearchParams({ From: TWILIO_PHONE_NUMBER, To: toPhone, Body: finalMessage }).toString(),
     })
 
     const twilioData = await twilioRes.json().catch(() => ({}))
@@ -157,7 +197,7 @@ Deno.serve(async (req) => {
         lead_id: leadId ?? null,
         sent_by: user.id,
         to_phone: toPhone,
-        message,
+        message: finalMessage,
         status: 'failed',
         direction: 'outbound',
         enrollment_id: enrollmentId ?? null,
@@ -172,7 +212,7 @@ Deno.serve(async (req) => {
           interaction_type: 'sms',
           direction: 'outbound',
           sentiment: 'negative',
-          content: `[SMS FAILED] To: ${toPhone}\nError: ${twilioData?.message ?? 'Unknown'}\n\n${message}`,
+          content: `[SMS FAILED] To: ${toPhone}\nError: ${twilioData?.message ?? 'Unknown'}\n\n${finalMessage}`,
           created_by: user.id,
         }).catch(e => console.warn('interaction log failed', e))
       }
@@ -189,7 +229,7 @@ Deno.serve(async (req) => {
       lead_id: leadId ?? null,
       sent_by: user.id,
       to_phone: toPhone,
-      message,
+      message: finalMessage,
       status: twilioData?.status ?? 'sent',
       direction: 'outbound',
       twilio_sid,
@@ -204,12 +244,11 @@ Deno.serve(async (req) => {
         interaction_type: 'sms',
         direction: 'outbound',
         sentiment: 'positive',
-        content: `[SMS SENT] To: ${toPhone}\nSID: ${twilio_sid ?? '-'}\n\n${message}`,
+        content: `[SMS SENT] To: ${toPhone}\nSID: ${twilio_sid ?? '-'}\n\n${finalMessage}`,
         created_by: user.id,
       }).catch(e => console.warn('interaction log failed', e))
     }
 
-    // Update campaign message log if this send is part of a sequence
     if (enrollmentId && sequenceId) {
       await supabase.from('campaign_message_logs').insert({
         enrollment_id: enrollmentId,
@@ -224,6 +263,7 @@ Deno.serve(async (req) => {
       success: true,
       sid: twilio_sid,
       status: twilioData?.status,
+      first_message: isFirstMessage,
       remainingToday: DAILY_LIMIT_PER_USER - ((sentToday ?? 0) + 1),
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 

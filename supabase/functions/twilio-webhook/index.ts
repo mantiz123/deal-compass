@@ -1,7 +1,7 @@
 // Twilio Webhook Handler
 // Handles two event types from Twilio:
 //   1. Status callbacks  — updates sms_outreach_log when Twilio confirms delivery/failure
-//   2. Inbound messages  — sets DNC flags when a seller replies STOP/UNSUBSCRIBE/etc.
+//   2. Inbound messages  — handles STOP/START/HELP and logs replies
 //
 // Configure in Twilio console:
 //   - Messaging → Phone Numbers → your number → "A message comes in" → this URL
@@ -17,12 +17,13 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!
 const TWILIO_WEBHOOK_URL = Deno.env.get('TWILIO_WEBHOOK_URL') ?? ''
 
-// Keywords that trigger DNC — Twilio auto-handles STOP at carrier level,
-// but we mirror it in our DB to block future API sends too.
 const STOP_KEYWORDS = new Set(['stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit'])
 const START_KEYWORDS = new Set(['start', 'unstop', 'yes'])
+const HELP_KEYWORDS = new Set(['help', 'info'])
 
-// Validate that the request actually came from Twilio
+// TCPA-required HELP response: company name, stop instructions, support contact
+const HELP_REPLY = 'KLOSE LLC: Real estate offers. Msg&Data rates may apply. Reply STOP to cancel. Support: sergio@goklose.com'
+
 async function validateTwilioSignature(
   authToken: string,
   signature: string,
@@ -44,8 +45,21 @@ async function validateTwilioSignature(
   return computed === signature
 }
 
+function twimlReply(message: string): Response {
+  return new Response(
+    `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${message}</Message></Response>`,
+    { headers: { 'Content-Type': 'text/xml' } },
+  )
+}
+
+function twimlEmpty(): Response {
+  return new Response(
+    `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`,
+    { headers: { 'Content-Type': 'text/xml' } },
+  )
+}
+
 Deno.serve(async (req) => {
-  // Twilio only POSTs form-encoded data
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 })
   }
@@ -74,7 +88,6 @@ Deno.serve(async (req) => {
     const body = (params['Body'] ?? '').trim().toLowerCase()
 
     // ── CASE 1: STATUS CALLBACK (delivery update) ─────────────────────────────
-    // Twilio posts MessageStatus = queued|sent|delivered|undelivered|failed
     if (messageSid && messageStatus && !fromPhone) {
       const validStatuses = ['queued', 'sent', 'delivered', 'undelivered', 'failed']
       if (validStatuses.includes(messageStatus)) {
@@ -83,7 +96,6 @@ Deno.serve(async (req) => {
           .update({ status: messageStatus })
           .eq('twilio_sid', messageSid)
 
-        // Mirror to campaign_message_logs if linked
         const { data: log } = await supabase
           .from('sms_outreach_log')
           .select('enrollment_id, sequence_id')
@@ -111,21 +123,24 @@ Deno.serve(async (req) => {
 
     // ── CASE 2: INBOUND MESSAGE (seller reply) ────────────────────────────────
     if (fromPhone && body) {
-      // Log the inbound message to sms_outreach_log for the record
-      // (no sent_by because it's inbound — use service role insert)
+      // Log the inbound message
       await supabase.from('sms_outreach_log').insert({
-        to_phone: fromPhone,   // "to" here is our number but we store the sender
+        to_phone: fromPhone,
         message: params['Body'] ?? '',
         status: 'delivered',
         direction: 'inbound',
         twilio_sid: messageSid,
       }).catch(e => console.warn('inbound sms log failed', e))
 
+      // ── HELP: TCPA-required response ──────────────────────────────────────
+      if (HELP_KEYWORDS.has(body)) {
+        return twimlReply(HELP_REPLY)
+      }
+
       // Find which lead/property this phone belongs to
       const normalized = fromPhone.replace(/\D/g, '')
       const last10 = normalized.slice(-10)
 
-      // Search all 5 phone slots for a match
       const phoneConditions = [1, 2, 3, 4, 5]
         .map(n => `phone_${n}.like.%${last10}`)
         .join(',')
@@ -136,14 +151,17 @@ Deno.serve(async (req) => {
         .or(phoneConditions)
 
       if (!properties?.length) {
-        // Unknown sender — still return 200 so Twilio stops retrying
-        return new Response(
-          `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`,
-          { headers: { 'Content-Type': 'text/xml' } },
-        )
+        return twimlEmpty()
       }
 
-      // ── STOP: set DNC flag on matched phone slot ──────────────────────────
+      // Pre-fetch all leads for matched properties (used by both STOP and general logging)
+      const propertyIds = properties.map(p => p.id)
+      const { data: leads } = await supabase
+        .from('leads')
+        .select('id')
+        .in('property_id', propertyIds)
+
+      // ── STOP: set DNC flag + pause campaigns ──────────────────────────────
       if (STOP_KEYWORDS.has(body)) {
         for (const prop of properties) {
           const slots: Record<string, string | null> = {
@@ -161,13 +179,6 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Pause all active campaign enrollments for leads on these properties
-        const propertyIds = properties.map(p => p.id)
-        const { data: leads } = await supabase
-          .from('leads')
-          .select('id')
-          .in('property_id', propertyIds)
-
         if (leads?.length) {
           const leadIds = leads.map(l => l.id)
           await supabase
@@ -175,23 +186,23 @@ Deno.serve(async (req) => {
             .update({ status: 'unsubscribed' })
             .in('lead_id', leadIds)
             .eq('status', 'active')
-        }
 
-        // Log STOP interaction on each matched lead
-        if (leads?.length) {
           await supabase.from('interactions').insert(
             leads.map(l => ({
               lead_id: l.id,
               interaction_type: 'sms',
               direction: 'inbound',
               sentiment: 'negative',
-              content: `[STOP RECEIVED] From: ${fromPhone} — DNC flag set, campaigns paused.\nOriginal message: "${params['Body']}"`,
+              content: `[STOP RECEIVED] From: ${fromPhone} — DNC flag set, campaigns unsubscribed.\nOriginal message: "${params['Body']}"`,
             }))
           ).catch(e => console.warn('stop interaction log failed', e))
         }
+
+        // Twilio auto-handles the opt-out reply — return empty TwiML
+        return twimlEmpty()
       }
 
-      // ── START: clear DNC flag if seller opts back in ──────────────────────
+      // ── START: clear DNC flag ─────────────────────────────────────────────
       if (START_KEYWORDS.has(body)) {
         for (const prop of properties) {
           const slots: Record<string, string | null> = {
@@ -210,14 +221,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Log inbound reply as interaction on matched leads
-      const propertyIds = properties.map(p => p.id)
-      const { data: leads } = await supabase
-        .from('leads')
-        .select('id')
-        .in('property_id', propertyIds)
-
-      if (leads?.length && !STOP_KEYWORDS.has(body)) {
+      // Log inbound reply as interaction on matched leads (non-STOP messages)
+      if (leads?.length) {
         await supabase.from('interactions').insert(
           leads.map(l => ({
             lead_id: l.id,
@@ -229,18 +234,13 @@ Deno.serve(async (req) => {
         ).catch(e => console.warn('inbound interaction log failed', e))
       }
 
-      // Return empty TwiML — no auto-reply (agent handles conversation manually)
-      return new Response(
-        `<?xml version="1.0" encoding="UTF-8"?><Response></Response>`,
-        { headers: { 'Content-Type': 'text/xml' } },
-      )
+      return twimlEmpty()
     }
 
     return new Response('', { status: 204 })
 
   } catch (error: any) {
     console.error('twilio-webhook error', error)
-    // Always return 200-range to prevent Twilio from retrying indefinitely
     return new Response('', { status: 204 })
   }
 })

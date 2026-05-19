@@ -32,6 +32,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
 const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+// Optional: set PROPWIRE_ORG_ID in Supabase secrets to pin imports to a specific org.
+// If not set, the function auto-detects the Klose Internal org from the DB.
+const PROPWIRE_ORG_ID_ENV = Deno.env.get("PROPWIRE_ORG_ID");
 const BUCKET = "propwire-imports";
 const NOTIFY_EMAIL = "sergio@goklose.com";
 const FROM_EMAIL = "KLOSE Imports <imports@goklose.com>";
@@ -62,6 +65,7 @@ interface PropwireRow {
   is_foreclosure: string;
   tax_delinquent: string;
   is_vacant: string;
+  is_probate: string;
   owner_phone: string;
   phone_2: string;
   phone_3: string;
@@ -126,6 +130,7 @@ const COL_ALIASES: Record<keyof PropwireRow, string[]> = {
   is_foreclosure:   ["Pre-Foreclosure", "Foreclosure", "In Foreclosure", "Pre Foreclosure", "Foreclosure Indicator"],
   tax_delinquent:   ["Tax Delinquent", "Delinquent Taxes", "Tax_Delinquent", "Tax Delinquent Indicator"],
   is_vacant:        ["Vacant", "Vacant Property", "Vacancy", "Vacant Indicator"],
+  is_probate:       ["Probate", "In Probate", "Probate Indicator", "Estate Sale", "Probate Property"],
   owner_phone:      ["Phone 1", "Primary Phone", "Phone", "Tel 1", "Owner Phone"],
   phone_2:          ["Phone 2", "Secondary Phone", "Tel 2"],
   phone_3:          ["Phone 3", "Tel 3"],
@@ -159,6 +164,7 @@ function mapRow(row: string[], colMap: Record<string, number>): PropwireRow {
     bathrooms: g("bathrooms"), sqft: g("sqft"), year_built: g("year_built"),
     is_absentee_owner: g("is_absentee_owner"), is_foreclosure: g("is_foreclosure"),
     tax_delinquent: g("tax_delinquent"), is_vacant: g("is_vacant"),
+    is_probate: g("is_probate"),
     owner_phone: g("owner_phone"), phone_2: g("phone_2"),
     phone_3: g("phone_3"), owner_email: g("owner_email"),
   };
@@ -201,28 +207,30 @@ function calcPiwScore(row: PropwireRow): { score: number; factors: Record<string
   const isTaxDelinquent = csvBool(row.tax_delinquent);
   const isVacant = csvBool(row.is_vacant);
   const isAbsentee = csvBool(row.is_absentee_owner);
+  const isProbate = csvBool(row.is_probate);
   const equity = csvNum(row.equity_pct) ?? 0;
   const arv = csvNum(row.estimated_value) ?? 0;
 
   // Seller motivation (max 40)
   let motivation = 0;
-  if (isForeclosure)    motivation += 25;
+  if (isForeclosure)        motivation += 25;
   else if (isTaxDelinquent) motivation += 18;
-  if (isVacant)         motivation += 12;
-  if (isAbsentee)       motivation += 8;
+  else if (isProbate)       motivation += 14;
+  if (isVacant)             motivation += 12;
+  if (isAbsentee)           motivation += 8;
   motivation = Math.min(motivation, 40);
 
   // Financial viability (max 35)
   let financial = 0;
-  if (equity >= 70)           financial += 20;
-  else if (equity >= 50)      financial += 15;
-  else if (equity >= 30)      financial += 8;
-  if (arv >= 40_000 && arv <= 80_000)  financial += 10;
-  else if (arv > 80_000 && arv <= 120_000) financial += 5;
+  if (equity >= 70)                         financial += 20;
+  else if (equity >= 50)                    financial += 15;
+  else if (equity >= 30)                    financial += 8;
+  if (arv >= 40_000 && arv <= 80_000)       financial += 10;
+  else if (arv > 80_000 && arv <= 120_000)  financial += 5;
   financial = Math.min(financial, 35);
 
   // Closing ease (max 25)
-  const distressCount = [isForeclosure, isTaxDelinquent, isVacant, isAbsentee].filter(Boolean).length;
+  const distressCount = [isForeclosure, isTaxDelinquent, isVacant, isAbsentee, isProbate].filter(Boolean).length;
   const closing = distressCount >= 2 ? 20 : distressCount === 1 ? 15 : 10;
 
   const score = Math.min(motivation + financial + closing, 100);
@@ -237,6 +245,7 @@ function calcPiwScore(row: PropwireRow): { score: number; factors: Record<string
       tax_delinquent: isTaxDelinquent,
       is_vacant: isVacant,
       is_absentee_owner: isAbsentee,
+      is_probate: isProbate,
       equity_pct: equity,
     },
   };
@@ -388,6 +397,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── 1b. Resolve organization ID ───────────────────────────
+    // Leads require organization_id — resolve from env var or Klose Internal org
+    let orgId: string | null = PROPWIRE_ORG_ID_ENV ?? null;
+    if (!orgId) {
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("id")
+        .eq("is_klose_internal", true)
+        .maybeSingle();
+      orgId = org?.id ?? null;
+    }
+    if (!orgId) throw new Error("Cannot resolve organization_id. Set PROPWIRE_ORG_ID secret or ensure is_klose_internal org exists.");
+
     // ── 2. Download and parse CSV ─────────────────────────────
     const { data: fileData, error: dlErr } = await supabase.storage
       .from(BUCKET)
@@ -400,54 +422,65 @@ Deno.serve(async (req) => {
 
     console.log(`Parsing ${rows.length} rows from ${fileToProcess.name}`);
 
-    // ── 3. Process rows ───────────────────────────────────────
+    // ── 3. First pass: collect filtered rows ──────────────────
     let totalInCsv = 0;
     let passedFilters = 0;
     let duplicatesSkipped = 0;
     let importedCount = 0;
     const importedLeads: ImportedLead[] = [];
 
+    // Collect all rows that pass city/state/value/equity filters
+    type FilteredRow = { r: PropwireRow; arv: number; equity: number; zip: string; addressClean: string };
+    const filteredRows: FilteredRow[] = [];
+
     for (const row of rows) {
       if (row.length < 3) continue;
       totalInCsv++;
-
       const r = mapRow(row, colMap);
 
-      // Filter: Birmingham AL
       if (r.city.toLowerCase().trim() !== FILTER_CITY) continue;
       if (r.state.toLowerCase().trim() !== FILTER_STATE) continue;
       if (!r.address.trim()) continue;
 
-      // Filter: equity and value
       const arv = csvNum(r.estimated_value) ?? 0;
       const equity = csvNum(r.equity_pct) ?? 0;
       if (arv < FILTER_MIN_VALUE || arv > FILTER_MAX_VALUE) continue;
       if (equity < FILTER_MIN_EQUITY_PCT) continue;
 
       passedFilters++;
+      filteredRows.push({ r, arv, equity, zip: r.zip.trim(), addressClean: r.address.trim().toLowerCase() });
+    }
 
-      // Dedup: check by address + zip_code
-      const zip = r.zip.trim();
-      const addressClean = r.address.trim().toLowerCase();
-      const { count: existCount } = await supabase
+    // ── 3b. Batch dedup: one query per unique zip code ────────
+    // Avoids N+1 queries (1 per row → 1 per zip code batch instead)
+    const uniqueZips = [...new Set(filteredRows.map(fr => fr.zip))];
+    const existingKeys = new Set<string>();
+    if (uniqueZips.length > 0) {
+      const { data: existingProps } = await supabase
         .from("properties")
-        .select("id", { count: "exact", head: true })
-        .ilike("address", addressClean)
-        .eq("zip_code", zip);
+        .select("address, zip_code")
+        .in("zip_code", uniqueZips);
+      for (const p of existingProps ?? []) {
+        existingKeys.add(`${p.address.toLowerCase().trim()}|${p.zip_code}`);
+      }
+    }
 
-      if ((existCount ?? 0) > 0) {
+    // ── 3c. Import non-duplicate rows ─────────────────────────
+    for (const { r, arv, zip, addressClean } of filteredRows) {
+      // Dedup check against pre-fetched set (no extra DB query)
+      if (existingKeys.has(`${addressClean}|${zip}`)) {
         duplicatesSkipped++;
         continue;
       }
 
       // ── Insert property ───────────────────────────────────
-      const repairs = null; // Propwire doesn't export repair estimates
-      const mao = calcMao(arv, repairs);
+      const mao = calcMao(arv, null); // Propwire doesn't export repair estimates
       const propType = mapPropertyType(r.property_type);
       const isForeclosure = csvBool(r.is_foreclosure);
       const isTaxDelinquent = csvBool(r.tax_delinquent);
       const isVacant = csvBool(r.is_vacant);
       const isAbsentee = csvBool(r.is_absentee_owner);
+      const isProbate = csvBool(r.is_probate);
       const mortgageBalance = csvNum(r.mortgage_balance);
       const equityNum = csvNum(r.equity_pct);
 
@@ -468,14 +501,13 @@ Deno.serve(async (req) => {
         owner_phone: r.owner_phone.trim() || null,
         owner_email: r.owner_email.trim() || null,
         is_absentee_owner: isAbsentee,
-        // Extended distress fields (added in later migrations)
         is_foreclosure: isForeclosure,
         is_vacant: isVacant,
+        is_probate: isProbate,
         tax_delinquent: isTaxDelinquent,
         mortgage_balance: mortgageBalance,
       };
 
-      // Include multi-phone if available
       if (r.phone_2.trim()) (propertyInsert as any).phone_2 = r.phone_2.trim();
       if (r.phone_3.trim()) (propertyInsert as any).phone_3 = r.phone_3.trim();
 
@@ -490,12 +522,13 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // ── Insert lead ───────────────────────────────────────
+      // ── Insert lead (with organization_id) ────────────────
       const { score: piwScore, factors } = calcPiwScore(r);
       const { milan, juan } = calcBuyerMatch(r, arv);
 
       const { error: leadErr } = await supabase.from("leads").insert({
         property_id: newProp.id,
+        organization_id: orgId,
         status: "captacion",
         piw_score: piwScore,
         piw_score_factors: {
@@ -521,6 +554,7 @@ Deno.serve(async (req) => {
       if (isTaxDelinquent)  distress.push("Tax Delinquent");
       if (isVacant)         distress.push("Vacant");
       if (isAbsentee)       distress.push("Absentee Owner");
+      if (isProbate)        distress.push("Probate");
 
       importedLeads.push({
         address: r.address.trim(),
