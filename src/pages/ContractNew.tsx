@@ -67,24 +67,24 @@ export default function ContractNew() {
 
   // Lead search
   useEffect(() => {
-    if (!leadSearch.trim() || !orgId) { setSearchResults([]); return; }
+    if (leadSearch.trim().length < 2 || !orgId) { setSearchResults([]); return; }
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
         const s = leadSearch.trim();
         const { data } = await supabase
           .from('leads')
-          .select('id, status, piw_score, property:properties(address, city, state, owner_name, mao, arv)')
+          .select('id, status, piw_score, property:properties!inner(address, city, state, zip_code, owner_name, mao, arv)')
           .eq('organization_id', orgId)
           .is('archived_at', null)
-          .or(`properties.address.ilike.%${s}%,properties.owner_name.ilike.%${s}%,properties.city.ilike.%${s}%`, { referencedTable: 'properties' })
-          .order('created_at', { ascending: false })
+          .or(`address.ilike.%${s}%,owner_name.ilike.%${s}%,city.ilike.%${s}%,zip_code.ilike.%${s}%`, { referencedTable: 'properties' })
+          .order('piw_score', { ascending: false, nullsFirst: false })
           .limit(20);
         setSearchResults(data || []);
       } finally {
         setSearching(false);
       }
-    }, 300);
+    }, 200);
     return () => clearTimeout(timer);
   }, [leadSearch, orgId]);
   const abContracts = useMemo(() => 
@@ -381,9 +381,9 @@ export default function ContractNew() {
                   </div>
                 )}
 
-                {!searching && leadSearch.trim() && searchResults.length === 0 && (
+                {!searching && leadSearch.trim().length >= 2 && searchResults.length === 0 && (
                   <p className="text-sm text-muted-foreground py-2 text-center">
-                    No se encontraron leads. Intenta con otra dirección o nombre.
+                    No se encontraron leads con esos términos.
                   </p>
                 )}
 
@@ -393,6 +393,7 @@ export default function ContractNew() {
                       const prop = result.property as any;
                       const piw = result.piw_score ?? 0;
                       const piwColor = piw >= 70 ? 'text-success' : piw >= 40 ? 'text-warning' : 'text-destructive';
+                      const dotColor = piw >= 70 ? 'bg-green-500' : piw >= 40 ? 'bg-yellow-500' : 'bg-red-500';
                       return (
                         <Card
                           key={result.id}
@@ -406,7 +407,7 @@ export default function ContractNew() {
                                 <div className="flex items-center gap-2 mb-0.5">
                                   <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                   <p className="font-medium text-sm truncate">
-                                    {prop?.address || '—'}, {prop?.city}, {prop?.state}
+                                    {prop?.address || '—'}, {prop?.city}{prop?.zip_code ? ` ${prop.zip_code}` : ''}, {prop?.state}
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-3 ml-5">
@@ -421,12 +422,15 @@ export default function ContractNew() {
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
                                 <Badge variant="outline" className="text-xs capitalize">{result.status?.replace(/_/g, ' ')}</Badge>
-                                {piw > 0 && (
-                                  <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`h-2 w-2 rounded-full shrink-0 ${piw > 0 ? dotColor : 'bg-muted'}`} />
+                                  <div className="flex items-center gap-0.5">
                                     <TrendingUp className="h-3 w-3 text-muted-foreground" />
-                                    <span className={`text-xs font-bold ${piwColor}`}>{piw}</span>
+                                    <span className={`text-xs font-bold ${piw > 0 ? piwColor : 'text-muted-foreground'}`}>
+                                      {piw > 0 ? piw : '—'}
+                                    </span>
                                   </div>
-                                )}
+                                </div>
                               </div>
                             </div>
                           </CardContent>
@@ -436,9 +440,9 @@ export default function ContractNew() {
                   </div>
                 </ScrollArea>
 
-                {!leadSearch.trim() && (
+                {leadSearch.trim().length < 2 && (
                   <p className="text-xs text-muted-foreground text-center py-2">
-                    Escribe para buscar leads. Busca por dirección, ciudad o nombre del propietario.
+                    Escribe al menos 2 caracteres — busca por dirección, ciudad, ZIP o nombre del propietario.
                   </p>
                 )}
               </CardContent>
