@@ -9,16 +9,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useCreateContract, useUpdateContract, useContractsForLead } from '@/hooks/useContracts';
 import { useProfile } from '@/hooks/useProfile';
+import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 import {
   CONTRACT_TEMPLATES,
   getFieldsForType,
   autoFillFields,
 } from '@/lib/contractTemplates';
-import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye, PenTool, Copy, Link, EyeOff } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileText, Loader2, Send, Save, Eye, PenTool, Copy, Link, EyeOff, Search, MapPin, TrendingUp } from 'lucide-react';
 import SigningWizard, { type SignablePage } from '@/components/contracts/SigningWizard';
 import {
   ABPage,
@@ -28,7 +30,7 @@ import {
   getDCKloseSignablePages,
 } from '@/components/contracts/ContractPageViewer';
 
-type Step = 'select' | 'select_parent' | 'fill' | 'klose_sign' | 'send';
+type Step = 'search_lead' | 'select' | 'select_parent' | 'fill' | 'klose_sign' | 'send';
 
 export default function ContractNew() {
   const [searchParams] = useSearchParams();
@@ -37,11 +39,15 @@ export default function ContractNew() {
   const leadId = searchParams.get('lead_id');
   const { data: profile } = useProfile();
 
-  const [step, setStep] = useState<Step>('select');
+  const [step, setStep] = useState<Step>(searchParams.get('lead_id') ? 'select' : 'search_lead');
   const [contractType, setContractType] = useState<'AB' | 'BC' | 'AMENDMENT' | 'DC' | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [lead, setLead] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!searchParams.get('lead_id'));
+  // Lead search state (step 0)
+  const [leadSearch, setLeadSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [createdContractId, setCreatedContractId] = useState<string | null>(null);
@@ -52,11 +58,35 @@ export default function ContractNew() {
   const [kloseSignerName, setKloseSignerName] = useState('');
   const [, setSelectedParentContract] = useState<any>(null);
 
+  const orgId = useCurrentOrgIdSafe();
   const createContract = useCreateContract();
   const updateContract = useUpdateContract();
 
   // Fetch existing contracts for this lead (for Amendment parent selection)
   const { data: existingContracts } = useContractsForLead(leadId || undefined);
+
+  // Lead search
+  useEffect(() => {
+    if (!leadSearch.trim() || !orgId) { setSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const s = leadSearch.trim();
+        const { data } = await supabase
+          .from('leads')
+          .select('id, status, piw_score, property:properties(address, city, state, owner_name, mao, arv)')
+          .eq('organization_id', orgId)
+          .is('archived_at', null)
+          .or(`properties.address.ilike.%${s}%,properties.owner_name.ilike.%${s}%,properties.city.ilike.%${s}%`, { referencedTable: 'properties' })
+          .order('created_at', { ascending: false })
+          .limit(20);
+        setSearchResults(data || []);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [leadSearch, orgId]);
   const abContracts = useMemo(() => 
     (existingContracts || []).filter(c => c.contract_type === 'AB' && c.status !== 'draft'),
     [existingContracts]
@@ -97,6 +127,11 @@ export default function ContractNew() {
       setKloseSignerName(profile.full_name);
     }
   }, [profile]);
+
+  const handleSelectLeadFromSearch = async (selectedLead: any) => {
+    setLead(selectedLead);
+    setStep('select');
+  };
 
   const handleSelectType = (type: 'AB' | 'BC' | 'AMENDMENT' | 'DC') => {
     setContractType(type);
@@ -273,8 +308,9 @@ export default function ContractNew() {
     );
   }
 
-  const progressSteps: Step[] = ['select', 'fill', 'klose_sign', 'send'];
-  const currentStepIdx = step === 'select_parent' ? 0 : progressSteps.indexOf(step);
+  const progressSteps: Step[] = ['search_lead', 'select', 'fill', 'klose_sign', 'send'];
+  const currentStepIdx = step === 'select_parent' ? 1 : progressSteps.indexOf(step);
+  const displayedSteps = leadId ? progressSteps.slice(1) : progressSteps; // hide search_lead when leadId in URL
 
   return (
     <Layout>
@@ -296,19 +332,119 @@ export default function ContractNew() {
 
         {/* Progress */}
         <div className="flex items-center gap-2">
-          {progressSteps.map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step === s || (step === 'select_parent' && s === 'select') ? 'bg-primary text-primary-foreground' :
-                currentStepIdx > i ? 'bg-green-500/20 text-green-400' :
-                'bg-muted text-muted-foreground'
-              }`}>
-                {currentStepIdx > i ? '✓' : i + 1}
+          {displayedSteps.map((s, i) => {
+            const displayIdx = displayedSteps.indexOf(s);
+            const activeIdx = leadId ? currentStepIdx - 1 : currentStepIdx;
+            return (
+              <div key={s} className="flex items-center gap-2">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  progressSteps[currentStepIdx] === s || (step === 'select_parent' && s === 'select') ? 'bg-primary text-primary-foreground' :
+                  activeIdx > displayIdx ? 'bg-green-500/20 text-green-400' :
+                  'bg-muted text-muted-foreground'
+                }`}>
+                  {activeIdx > displayIdx ? '✓' : displayIdx + 1}
+                </div>
+                {displayIdx < displayedSteps.length - 1 && <div className="w-10 h-0.5 bg-border" />}
               </div>
-              {i < 3 && <div className="w-12 h-0.5 bg-border" />}
-            </div>
-          ))}
+            );
+          })}
         </div>
+
+        {/* Step 0: Lead Search (when no lead_id in URL) */}
+        {step === 'search_lead' && (
+          <div className="space-y-4">
+            <Card variant="glass">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5 text-primary" />
+                  Seleccionar Lead
+                </CardTitle>
+                <CardDescription>
+                  Busca el lead por dirección o nombre del propietario para pre-llenar los datos del contrato automáticamente.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={leadSearch}
+                    onChange={(e) => setLeadSearch(e.target.value)}
+                    placeholder="Ej: 648 27th St, John Smith, Birmingham..."
+                    className="pl-9"
+                    autoFocus
+                  />
+                </div>
+
+                {searching && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
+                  </div>
+                )}
+
+                {!searching && leadSearch.trim() && searchResults.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-2 text-center">
+                    No se encontraron leads. Intenta con otra dirección o nombre.
+                  </p>
+                )}
+
+                <ScrollArea className="max-h-[420px]">
+                  <div className="space-y-2">
+                    {searchResults.map((result) => {
+                      const prop = result.property as any;
+                      const piw = result.piw_score ?? 0;
+                      const piwColor = piw >= 70 ? 'text-success' : piw >= 40 ? 'text-warning' : 'text-destructive';
+                      return (
+                        <Card
+                          key={result.id}
+                          variant="interactive"
+                          className="cursor-pointer hover:border-primary/60 transition-colors"
+                          onClick={() => handleSelectLeadFromSearch(result)}
+                        >
+                          <CardContent className="py-3 px-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                  <p className="font-medium text-sm truncate">
+                                    {prop?.address || '—'}, {prop?.city}, {prop?.state}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-3 ml-5">
+                                  <span className="text-xs text-muted-foreground">{prop?.owner_name || 'Sin nombre'}</span>
+                                  {prop?.mao > 0 && (
+                                    <span className="text-xs text-muted-foreground">MAO: <span className="text-foreground font-medium">${Number(prop.mao).toLocaleString()}</span></span>
+                                  )}
+                                  {prop?.arv > 0 && (
+                                    <span className="text-xs text-muted-foreground">ARV: ${Number(prop.arv).toLocaleString()}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Badge variant="outline" className="text-xs capitalize">{result.status?.replace(/_/g, ' ')}</Badge>
+                                {piw > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                                    <span className={`text-xs font-bold ${piwColor}`}>{piw}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+
+                {!leadSearch.trim() && (
+                  <p className="text-xs text-muted-foreground text-center py-2">
+                    Escribe para buscar leads. Busca por dirección, ciudad o nombre del propietario.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Step 1: Select Type */}
         {step === 'select' && (

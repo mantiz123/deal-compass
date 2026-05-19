@@ -7,12 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
-import { ABPage, getABSignablePages, getBCSignablePages, getAmendmentSignablePages, type KloseSignatureData } from '@/components/contracts/ContractPageViewer';
+import { ABPage, getABSignablePages, getBCSignablePages, getAmendmentSignablePages, getDCSignablePages, type KloseSignatureData } from '@/components/contracts/ContractPageViewer';
 import SellerInfoForm from '@/components/contracts/SellerInfoForm';
 import SigningWizard, { type SignablePage } from '@/components/contracts/SigningWizard';
 import kloseLogo from '@/assets/klose-logo.png';
 
-type FlowStep = 'loading' | 'expired' | 'already_signed' | 'seller_info' | 'signing' | 'confirming' | 'success' | 'error';
+type FlowStep = 'loading' | 'expired' | 'already_signed' | 'consent' | 'seller_info' | 'signing' | 'confirming' | 'success' | 'error';
 
 export default function ContractSign() {
   const { token } = useParams<{ token: string }>();
@@ -24,6 +24,10 @@ export default function ContractSign() {
   const [kloseSignatures, setKloseSignatures] = useState<KloseSignatureData[]>([]);
   const [agreeBinding, setAgreeBinding] = useState(false);
   const [agreeRead, setAgreeRead] = useState(false);
+  const [agreeConsent, setAgreeConsent] = useState(false);
+  const [agreeEsign, setAgreeEsign] = useState(false);
+  const [consentTimestamp, setConsentTimestamp] = useState('');
+  const [consentIp, setConsentIp] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -76,13 +80,47 @@ export default function ContractSign() {
         setKloseSignatures(parsed);
       }
 
-      // For AB contracts, go to seller info first; for BC/others, go straight to signing
-      if (data.contract_type === 'AB') {
-        setFlowStep('seller_info');
-      } else {
-        setFlowStep('signing');
-      }
+      // Always show ESIGN consent first
+      setFlowStep('consent');
     } catch { setFlowStep('error'); }
+  };
+
+  const handleConsentAccept = async () => {
+    const ts = new Date().toISOString();
+    setConsentTimestamp(ts);
+    let ip = '';
+    try { const r = await fetch('https://api.ipify.org?format=json'); ip = (await r.json()).ip; } catch {}
+    setConsentIp(ip);
+
+    // Store consent as a special audit record
+    if (contract) {
+      const auditEntry = JSON.stringify({
+        type: 'esign_consent',
+        esign_act: true,
+        ueta_alabama: true,
+        ip,
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timestamp: ts,
+      });
+      await supabase.from('contract_signatures').insert({
+        contract_id: contract.id,
+        signer_name: 'ESIGN_CONSENT',
+        signer_email: contract.seller_email,
+        signature_image: 'CONSENT_GIVEN',
+        ip_address: ip,
+        user_agent: auditEntry,
+      });
+    }
+
+    if (contract?.contract_type === 'AB') {
+      setFlowStep('seller_info');
+    } else {
+      setFlowStep('signing');
+    }
   };
 
   const handleSellerInfoComplete = (sellerData: Record<string, string>) => {
@@ -103,18 +141,30 @@ export default function ContractSign() {
       try { const r = await fetch('https://api.ipify.org?format=json'); ip = (await r.json()).ip; } catch {}
 
       const isBC = contract.contract_type === 'BC';
-      const signerName = isBC
+      const isDC = contract.contract_type === 'DC';
+      const signerName = isDC
+        ? (contractData.buyer_name || '')
+        : isBC
         ? (contractData.assignee_name || '')
         : (contractData.seller_name || '');
 
-      // Insert all page signatures
+      // Insert all page signatures with full audit trail
       const sigInserts = Object.entries(pageSignatures).map(([pageNum, sig]) => ({
         contract_id: contract.id,
         signer_name: signerName,
         signer_email: contract.seller_email,
         signature_image: sig,
         ip_address: ip,
-        user_agent: `${navigator.userAgent} | Page ${pageNum}`,
+        user_agent: JSON.stringify({
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          consentTimestamp,
+          consentIp,
+          page: Number(pageNum),
+        }),
       }));
 
       const { error: sigError } = await supabase.from('contract_signatures').insert(sigInserts);
@@ -162,7 +212,13 @@ export default function ContractSign() {
   // Build signable pages for the wizard — AB uses individual page renderer
   const buildWizardPages = (): SignablePage[] => {
     const type = contract?.contract_type;
-    const pageInfos = type === 'AB' ? getABSignablePages() : type === 'BC' ? getBCSignablePages() : getAmendmentSignablePages();
+    const pageInfos = type === 'AB'
+      ? getABSignablePages()
+      : type === 'BC'
+      ? getBCSignablePages()
+      : type === 'DC'
+      ? getDCSignablePages()
+      : getAmendmentSignablePages();
 
     return pageInfos.map(info => ({
       pageNum: info.pageNum,
@@ -227,6 +283,78 @@ export default function ContractSign() {
   const propCity = property?.city || contractData.property_city || '';
   const propState = property?.state || contractData.property_state || '';
 
+  // ESIGN/UETA Consent Step
+  if (flowStep === 'consent') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="max-w-lg mx-auto p-4 space-y-6 mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5 text-primary" />
+                Electronic Signature Consent
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="rounded-lg border bg-muted/30 p-4 text-sm space-y-3 leading-relaxed">
+                <p className="font-semibold text-foreground">Before signing, please read and agree to the following:</p>
+                <p className="text-muted-foreground">
+                  By checking the boxes below, you consent to the use of electronic signatures and records in connection with this real estate transaction, pursuant to:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                  <li><strong className="text-foreground">ESIGN Act</strong> — Electronic Signatures in Global and National Commerce Act (15 U.S.C. §7001)</li>
+                  <li><strong className="text-foreground">UETA</strong> — Alabama Uniform Electronic Transactions Act (Alabama Code §8-1A-1 et seq.)</li>
+                </ul>
+                <p className="text-muted-foreground">
+                  Your electronic signature has the same legal effect, validity, and enforceability as a handwritten wet-ink signature.
+                </p>
+                <div className="rounded bg-yellow-500/10 border border-yellow-500/30 px-3 py-2 text-yellow-700 dark:text-yellow-400 text-xs">
+                  <strong>Paper Alternative:</strong> You have the right to receive paper copies of these documents. If you prefer to sign on paper, do not proceed — contact Klose LLC at <a href="mailto:info@goklose.com" className="underline">info@goklose.com</a>.
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="consent-esign"
+                    checked={agreeConsent}
+                    onCheckedChange={(v) => setAgreeConsent(v === true)}
+                  />
+                  <Label htmlFor="consent-esign" className="text-sm leading-snug cursor-pointer">
+                    I consent to the use of electronic signatures and records under the ESIGN Act (15 U.S.C. §7001) and the Alabama UETA (§8-1A-1). I understand my electronic signature is legally binding to the same extent as a handwritten signature.
+                  </Label>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="consent-paper"
+                    checked={agreeEsign}
+                    onCheckedChange={(v) => setAgreeEsign(v === true)}
+                  />
+                  <Label htmlFor="consent-paper" className="text-sm leading-snug cursor-pointer">
+                    I have been informed of my right to receive paper copies and I voluntarily choose to proceed with electronic signing.
+                  </Label>
+                </div>
+              </div>
+
+              <Button
+                className="w-full"
+                disabled={!agreeConsent || !agreeEsign}
+                onClick={handleConsentAccept}
+              >
+                Continue to Sign Documents →
+              </Button>
+
+              <p className="text-xs text-center text-muted-foreground">
+                Your consent will be recorded with your IP address, device info, and timestamp as required by law.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   // Step 1: Seller Info Form (AB only)
   if (flowStep === 'seller_info') {
     return (
@@ -259,7 +387,13 @@ export default function ContractSign() {
         <div className="max-w-3xl mx-auto p-4 space-y-4 mt-4">
           <SigningWizard
             pages={buildWizardPages()}
-            signerName={contract?.contract_type === 'BC' ? (contractData.assignee_name || '') : (contractData.seller_name || '')}
+            signerName={
+              contract?.contract_type === 'DC'
+                ? (contractData.buyer_name || '')
+                : contract?.contract_type === 'BC'
+                ? (contractData.assignee_name || '')
+                : (contractData.seller_name || '')
+            }
             onComplete={handleSigningComplete}
             onBack={() => contract?.contract_type === 'AB' ? setFlowStep('seller_info') : null}
           />
@@ -284,7 +418,13 @@ export default function ContractSign() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Signer</p>
-                <p className="font-medium">{contract?.contract_type === 'BC' ? contractData.assignee_name : contractData.seller_name}</p>
+                <p className="font-medium">
+                  {contract?.contract_type === 'DC'
+                    ? contractData.buyer_name
+                    : contract?.contract_type === 'BC'
+                    ? contractData.assignee_name
+                    : contractData.seller_name}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Signatures Collected</p>

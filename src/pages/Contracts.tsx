@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useContracts, type Contract } from '@/hooks/useContracts';
 import { ContractDetailSheet } from '@/components/contracts/ContractDetailSheet';
+import { ContractDemoModal } from '@/components/contracts/ContractDemoModal';
 import { Search, Download, Eye, CheckCircle2, FileText, AlertCircle, DollarSign, Clock, AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
@@ -41,6 +42,7 @@ export default function Contracts() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('AB');
   const [onlyPendingKlose, setOnlyPendingKlose] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   const { data: allContracts = [], isLoading } = useContracts({
     status: statusFilter,
@@ -304,6 +306,9 @@ export default function Contracts() {
             <h1 className="text-2xl font-bold text-foreground">Contratos</h1>
             <p className="text-muted-foreground">Gestión de contratos y firmas electrónicas</p>
           </div>
+          <Button variant="outline" onClick={() => setDemoOpen(true)} className="gap-2">
+            🔍 Ver Demo
+          </Button>
         </div>
 
         {/* KPIs */}
@@ -473,6 +478,7 @@ export default function Contracts() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />
+      <ContractDemoModal open={demoOpen} onOpenChange={setDemoOpen} />
     </Layout>
   );
 }
