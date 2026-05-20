@@ -159,8 +159,9 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
       }
       
       const arvNum = arv ? parseFloat(arv) : undefined;
-      const repairNum = repairCost ? parseFloat(repairCost) : undefined;
-      const mao = arvNum && repairNum ? (arvNum * 0.65) - repairNum : undefined;
+      const repairNum = repairCost ? parseFloat(repairCost) : 0;
+      // MAO = ARV × 65% − repairs − assignment fee ($10K Klose default)
+      const mao = arvNum ? Math.round(arvNum * 0.65) - repairNum - 10_000 : undefined;
 
       await createLead.mutateAsync({
         property: {

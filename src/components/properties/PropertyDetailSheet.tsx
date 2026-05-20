@@ -7,6 +7,7 @@ import { Property, useDeleteProperty } from '@/hooks/useProperties';
 import { PropertyImageGallery } from './PropertyImageGallery';
 import { EditPropertyDialog } from './EditPropertyDialog';
 import { PropStreamCMAUploader } from './PropStreamCMAUploader';
+import { DealCalculator } from './DealCalculator';
 import {
   Building2,
   MapPin,
@@ -149,51 +150,45 @@ export function PropertyDetailSheet({ property, open, onOpenChange }: PropertyDe
               </div>
             </Card>
 
-            {/* Financial Info */}
-            <Card variant="glass" className="p-4">
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Información Financiera
-              </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {property.arv && (
-                  <div>
-                    <span className="text-muted-foreground">ARV:</span>
-                    <p className="font-semibold text-lg">${property.arv.toLocaleString()}</p>
-                  </div>
-                )}
-                {property.mao && (
-                  <div>
-                    <span className="text-muted-foreground">MAO:</span>
-                    <p className="font-semibold text-lg text-success">${property.mao.toLocaleString()}</p>
-                  </div>
-                )}
-                {property.repair_cost && (
-                  <div>
-                    <span className="text-muted-foreground">Costo de reparación:</span>
-                    <p className="font-semibold">${property.repair_cost.toLocaleString()}</p>
-                  </div>
-                )}
-                {property.last_sale_price && (
-                  <div>
-                    <span className="text-muted-foreground">Última venta:</span>
-                    <p className="font-semibold">${property.last_sale_price.toLocaleString()}</p>
-                  </div>
-                )}
-                {property.equity_percent && (
-                  <div>
-                    <span className="text-muted-foreground">Equity:</span>
-                    <p className="font-semibold">{property.equity_percent}%</p>
-                  </div>
-                )}
-                {property.tax_debt && (
-                  <div>
-                    <span className="text-muted-foreground">Deuda fiscal:</span>
-                    <p className="font-semibold text-destructive">${property.tax_debt.toLocaleString()}</p>
-                  </div>
-                )}
-              </div>
-            </Card>
+            {/* Financial summary (quick reference) */}
+            {(property.last_sale_price || property.equity_percent || property.tax_debt) && (
+              <Card variant="glass" className="p-4">
+                <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Datos Financieros
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {property.last_sale_price && (
+                    <div>
+                      <span className="text-muted-foreground">Última venta:</span>
+                      <p className="font-semibold">${property.last_sale_price.toLocaleString()}</p>
+                    </div>
+                  )}
+                  {property.equity_percent && (
+                    <div>
+                      <span className="text-muted-foreground">Equity:</span>
+                      <p className="font-semibold">{property.equity_percent}%</p>
+                    </div>
+                  )}
+                  {property.tax_debt && (
+                    <div>
+                      <span className="text-muted-foreground">Deuda fiscal:</span>
+                      <p className="font-semibold text-destructive">${property.tax_debt.toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {/* Deal Calculator — MAO breakdown + comps + ARV validator */}
+            <DealCalculator
+              arv={property.arv}
+              repairCost={property.repair_cost}
+              sqft={property.sqft}
+              address={property.address}
+              city={property.city}
+              state={property.state}
+            />
 
             {/* Owner Info */}
             {(property.owner_name || property.owner_email || property.owner_phone) && (
