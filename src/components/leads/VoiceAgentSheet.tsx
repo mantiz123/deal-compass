@@ -388,7 +388,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange, defaultTrainingMode }:
       // 3. Connect — try WebRTC (15s timeout) then fall back to WebSocket (20s timeout)
       try {
         await withTimeout(
-          conversation.startSession({ ...baseConfig, connectionType: 'webrtc' }),
+          Promise.resolve(conversation.startSession({ ...baseConfig, connectionType: 'webrtc' })),
           15000,
           'Tiempo de espera WebRTC agotado (15s). Cambiando a WebSocket...'
         );
