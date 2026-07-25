@@ -336,7 +336,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange, defaultTrainingMode }:
     setTrainingResult(null);
     setDeepAnalysis(null);
 
-    const withTimeout = <T>(promise: Promise<T>, ms: number, timeoutMsg: string): Promise<T> =>
+    const withTimeout = <T,>(promise: Promise<T>, ms: number, timeoutMsg: string): Promise<T> =>
       Promise.race([promise, new Promise<never>((_, r) => setTimeout(() => r(new Error(timeoutMsg)), ms))]);
 
     try {
