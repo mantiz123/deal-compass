@@ -49,7 +49,7 @@ export function useDNCCheck(property: Property | null | undefined): DNCStatus {
   }, [
     property?.do_not_mail,
     property?.is_litigator,
-    property?.phone_1_dnc, property?.phone_1,
+    property?.phone_1_dnc, property?.owner_phone,
     property?.phone_2_dnc, property?.phone_2,
     property?.phone_3_dnc, property?.phone_3,
     property?.phone_4_dnc, property?.phone_4,
