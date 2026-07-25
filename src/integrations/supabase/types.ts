@@ -989,6 +989,7 @@ export type Database = {
           contract_type: Database["public"]["Enums"]["contract_type"]
           created_at: string
           created_by: string | null
+          document_hash: string | null
           id: string
           ip_address: string | null
           lead_id: string
@@ -1000,6 +1001,7 @@ export type Database = {
           signed_at: string | null
           signed_pdf_url: string | null
           signing_token: string | null
+          signing_token_expires_at: string | null
           status: Database["public"]["Enums"]["contract_status"]
           updated_at: string
           viewed_at: string | null
@@ -1009,6 +1011,7 @@ export type Database = {
           contract_type: Database["public"]["Enums"]["contract_type"]
           created_at?: string
           created_by?: string | null
+          document_hash?: string | null
           id?: string
           ip_address?: string | null
           lead_id: string
@@ -1020,6 +1023,7 @@ export type Database = {
           signed_at?: string | null
           signed_pdf_url?: string | null
           signing_token?: string | null
+          signing_token_expires_at?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
           updated_at?: string
           viewed_at?: string | null
@@ -1029,6 +1033,7 @@ export type Database = {
           contract_type?: Database["public"]["Enums"]["contract_type"]
           created_at?: string
           created_by?: string | null
+          document_hash?: string | null
           id?: string
           ip_address?: string | null
           lead_id?: string
@@ -1040,6 +1045,7 @@ export type Database = {
           signed_at?: string | null
           signed_pdf_url?: string | null
           signing_token?: string | null
+          signing_token_expires_at?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
           updated_at?: string
           viewed_at?: string | null
@@ -1418,6 +1424,62 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_email_drafts: {
+        Row: {
+          body: string
+          created_at: string
+          draft_type: string
+          generated_at: string
+          id: string
+          lead_id: string
+          send_result: Json | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          subject: string
+          to_email: string | null
+          to_name: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          draft_type?: string
+          generated_at?: string
+          id?: string
+          lead_id: string
+          send_result?: Json | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          subject: string
+          to_email?: string | null
+          to_name?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          draft_type?: string
+          generated_at?: string
+          id?: string
+          lead_id?: string
+          send_result?: Json | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          subject?: string
+          to_email?: string | null
+          to_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_email_drafts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
@@ -1908,6 +1970,7 @@ export type Database = {
           days_on_market_avg: number | null
           divorce_date: string | null
           do_not_mail: boolean | null
+          email_bounced: boolean | null
           equity_percent: number | null
           estimated_monthly_rent: number | null
           eviction_count: number | null
@@ -1976,6 +2039,7 @@ export type Database = {
           proximity_to_development: string | null
           repair_cost: number | null
           school_rating: number | null
+          skip_trace_priority: boolean | null
           sqft: number | null
           state: string
           tax_debt: number | null
@@ -2005,6 +2069,7 @@ export type Database = {
           days_on_market_avg?: number | null
           divorce_date?: string | null
           do_not_mail?: boolean | null
+          email_bounced?: boolean | null
           equity_percent?: number | null
           estimated_monthly_rent?: number | null
           eviction_count?: number | null
@@ -2073,6 +2138,7 @@ export type Database = {
           proximity_to_development?: string | null
           repair_cost?: number | null
           school_rating?: number | null
+          skip_trace_priority?: boolean | null
           sqft?: number | null
           state?: string
           tax_debt?: number | null
@@ -2102,6 +2168,7 @@ export type Database = {
           days_on_market_avg?: number | null
           divorce_date?: string | null
           do_not_mail?: boolean | null
+          email_bounced?: boolean | null
           equity_percent?: number | null
           estimated_monthly_rent?: number | null
           eviction_count?: number | null
@@ -2170,6 +2237,7 @@ export type Database = {
           proximity_to_development?: string | null
           repair_cost?: number | null
           school_rating?: number | null
+          skip_trace_priority?: boolean | null
           sqft?: number | null
           state?: string
           tax_debt?: number | null
@@ -2384,6 +2452,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      propwire_import_log: {
+        Row: {
+          created_at: string
+          duplicates_skipped: number
+          email_sent: boolean
+          error_message: string | null
+          file_name: string
+          id: string
+          imported_at: string
+          imported_count: number
+          passed_filters: number
+          top_leads: Json
+          total_in_csv: number
+        }
+        Insert: {
+          created_at?: string
+          duplicates_skipped?: number
+          email_sent?: boolean
+          error_message?: string | null
+          file_name: string
+          id?: string
+          imported_at?: string
+          imported_count?: number
+          passed_filters?: number
+          top_leads?: Json
+          total_in_csv?: number
+        }
+        Update: {
+          created_at?: string
+          duplicates_skipped?: number
+          email_sent?: boolean
+          error_message?: string | null
+          file_name?: string
+          id?: string
+          imported_at?: string
+          imported_count?: number
+          passed_filters?: number
+          top_leads?: Json
+          total_in_csv?: number
+        }
+        Relationships: []
       }
       realtors: {
         Row: {
