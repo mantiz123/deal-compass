@@ -336,7 +336,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange, defaultTrainingMode }:
     setTrainingResult(null);
     setDeepAnalysis(null);
 
-    const withTimeout = <T>(promise: Promise<T>, ms: number, timeoutMsg: string): Promise<T> =>
+    const withTimeout = <T,>(promise: Promise<T>, ms: number, timeoutMsg: string): Promise<T> =>
       Promise.race([promise, new Promise<never>((_, r) => setTimeout(() => r(new Error(timeoutMsg)), ms))]);
 
     try {
@@ -388,7 +388,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange, defaultTrainingMode }:
       // 3. Connect — try WebRTC (15s timeout) then fall back to WebSocket (20s timeout)
       try {
         await withTimeout(
-          conversation.startSession({ ...baseConfig, connectionType: 'webrtc' }),
+          Promise.resolve(conversation.startSession({ ...baseConfig, connectionType: 'webrtc' })),
           15000,
           'Tiempo de espera WebRTC agotado (15s). Cambiando a WebSocket...'
         );
@@ -407,7 +407,7 @@ function VoiceAgentSheetInner({ lead, open, onOpenChange, defaultTrainingMode }:
         console.warn('[VoiceAgent] WebRTC failed, retrying with WebSocket:', msg);
         toast({ title: 'Reintentando vía WebSocket…', description: 'WebRTC no disponible, cambiando de transporte' });
         await withTimeout(
-          conversation.startSession({ ...baseConfig, connectionType: 'websocket' }),
+          Promise.resolve(conversation.startSession({ ...baseConfig, connectionType: 'websocket' })),
           20000,
           'Tiempo de espera WebSocket agotado (20s). Verifica tu conexión a internet.'
         );
