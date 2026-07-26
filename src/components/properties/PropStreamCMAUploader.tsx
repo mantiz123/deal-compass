@@ -198,45 +198,10 @@ export function PropStreamCMAUploader({ property, onComplete }: PropStreamCMAUpl
         }
       }
 
-      // Step 4: Check if lead exists, create if not
+      // Pipeline de leads retirado — solo procesamos la propiedad y comps.
       setStep('creating_lead');
-      const { data: existingLeads } = await supabase
-        .from('leads')
-        .select('id')
-        .eq('property_id', property.id)
-        .is('archived_at', null)
-        .limit(1);
-
-      let leadId: string;
-      let leadCreated = false;
-
-      if (existingLeads && existingLeads.length > 0) {
-        leadId = existingLeads[0].id;
-        // Update listing price if available
-        const listingPrice = prop?.listing_price || ps?.estimated_value;
-        if (listingPrice) {
-          await supabase
-            .from('leads')
-            .update({ listing_price: Number(listingPrice), updated_at: new Date().toISOString() })
-            .eq('id', leadId);
-        }
-      } else {
-        const listingPrice = prop?.listing_price || ps?.estimated_value;
-        const { data: newLead, error: leadError } = await supabase
-          .from('leads')
-          .insert({
-            property_id: property.id,
-            source: 'propstream',
-            status: 'captacion' as const,
-            listing_price: listingPrice ? Number(listingPrice) : null,
-          })
-          .select('id')
-          .single();
-
-        if (leadError) throw leadError;
-        leadId = newLead.id;
-        leadCreated = true;
-      }
+      const leadId: string = property.id;
+      const leadCreated = false;
 
       // Step 5: Calculate K-Score
       setStep('calculating');

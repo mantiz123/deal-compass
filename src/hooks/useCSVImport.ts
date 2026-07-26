@@ -202,14 +202,10 @@ export const useCSVImport = () => {
                   .eq('id', existingProperty.id);
               }
 
-              // Recalculate K-Score with updated data
-              if (calculatePIW) {
-                const { data: existingLead } = await supabase
-                  .from('leads')
-                  .select('id')
-                  .eq('property_id', existingProperty.id)
-                  .is('archived_at', null)
-                  .maybeSingle();
+              // Recalculo K-Score deshabilitado (pipeline de leads retirado)
+              if (false && calculatePIW) {
+                const existingLead: any = null;
+                
                 
                 if (existingLead) {
                   const { data: fullProperty } = await supabase
@@ -448,22 +444,9 @@ export const useCSVImport = () => {
               result.hotLeadsNoPhone.push(`${property.address}, ${property.city} (Equity: $${netEquity.toLocaleString()})`);
             }
             
-            const leadInsertData: any = { property_id: property.id, source: source, status: 'captacion' as const };
-            if (propertyData.mls_amount) {
-              leadInsertData.listing_price = propertyData.mls_amount;
-            }
+            // Pipeline de leads retirado: solo importamos properties.
+            const lead: any = null;
             
-            const { data: lead, error: leadError } = await supabase
-              .from('leads')
-              .insert(leadInsertData)
-              .select()
-              .single();
-            
-            if (leadError) {
-              result.failed++;
-              result.errors.push(`Fila ${i + batch.indexOf(row) + 2}: Error creando lead - ${leadError.message}`);
-              continue;
-            }
             
             if (calculatePIW && lead) {
               try {

@@ -65,29 +65,10 @@ export default function ContractNew() {
   // Fetch existing contracts for this lead (for Amendment parent selection)
   const { data: existingContracts } = useContractsForLead(leadId || undefined);
 
-  // Lead search
-  useEffect(() => {
-    if (leadSearch.trim().length < 2 || !orgId) { setSearchResults([]); return; }
-    const timer = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const s = leadSearch.trim();
-        const { data } = await supabase
-          .from('leads')
-          .select('id, status, piw_score, property:properties!inner(address, city, state, zip_code, owner_name, mao, arv)')
-          .eq('organization_id', orgId)
-          .is('archived_at', null)
-          .or(`address.ilike.%${s}%,owner_name.ilike.%${s}%,city.ilike.%${s}%,zip_code.ilike.%${s}%`, { referencedTable: 'properties' })
-          .order('piw_score', { ascending: false, nullsFirst: false })
-          .limit(20);
-        setSearchResults(data || []);
-      } finally {
-        setSearching(false);
-      }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [leadSearch, orgId]);
-  const abContracts = useMemo(() => 
+  // Búsqueda de leads deshabilitada — el pipeline de leads fue retirado.
+  useEffect(() => { setSearchResults([]); setSearching(false); }, [leadSearch, orgId]);
+
+  const abContracts = useMemo(() =>
     (existingContracts || []).filter(c => c.contract_type === 'AB' && c.status !== 'draft'),
     [existingContracts]
   );
@@ -96,20 +77,7 @@ export default function ContractNew() {
   const isDC = contractType === 'DC';
   const recipientLabel = (isBC || isDC) ? 'Buyer' : 'Seller';
 
-  // Load lead data
-  useEffect(() => {
-    if (!leadId) { setLoading(false); return; }
-    const fetchLead = async () => {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*, property:properties(*)')
-        .eq('id', leadId)
-        .single();
-      if (!error && data) setLead(data as any);
-      setLoading(false);
-    };
-    fetchLead();
-  }, [leadId]);
+  useEffect(() => { setLoading(false); }, [leadId]);
 
   const fields = useMemo(() => contractType ? getFieldsForType(contractType) : [], [contractType]);
 
