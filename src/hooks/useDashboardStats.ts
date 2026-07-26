@@ -3,12 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentOrgIdSafe } from '@/contexts/OrganizationContext';
 
 export interface DashboardStats {
-  totalLeads: number;
-  activeDeals: number;
-  buyersInNetwork: number;
-  avgPIWScore: number;
-  monthlyVolume: number;
-  leadsByStatus: Record<string, number>;
+  totalProperties: number;
+  totalInvestors: number;
+  pendingPayments: number;
+  receivedPayments: number;
+  pendingCount: number;
+  paidCount: number;
 }
 
 export function useDashboardStats() {
@@ -17,50 +17,43 @@ export function useDashboardStats() {
     queryKey: ['dashboard-stats', orgId],
     enabled: !!orgId,
     queryFn: async (): Promise<DashboardStats> => {
-      // Fetch leads count and status breakdown
-      const { data: leads, error: leadsError } = await supabase
-        .from('leads')
-        .select('id, status, piw_score, assignment_fee')
-        .eq('organization_id', orgId!);
+      const [{ count: propsCount }, { count: buyersCount }, { data: payments }] = await Promise.all([
+        supabase
+          .from('properties')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', orgId!),
+        supabase
+          .from('buyers')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', orgId!)
+          .eq('is_active', true),
+        supabase
+          .from('payments')
+          .select('amount, status')
+          .eq('organization_id', orgId!),
+      ]);
 
-      if (leadsError) throw leadsError;
-
-      // Fetch buyers count
-      const { count: buyersCount, error: buyersError } = await supabase
-        .from('buyers')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', orgId!)
-        .eq('is_active', true);
-
-      if (buyersError) throw buyersError;
-
-      // Calculate stats
-      const totalLeads = leads?.length || 0;
-      const activeDeals = leads?.filter(l => 
-        l.status === 'bajo_contrato' || l.status === 'cesion'
-      ).length || 0;
-
-      const scoresWithValues = leads?.filter(l => l.piw_score !== null) || [];
-      const avgPIWScore = scoresWithValues.length > 0
-        ? Math.round(scoresWithValues.reduce((acc, l) => acc + (l.piw_score || 0), 0) / scoresWithValues.length)
-        : 0;
-
-      const monthlyVolume = leads
-        ?.filter(l => l.status === 'cerrado' && l.assignment_fee)
-        .reduce((acc, l) => acc + (l.assignment_fee || 0), 0) || 0;
-
-      const leadsByStatus: Record<string, number> = {};
-      leads?.forEach(lead => {
-        leadsByStatus[lead.status] = (leadsByStatus[lead.status] || 0) + 1;
-      });
+      let pendingPayments = 0;
+      let receivedPayments = 0;
+      let pendingCount = 0;
+      let paidCount = 0;
+      for (const p of payments || []) {
+        if (p.status === 'pending') {
+          pendingPayments += Number(p.amount);
+          pendingCount++;
+        } else if (p.status === 'paid') {
+          receivedPayments += Number(p.amount);
+          paidCount++;
+        }
+      }
 
       return {
-        totalLeads,
-        activeDeals,
-        buyersInNetwork: buyersCount || 0,
-        avgPIWScore,
-        monthlyVolume,
-        leadsByStatus,
+        totalProperties: propsCount || 0,
+        totalInvestors: buyersCount || 0,
+        pendingPayments,
+        receivedPayments,
+        pendingCount,
+        paidCount,
       };
     },
   });

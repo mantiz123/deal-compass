@@ -1,7 +1,4 @@
-import { useState, useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useState } from "react";
 import { useServerPagination } from "@/hooks/useServerPagination";
 import { DataPagination } from "@/components/ui/data-pagination";
 import { Layout } from "@/components/layout/Layout";
@@ -11,41 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Progress } from "@/components/ui/progress";
 import { useBuyers, type Buyer } from "@/hooks/useBuyers";
-import { useBuyerStats } from "@/hooks/useBuyerMatchmaking";
-import { useRecalculateAllBuyerLiquidity } from "@/hooks/useBuyerLiquidity";
 import { NewBuyerDialog } from "@/components/buyers/NewBuyerDialog";
 import { EditBuyerDialog } from "@/components/buyers/EditBuyerDialog";
 import { DeleteBuyerDialog } from "@/components/buyers/DeleteBuyerDialog";
 import { BuyerDetailSheet } from "@/components/buyers/BuyerDetailSheet";
 import {
-  Search,
-  Plus,
-  Phone,
-  Mail,
-  MoreHorizontal,
-  MapPin,
-  DollarSign,
-  Home,
-  Zap,
-  Star,
-  Users,
-  AlertCircle,
-  Pencil,
-  Trash2,
-  UserX,
-  Eye,
-  Droplets,
-  RefreshCw,
-  TrendingUp,
-  Send,
+  Search, Plus, Phone, Mail, MoreHorizontal, MapPin, DollarSign,
+  Home, Users, AlertCircle, Pencil, Trash2, UserX, Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,39 +37,7 @@ const Buyers = () => {
   const [deleteBuyer, setDeleteBuyer] = useState<Buyer | null>(null);
   const [viewBuyer, setViewBuyer] = useState<Buyer | null>(null);
 
-  const { data: stats } = useBuyerStats();
-  const recalculateLiquidity = useRecalculateAllBuyerLiquidity();
-
-  const reactivateMutation = useMutation({
-    mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reactivate-buyers`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({}),
-        }
-      );
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error ?? "Error activating buyers");
-      return result as { sent: number; failed: number; total: number };
-    },
-    onSuccess: (data) => {
-      toast.success(
-        `Red activada — ${data.sent} emails enviados${data.failed ? ` (${data.failed} fallaron)` : ""}`,
-        { duration: 6000 }
-      );
-    },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
-  });
   const pagination = useServerPagination(24);
-
   const { data: result, isLoading, error } = useBuyers({
     search: searchTerm || undefined,
     tier: selectedTier,
@@ -108,17 +49,8 @@ const Buyers = () => {
   const totalCount = result?.count ?? 0;
   const buyersPagination = pagination.paginationProps(totalCount);
 
-  // Reset page on filter change
   const handleSearchChange = (val: string) => { setSearchTerm(val); pagination.resetPage(); };
   const handleTierChange = (tier: string | null) => { setSelectedTier(tier); pagination.resetPage(); };
-
-  const getLiquidityColor = (score: number | null): string => {
-    if (!score) return 'text-muted-foreground';
-    if (score >= 80) return 'text-success';
-    if (score >= 60) return 'text-accent';
-    if (score >= 40) return 'text-warning';
-    return 'text-destructive';
-  };
 
   const formatARVRange = (buyer: Buyer) => {
     if (!buyer.min_arv && !buyer.max_arv) return 'Sin especificar';
@@ -134,109 +66,24 @@ const Buyers = () => {
 
   return (
     <Layout>
-      {/* Header */}
       <div className="mb-8 animate-slide-up">
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Buyers Network</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Inversionistas</h1>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Gestiona tu red de cash buyers con matchmaking impulsado por IA
+              Red de inversionistas Section 8 y cash buyers
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 sm:gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => recalculateLiquidity.mutate()}
-              disabled={recalculateLiquidity.isPending}
-            >
-              <RefreshCw className={cn(
-                "mr-2 h-4 w-4",
-                recalculateLiquidity.isPending && "animate-spin"
-              )} />
-              Recalcular
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-primary/40 text-primary hover:bg-primary/10"
-              onClick={() => {
-                if (!reactivateMutation.isPending) reactivateMutation.mutate();
-              }}
-              disabled={reactivateMutation.isPending}
-              title="Envía email de reactivación a todos los buyers activos con email"
-            >
-              <Send className={cn("mr-2 h-4 w-4", reactivateMutation.isPending && "animate-pulse")} />
-              {reactivateMutation.isPending ? "Enviando…" : "Activar Red de Buyers"}
-            </Button>
-            <Button size="sm" onClick={() => setShowNewDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Buyer
-            </Button>
-          </div>
+          <Button size="sm" onClick={() => setShowNewDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Agregar Inversionista
+          </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="mb-6 grid gap-4 md:grid-cols-4">
-        <Card variant="interactive">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Buyers</p>
-                <p className="text-2xl font-bold">{stats?.totalBuyers || 0}</p>
-              </div>
-              <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                <Users className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card variant="interactive">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Activos</p>
-                <p className="text-2xl font-bold">{stats?.activeBuyers || 0}</p>
-              </div>
-              <div className="rounded-lg bg-success/10 p-2 text-success">
-                <Zap className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card variant="interactive">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Tiempo Cierre Prom.</p>
-                <p className="text-2xl font-bold">{stats?.avgCloseTime || 0} días</p>
-              </div>
-              <div className="rounded-lg bg-info/10 p-2 text-info">
-                <Star className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card variant="interactive">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Deals Totales</p>
-                <p className="text-2xl font-bold">{stats?.totalDeals || 0}</p>
-              </div>
-              <div className="rounded-lg bg-accent/10 p-2 text-accent">
-                <DollarSign className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search & Filters */}
       <Card variant="glass" className="mb-6">
         <CardContent className="py-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -246,15 +93,12 @@ const Buyers = () => {
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {Object.entries(tierConfig).map(([key, config]) => (
                 <Badge
                   key={key}
-                  className={cn(
-                    "cursor-pointer transition-all",
-                    config.color,
-                    selectedTier === key && "ring-2 ring-primary"
-                  )}
+                  className={cn("cursor-pointer transition-all", config.color,
+                    selectedTier === key && "ring-2 ring-primary")}
                   onClick={() => handleTierChange(selectedTier === key ? null : key)}
                 >
                   {config.label}
@@ -265,7 +109,6 @@ const Buyers = () => {
         </CardContent>
       </Card>
 
-      {/* Loading State */}
       {isLoading && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -276,45 +119,36 @@ const Buyers = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <Skeleton className="h-12 w-full" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
 
-      {/* Error State */}
       {error && (
         <Card variant="glass" className="border-destructive/50">
           <CardContent className="p-6 text-center">
             <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Error al cargar compradores</h3>
-            <p className="text-muted-foreground">Por favor, intenta de nuevo más tarde.</p>
+            <h3 className="text-lg font-semibold mb-2">Error al cargar inversionistas</h3>
           </CardContent>
         </Card>
       )}
 
-      {/* Empty State */}
       {!isLoading && !error && totalCount === 0 && (
         <Card variant="glass">
           <CardContent className="p-12 text-center">
             <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No hay compradores todavía</h3>
+            <h3 className="text-xl font-semibold mb-2">No hay inversionistas todavía</h3>
             <p className="text-muted-foreground mb-6">
-              Añade tu primer cash buyer para comenzar a hacer matchmaking con tus deals.
+              Agrega tu primer inversionista para comenzar tu red.
             </p>
             <Button onClick={() => setShowNewDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Añadir Primer Comprador
+              <Plus className="mr-2 h-4 w-4" />Agregar Primero
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Buyers Grid */}
       {!isLoading && !error && buyers.length > 0 && (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -339,49 +173,7 @@ const Buyers = () => {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Liquidity Score */}
-                  <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-3">
-                    <span className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Droplets className="h-3 w-3" />
-                      Liquidity Score
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "text-lg font-bold",
-                        getLiquidityColor((buyer as any).liquidity_score)
-                      )}>
-                        {(buyer as any).liquidity_score || '-'}
-                      </span>
-                      {(buyer as any).liquidity_score && (
-                        <Progress 
-                          value={(buyer as any).liquidity_score} 
-                          className="w-12 h-2"
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Close Ratio & Deals */}
-                  <div className="flex items-center justify-between rounded-lg bg-secondary/30 p-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <TrendingUp className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-muted-foreground">Ratio Cierre:</span>
-                      <span className="font-medium">
-                        {(buyer as any).close_ratio 
-                          ? `${Math.round(Number((buyer as any).close_ratio))}%` 
-                          : '-'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Zap className="h-3 w-3 text-primary" />
-                      <span className="font-bold text-primary">
-                        {buyer.deals_closed || 0} deals
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Details */}
+                <CardContent className="space-y-3">
                   <div className="space-y-2 text-sm">
                     {buyer.preferred_zip_codes && buyer.preferred_zip_codes.length > 0 && (
                       <div className="flex items-center gap-2">
@@ -407,66 +199,45 @@ const Buyers = () => {
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-between border-t border-border pt-3">
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-success">
-                        {buyer.avg_close_time_days || '-'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Días Promedio</p>
-                    </div>
-                    <div className="flex gap-1">
-                      {buyer.phone && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => window.open(`tel:${buyer.phone}`)}
-                        >
-                          <Phone className="h-4 w-4" />
+                  <div className="flex items-center justify-end gap-1 border-t border-border pt-3">
+                    {buyer.phone && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8"
+                        onClick={(e) => { e.stopPropagation(); window.open(`tel:${buyer.phone}`); }}>
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {buyer.email && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8"
+                        onClick={(e) => { e.stopPropagation(); window.open(`mailto:${buyer.email}`); }}>
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8"
+                          onClick={(e) => e.stopPropagation()}>
+                          <MoreHorizontal className="h-4 w-4" />
                         </Button>
-                      )}
-                      {buyer.email && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => window.open(`mailto:${buyer.email}`)}
-                        >
-                          <Mail className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setViewBuyer(buyer); }}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Detalles
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditBuyer(buyer); }}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={(e) => { e.stopPropagation(); setDeleteBuyer(buyer); }}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Eliminar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setViewBuyer(buyer); }}>
+                          <Eye className="h-4 w-4 mr-2" />Ver Detalles
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditBuyer(buyer); }}>
+                          <Pencil className="h-4 w-4 mr-2" />Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => { e.stopPropagation(); setDeleteBuyer(buyer); }}
+                          className="text-destructive focus:text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
 
-                  {/* Inactive indicator */}
                   {!buyer.is_active && (
-                    <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="mt-1 pt-3 border-t border-border flex items-center gap-2 text-sm text-muted-foreground">
                       <UserX className="h-4 w-4" />
                       <span>Inactivo</span>
                     </div>
@@ -479,23 +250,13 @@ const Buyers = () => {
         </>
       )}
 
-      {/* Dialogs & Sheets */}
       <NewBuyerDialog open={showNewDialog} onOpenChange={setShowNewDialog} />
-      <EditBuyerDialog 
-        buyer={editBuyer} 
-        open={!!editBuyer} 
-        onOpenChange={(open) => !open && setEditBuyer(null)} 
-      />
-      <DeleteBuyerDialog 
-        buyer={deleteBuyer} 
-        open={!!deleteBuyer} 
-        onOpenChange={(open) => !open && setDeleteBuyer(null)} 
-      />
-      <BuyerDetailSheet
-        buyer={viewBuyer}
-        open={!!viewBuyer}
-        onOpenChange={(open) => !open && setViewBuyer(null)}
-      />
+      <EditBuyerDialog buyer={editBuyer} open={!!editBuyer}
+        onOpenChange={(open) => !open && setEditBuyer(null)} />
+      <DeleteBuyerDialog buyer={deleteBuyer} open={!!deleteBuyer}
+        onOpenChange={(open) => !open && setDeleteBuyer(null)} />
+      <BuyerDetailSheet buyer={viewBuyer} open={!!viewBuyer}
+        onOpenChange={(open) => !open && setViewBuyer(null)} />
     </Layout>
   );
 };
