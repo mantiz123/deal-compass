@@ -70,12 +70,12 @@ export function usePropertyStats() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('properties')
-        .select('*, lead:leads(id)');
+        .select('*');
 
       if (error) throw error;
 
       const total = data.length;
-      const withLeads = data.filter(p => (p.lead as any[])?.length > 0).length;
+      const withLeads = 0;
       const totalArv = data.reduce((sum, p) => sum + (p.arv || 0), 0);
       const avgArv = total > 0 ? totalArv / total : 0;
 
