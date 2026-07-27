@@ -7,7 +7,7 @@ import { Property, useDeleteProperty } from '@/hooks/useProperties';
 import { PropertyImageGallery } from './PropertyImageGallery';
 import { EditPropertyDialog } from './EditPropertyDialog';
 import { PropStreamCMAUploader } from './PropStreamCMAUploader';
-import { DealCalculator } from './DealCalculator';
+import { Section8UnderwritingCard } from './Section8UnderwritingCard';
 import {
   Building2,
   MapPin,
@@ -180,11 +180,12 @@ export function PropertyDetailSheet({ property, open, onOpenChange }: PropertyDe
               </Card>
             )}
 
-            {/* Deal Calculator — MAO breakdown + comps + ARV validator */}
-            <DealCalculator
+            {/* Section 8 Underwriting — cashflow, DSCR, cap rate, semáforo */}
+            <Section8UnderwritingCard
               arv={property.arv}
               repairCost={property.repair_cost}
-              sqft={property.sqft}
+              estimatedRent={property.estimated_monthly_rent}
+              lastSalePrice={property.last_sale_price}
               address={property.address}
               city={property.city}
               state={property.state}
