@@ -380,6 +380,12 @@ export function Section8UnderwritingCard({
               prefix="$"
             />
             <NumberField
+              label="HOA / mes"
+              value={hoaMonthly}
+              onChange={setHoaMonthly}
+              prefix="$"
+            />
+            <NumberField
               label="Property mgmt"
               value={pmPct}
               onChange={setPmPct}
