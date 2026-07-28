@@ -16,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword";
 import PendingApproval from "./pages/PendingApproval";
 import Settings from "./pages/Settings";
 import Landing from "./pages/Landing";
+import Analyze from "./pages/Analyze";
 import Contracts from "./pages/Contracts";
 import ContractNew from "./pages/ContractNew";
 import ContractSign from "./pages/ContractSign";
