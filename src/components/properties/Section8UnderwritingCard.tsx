@@ -84,6 +84,7 @@ export function Section8UnderwritingCard({
   // Operating (Alabama defaults)
   const [taxRatePct, setTaxRatePct] = useState(0.9); // % of purchase / yr
   const [insuranceAnnual, setInsuranceAnnual] = useState(1400);
+  const [hoaMonthly, setHoaMonthly] = useState(0);
   const [pmPct, setPmPct] = useState(10);
   const [vacancyPct, setVacancyPct] = useState(5);
   const [repairsPct, setRepairsPct] = useState(5);
