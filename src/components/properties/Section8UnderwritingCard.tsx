@@ -134,6 +134,7 @@ export function Section8UnderwritingCard({
       pAndI,
       taxMonthly,
       insMonthly,
+      hoaMonthly,
       piti,
       opex,
       cashflow,
@@ -143,6 +144,7 @@ export function Section8UnderwritingCard({
       cashInvested,
       cocReturn,
       rentToPrice,
+      fiftyPctPass,
     };
   }, [
     purchasePrice,
@@ -151,6 +153,7 @@ export function Section8UnderwritingCard({
     amortYears,
     taxRatePct,
     insuranceAnnual,
+    hoaMonthly,
     pmPct,
     vacancyPct,
     repairsPct,
