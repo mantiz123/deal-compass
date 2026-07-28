@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Section8UnderwritingCard } from '@/components/properties/Section8UnderwritingCard';
 import { ArrowRight, Shield, TrendingUp, Home } from 'lucide-react';
-import { Helmet } from 'react-helmet-async';
+import { useEffect } from 'react';
 
 export default function Analyze() {
   return (
