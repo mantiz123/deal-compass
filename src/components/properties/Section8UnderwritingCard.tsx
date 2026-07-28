@@ -102,15 +102,15 @@ export function Section8UnderwritingCard({
 
     const taxMonthly = (purchasePrice * (taxRatePct / 100)) / 12;
     const insMonthly = insuranceAnnual / 12;
-    const piti = pAndI + taxMonthly + insMonthly;
+    const piti = pAndI + taxMonthly + insMonthly + hoaMonthly;
 
     const opexRate = (pmPct + vacancyPct + repairsPct + capexPct) / 100;
     const opex = monthlyRent * opexRate;
 
     const cashflow = monthlyRent - piti - opex;
 
-    // NOI (excludes debt service by definition)
-    const noiMonthly = monthlyRent - opex - taxMonthly - insMonthly;
+    // NOI excludes debt service and HOA is an operating expense
+    const noiMonthly = monthlyRent - opex - taxMonthly - insMonthly - hoaMonthly;
     const noiAnnual = noiMonthly * 12;
 
     const capRate = purchasePrice > 0 ? (noiAnnual / purchasePrice) * 100 : 0;
@@ -123,6 +123,11 @@ export function Section8UnderwritingCard({
 
     const rentToPrice =
       purchasePrice > 0 ? ((monthlyRent * 12) / purchasePrice) * 100 : 0;
+
+    // 50% rule sanity check: operating expenses (ex debt) should be ≤ 50% of rent
+    const fiftyPctOpex = monthlyRent * 0.5;
+    const actualOpexPlusFixed = opex + taxMonthly + insMonthly + hoaMonthly;
+    const fiftyPctPass = actualOpexPlusFixed <= fiftyPctOpex;
 
     return {
       loan,
