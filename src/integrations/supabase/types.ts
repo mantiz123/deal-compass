@@ -252,6 +252,141 @@ export type Database = {
           },
         ]
       }
+      hud_fmr_alabama_fy2026: {
+        Row: {
+          area_name: string
+          county_fips: string | null
+          county_name: string | null
+          created_at: string
+          effective_date: string
+          fiscal_year: number
+          fmr_0br: number
+          fmr_1br: number
+          fmr_2br: number
+          fmr_3br: number
+          fmr_4br: number
+          has_may_2026_revision: boolean
+          hud_area_code: string
+          id: string
+          is_metro: boolean
+          payment_standard_0br: number | null
+          payment_standard_1br: number | null
+          payment_standard_2br: number | null
+          payment_standard_3br: number | null
+          payment_standard_4br: number | null
+          payment_standard_pha_name: string | null
+          payment_standard_source: string
+          payment_standard_updated_at: string | null
+          source_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          area_name: string
+          county_fips?: string | null
+          county_name?: string | null
+          created_at?: string
+          effective_date?: string
+          fiscal_year?: number
+          fmr_0br: number
+          fmr_1br: number
+          fmr_2br: number
+          fmr_3br: number
+          fmr_4br: number
+          has_may_2026_revision?: boolean
+          hud_area_code: string
+          id?: string
+          is_metro?: boolean
+          payment_standard_0br?: number | null
+          payment_standard_1br?: number | null
+          payment_standard_2br?: number | null
+          payment_standard_3br?: number | null
+          payment_standard_4br?: number | null
+          payment_standard_pha_name?: string | null
+          payment_standard_source?: string
+          payment_standard_updated_at?: string | null
+          source_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          area_name?: string
+          county_fips?: string | null
+          county_name?: string | null
+          created_at?: string
+          effective_date?: string
+          fiscal_year?: number
+          fmr_0br?: number
+          fmr_1br?: number
+          fmr_2br?: number
+          fmr_3br?: number
+          fmr_4br?: number
+          has_may_2026_revision?: boolean
+          hud_area_code?: string
+          id?: string
+          is_metro?: boolean
+          payment_standard_0br?: number | null
+          payment_standard_1br?: number | null
+          payment_standard_2br?: number | null
+          payment_standard_3br?: number | null
+          payment_standard_4br?: number | null
+          payment_standard_pha_name?: string | null
+          payment_standard_source?: string
+          payment_standard_updated_at?: string | null
+          source_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hud_fmr_safmr_zip: {
+        Row: {
+          area_name: string
+          created_at: string
+          effective_date: string
+          fiscal_year: number
+          has_may_2026_revision: boolean
+          hud_area_code: string
+          id: string
+          safmr_0br: number
+          safmr_1br: number
+          safmr_2br: number
+          safmr_3br: number
+          safmr_4br: number
+          updated_at: string
+          zip_code: string
+        }
+        Insert: {
+          area_name: string
+          created_at?: string
+          effective_date?: string
+          fiscal_year?: number
+          has_may_2026_revision?: boolean
+          hud_area_code: string
+          id?: string
+          safmr_0br: number
+          safmr_1br: number
+          safmr_2br: number
+          safmr_3br: number
+          safmr_4br: number
+          updated_at?: string
+          zip_code: string
+        }
+        Update: {
+          area_name?: string
+          created_at?: string
+          effective_date?: string
+          fiscal_year?: number
+          has_may_2026_revision?: boolean
+          hud_area_code?: string
+          id?: string
+          safmr_0br?: number
+          safmr_1br?: number
+          safmr_2br?: number
+          safmr_3br?: number
+          safmr_4br?: number
+          updated_at?: string
+          zip_code?: string
+        }
+        Relationships: []
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -1015,6 +1150,116 @@ export type Database = {
           },
           {
             foreignKeyName: "property_images_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_underwriting: {
+        Row: {
+          amortization_years: number
+          cap_rate: number | null
+          capex_pct: number
+          cash_invested: number | null
+          closing_cost_pct: number
+          coc_return: number | null
+          created_at: string
+          down_payment_pct: number
+          dscr: number | null
+          hoa_monthly: number
+          hud_area_code: string | null
+          id: string
+          insurance_annual: number
+          interest_rate: number
+          monthly_cashflow: number | null
+          monthly_rent: number
+          noi_annual: number | null
+          notes: string | null
+          organization_id: string
+          property_id: string | null
+          property_mgmt_pct: number
+          property_tax_rate_pct: number
+          purchase_price: number
+          rehab_cost: number
+          rent_source: string | null
+          repairs_pct: number
+          scenario_name: string
+          traffic_light: string | null
+          updated_at: string
+          user_id: string
+          vacancy_pct: number
+        }
+        Insert: {
+          amortization_years?: number
+          cap_rate?: number | null
+          capex_pct?: number
+          cash_invested?: number | null
+          closing_cost_pct?: number
+          coc_return?: number | null
+          created_at?: string
+          down_payment_pct?: number
+          dscr?: number | null
+          hoa_monthly?: number
+          hud_area_code?: string | null
+          id?: string
+          insurance_annual?: number
+          interest_rate?: number
+          monthly_cashflow?: number | null
+          monthly_rent: number
+          noi_annual?: number | null
+          notes?: string | null
+          organization_id: string
+          property_id?: string | null
+          property_mgmt_pct?: number
+          property_tax_rate_pct?: number
+          purchase_price: number
+          rehab_cost?: number
+          rent_source?: string | null
+          repairs_pct?: number
+          scenario_name?: string
+          traffic_light?: string | null
+          updated_at?: string
+          user_id: string
+          vacancy_pct?: number
+        }
+        Update: {
+          amortization_years?: number
+          cap_rate?: number | null
+          capex_pct?: number
+          cash_invested?: number | null
+          closing_cost_pct?: number
+          coc_return?: number | null
+          created_at?: string
+          down_payment_pct?: number
+          dscr?: number | null
+          hoa_monthly?: number
+          hud_area_code?: string | null
+          id?: string
+          insurance_annual?: number
+          interest_rate?: number
+          monthly_cashflow?: number | null
+          monthly_rent?: number
+          noi_annual?: number | null
+          notes?: string | null
+          organization_id?: string
+          property_id?: string | null
+          property_mgmt_pct?: number
+          property_tax_rate_pct?: number
+          purchase_price?: number
+          rehab_cost?: number
+          rent_source?: string | null
+          repairs_pct?: number
+          scenario_name?: string
+          traffic_light?: string | null
+          updated_at?: string
+          user_id?: string
+          vacancy_pct?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_underwriting_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"

@@ -84,6 +84,7 @@ export function Section8UnderwritingCard({
   // Operating (Alabama defaults)
   const [taxRatePct, setTaxRatePct] = useState(0.9); // % of purchase / yr
   const [insuranceAnnual, setInsuranceAnnual] = useState(1400);
+  const [hoaMonthly, setHoaMonthly] = useState(0);
   const [pmPct, setPmPct] = useState(10);
   const [vacancyPct, setVacancyPct] = useState(5);
   const [repairsPct, setRepairsPct] = useState(5);
@@ -101,15 +102,15 @@ export function Section8UnderwritingCard({
 
     const taxMonthly = (purchasePrice * (taxRatePct / 100)) / 12;
     const insMonthly = insuranceAnnual / 12;
-    const piti = pAndI + taxMonthly + insMonthly;
+    const piti = pAndI + taxMonthly + insMonthly + hoaMonthly;
 
     const opexRate = (pmPct + vacancyPct + repairsPct + capexPct) / 100;
     const opex = monthlyRent * opexRate;
 
     const cashflow = monthlyRent - piti - opex;
 
-    // NOI (excludes debt service by definition)
-    const noiMonthly = monthlyRent - opex - taxMonthly - insMonthly;
+    // NOI excludes debt service and HOA is an operating expense
+    const noiMonthly = monthlyRent - opex - taxMonthly - insMonthly - hoaMonthly;
     const noiAnnual = noiMonthly * 12;
 
     const capRate = purchasePrice > 0 ? (noiAnnual / purchasePrice) * 100 : 0;
@@ -123,11 +124,17 @@ export function Section8UnderwritingCard({
     const rentToPrice =
       purchasePrice > 0 ? ((monthlyRent * 12) / purchasePrice) * 100 : 0;
 
+    // 50% rule sanity check: operating expenses (ex debt) should be ≤ 50% of rent
+    const fiftyPctOpex = monthlyRent * 0.5;
+    const actualOpexPlusFixed = opex + taxMonthly + insMonthly + hoaMonthly;
+    const fiftyPctPass = actualOpexPlusFixed <= fiftyPctOpex;
+
     return {
       loan,
       pAndI,
       taxMonthly,
       insMonthly,
+      hoaMonthly,
       piti,
       opex,
       cashflow,
@@ -137,6 +144,7 @@ export function Section8UnderwritingCard({
       cashInvested,
       cocReturn,
       rentToPrice,
+      fiftyPctPass,
     };
   }, [
     purchasePrice,
@@ -145,6 +153,7 @@ export function Section8UnderwritingCard({
     amortYears,
     taxRatePct,
     insuranceAnnual,
+    hoaMonthly,
     pmPct,
     vacancyPct,
     repairsPct,
@@ -252,6 +261,9 @@ export function Section8UnderwritingCard({
             <Row label="− P&I préstamo" value={`−$${fmt(m.pAndI)}`} negative />
             <Row label="− Property tax" value={`−$${fmt(m.taxMonthly)}`} negative />
             <Row label="− Insurance" value={`−$${fmt(m.insMonthly)}`} negative />
+            {hoaMonthly > 0 && (
+              <Row label="− HOA" value={`−$${fmt(hoaMonthly)}`} negative />
+            )}
             <Row
               label={`− OpEx (${pmPct + vacancyPct + repairsPct + capexPct}%)`}
               value={`−$${fmt(m.opex)}`}
@@ -270,6 +282,12 @@ export function Section8UnderwritingCard({
               <span className="tabular-nums">
                 {pct(m.rentToPrice)}{' '}
                 {m.rentToPrice >= 12 ? '✓ Section 8 friendly' : '— buscar > 12%'}
+              </span>
+            </div>
+            <div className="flex justify-between text-[11px] text-muted-foreground">
+              <span>Regla del 50% (OpEx + fijos ≤ 50% renta)</span>
+              <span className={`tabular-nums ${m.fiftyPctPass ? 'text-success' : 'text-warning'}`}>
+                {m.fiftyPctPass ? '✓ Pasa' : '⚠ Excede — revisa gastos'}
               </span>
             </div>
             <div className="flex justify-between text-[11px] text-muted-foreground">
@@ -359,6 +377,12 @@ export function Section8UnderwritingCard({
               label="Insurance / año"
               value={insuranceAnnual}
               onChange={setInsuranceAnnual}
+              prefix="$"
+            />
+            <NumberField
+              label="HOA / mes"
+              value={hoaMonthly}
+              onChange={setHoaMonthly}
               prefix="$"
             />
             <NumberField
