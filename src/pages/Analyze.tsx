@@ -6,16 +6,20 @@ import { ArrowRight, Shield, TrendingUp, Home } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function Analyze() {
+  useEffect(() => {
+    document.title = 'Section 8 Deal Analyzer — Calculadora gratis | Klose';
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) {
+      meta.setAttribute(
+        'content',
+        'Analiza cualquier propiedad de Section 8 en Alabama: cashflow, DSCR, cap rate y cash-on-cash en segundos. HUD FMR FY2026.'
+      );
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Section 8 Deal Analyzer — Calculadora gratis | Klose</title>
-        <meta
-          name="description"
-          content="Analiza cualquier propiedad de Section 8 en Alabama: cashflow, DSCR, cap rate y cash-on-cash en segundos. HUD FMR FY2026."
-        />
-        <link rel="canonical" href="https://goklose.com/analyze" />
-      </Helmet>
+
 
       {/* Header público */}
       <header className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-40">
