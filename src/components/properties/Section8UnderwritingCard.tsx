@@ -261,6 +261,9 @@ export function Section8UnderwritingCard({
             <Row label="− P&I préstamo" value={`−$${fmt(m.pAndI)}`} negative />
             <Row label="− Property tax" value={`−$${fmt(m.taxMonthly)}`} negative />
             <Row label="− Insurance" value={`−$${fmt(m.insMonthly)}`} negative />
+            {hoaMonthly > 0 && (
+              <Row label="− HOA" value={`−$${fmt(hoaMonthly)}`} negative />
+            )}
             <Row
               label={`− OpEx (${pmPct + vacancyPct + repairsPct + capexPct}%)`}
               value={`−$${fmt(m.opex)}`}
@@ -279,6 +282,12 @@ export function Section8UnderwritingCard({
               <span className="tabular-nums">
                 {pct(m.rentToPrice)}{' '}
                 {m.rentToPrice >= 12 ? '✓ Section 8 friendly' : '— buscar > 12%'}
+              </span>
+            </div>
+            <div className="flex justify-between text-[11px] text-muted-foreground">
+              <span>Regla del 50% (OpEx + fijos ≤ 50% renta)</span>
+              <span className={`tabular-nums ${m.fiftyPctPass ? 'text-success' : 'text-warning'}`}>
+                {m.fiftyPctPass ? '✓ Pasa' : '⚠ Excede — revisa gastos'}
               </span>
             </div>
             <div className="flex justify-between text-[11px] text-muted-foreground">
