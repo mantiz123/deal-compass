@@ -15,13 +15,19 @@ import {
   Link2,
   Menu,
   X,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOrganization } from "@/contexts/OrganizationContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import kloseLogo from "@/assets/klose-logo.png";
 
 type NavItem = { name: string; href: string; icon: typeof LayoutDashboard };
+
+const adminNavItems: NavItem[] = [
+  { name: "Admin Inversionistas", href: "/admin/buyers", icon: ShieldCheck },
+];
 
 const navItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -39,6 +45,7 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { signOut } = useAuth();
+  const { isSuperAdmin } = useOrganization();
   const isMobile = useIsMobile();
 
   const handleNavClick = () => {
@@ -88,6 +95,7 @@ export function Sidebar() {
 
       <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
         {navItems.map(renderNavItem)}
+        {isSuperAdmin && adminNavItems.map(renderNavItem)}
       </nav>
 
       <div className="border-t border-border p-2 space-y-1">
