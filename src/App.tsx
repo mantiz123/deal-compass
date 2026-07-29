@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import Index from "./pages/Index";
 import Buyers from "./pages/Buyers";
+import AdminBuyers from "./pages/AdminBuyers";
 import Properties from "./pages/Properties";
 import Payments from "./pages/Payments";
 import Import from "./pages/Import";
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/auth/reset" element={<ResetPassword />} />
               <Route path="/pending-approval" element={<PendingApproval />} />
               <Route path="/buyers" element={<Buyers />} />
+              <Route path="/admin/buyers" element={<AdminBuyers />} />
               <Route path="/properties" element={<Properties />} />
               <Route path="/payments" element={<Payments />} />
               <Route path="/import" element={<Import />} />
