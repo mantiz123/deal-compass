@@ -35,16 +35,15 @@ export default function PayCheckout() {
   useEffect(() => {
     if (!token) return;
     (async () => {
-      const { data, error } = await supabase
-        .from("payment_links")
-        .select("id, title, description, amount_cents, currency, status, customer_email")
-        .eq("token", token)
-        .maybeSingle();
-      if (error || !data) {
+      const { data, error } = await supabase.functions.invoke("get-payment-link", {
+        body: { token },
+      });
+      const linkData = (data as any)?.link as LinkData | undefined;
+      if (error || !linkData) {
         setError("Este link de pago no existe o fue removido.");
       } else {
-        setLink(data as LinkData);
-        if (data.status === "paid" || searchParams.get("success") === "true") {
+        setLink(linkData);
+        if (linkData.status === "paid" || searchParams.get("success") === "true") {
           setDone(true);
         }
       }

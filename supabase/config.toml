@@ -11,3 +11,12 @@ verify_jwt = false
 
 [functions.create-stripe-checkout]
 verify_jwt = false
+
+[functions.get-payment-link]
+verify_jwt = false
+
+[functions.get-contract-for-signing]
+verify_jwt = false
+
+[functions.submit-contract-signing]
+verify_jwt = false
