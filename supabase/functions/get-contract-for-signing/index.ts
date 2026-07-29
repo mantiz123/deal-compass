@@ -16,6 +16,17 @@ function getClientIp(req: Request): string {
   )
 }
 
+// The contracts bucket is private: convert a stored URL into a short-lived signed URL
+export async function toSignedUrl(supabase: any, url: string | null): Promise<string | null> {
+  if (!url) return null
+  const marker = '/contracts/'
+  const idx = url.indexOf(marker)
+  if (idx === -1) return null
+  const path = url.slice(idx + marker.length).split('?')[0]
+  const { data } = await supabase.storage.from('contracts').createSignedUrl(path, 60 * 60)
+  return data?.signedUrl ?? null
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -80,8 +91,8 @@ Deno.serve(async (req) => {
           seller_email: contract.seller_email,
           signing_token: contract.signing_token,
           document_hash: contract.document_hash,
-          signed_pdf_url: contract.signed_pdf_url,
-          pdf_url: contract.pdf_url,
+          signed_pdf_url: await toSignedUrl(supabase, contract.signed_pdf_url),
+          pdf_url: await toSignedUrl(supabase, contract.pdf_url),
           lead: contract.lead,
         },
         kloseSignatures: kloseSigs || [],

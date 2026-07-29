@@ -129,7 +129,15 @@ Deno.serve(async (req) => {
       clearTimeout(pdfTimeout)
       if (pdfRes.ok) {
         const pdfData = await pdfRes.json()
-        signedPdfUrl = pdfData.signedPdfUrl || ''
+        const rawUrl: string = pdfData.signedPdfUrl || ''
+        // contracts bucket is private → hand back a short-lived signed URL
+        const marker = '/contracts/'
+        const idx = rawUrl.indexOf(marker)
+        if (idx !== -1) {
+          const path = rawUrl.slice(idx + marker.length).split('?')[0]
+          const { data: signed } = await supabase.storage.from('contracts').createSignedUrl(path, 60 * 60)
+          signedPdfUrl = signed?.signedUrl || ''
+        }
       }
     } catch (e) {
       console.error('PDF generation error (non-fatal):', e)
