@@ -441,12 +441,18 @@ export function Section8UnderwritingCard({
               </div>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-2 flex items-start gap-1.5">
+          <div className="text-[11px] text-muted-foreground mt-2 flex items-start gap-1.5">
             <Info className="h-3 w-3 mt-0.5 shrink-0" />
-            Se aplica la <strong className="font-medium">Clase II (20% de assessment ratio)</strong>{' '}
-            porque es propiedad de alquiler, no homestead. Usar la Clase III (10%) subestimaría el
-            impuesto a la mitad. Tampoco aplica la exención de homestead.
-          </p>
+            <p className="leading-relaxed">
+              Se aplica la{' '}
+              <strong className="font-medium text-foreground">
+                Clase II (20% de assessment ratio)
+              </strong>{' '}
+              porque es propiedad de alquiler, no homestead. Usar la Clase III (10%) subestimaría el
+              impuesto a la mitad. Tampoco aplica la exención de homestead.
+            </p>
+          </div>
+
         </Card>
 
         {/* Operating */}
