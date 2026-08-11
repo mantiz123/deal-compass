@@ -252,6 +252,308 @@ export type Database = {
           },
         ]
       }
+      deal_checklist_items: {
+        Row: {
+          created_at: string
+          deal_id: string
+          id: string
+          is_done: boolean
+          label: string
+          notes: string | null
+          organization_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          id?: string
+          is_done?: boolean
+          label: string
+          notes?: string | null
+          organization_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          id?: string
+          is_done?: boolean
+          label?: string
+          notes?: string | null
+          organization_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_checklist_items_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_checklist_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_comps: {
+        Row: {
+          address: string
+          bathrooms: number | null
+          bedrooms: number | null
+          closed_date: string | null
+          created_at: string
+          days_on_market: number | null
+          deal_id: string
+          distance_miles: number | null
+          exclusion_reason: string | null
+          id: string
+          included: boolean
+          lot_size_acres: number | null
+          notes: string | null
+          organization_id: string
+          price: number | null
+          similarity_score: number | null
+          sqft: number | null
+          status: Database["public"]["Enums"]["comp_status"]
+          year_built: number | null
+        }
+        Insert: {
+          address: string
+          bathrooms?: number | null
+          bedrooms?: number | null
+          closed_date?: string | null
+          created_at?: string
+          days_on_market?: number | null
+          deal_id: string
+          distance_miles?: number | null
+          exclusion_reason?: string | null
+          id?: string
+          included?: boolean
+          lot_size_acres?: number | null
+          notes?: string | null
+          organization_id: string
+          price?: number | null
+          similarity_score?: number | null
+          sqft?: number | null
+          status?: Database["public"]["Enums"]["comp_status"]
+          year_built?: number | null
+        }
+        Update: {
+          address?: string
+          bathrooms?: number | null
+          bedrooms?: number | null
+          closed_date?: string | null
+          created_at?: string
+          days_on_market?: number | null
+          deal_id?: string
+          distance_miles?: number | null
+          exclusion_reason?: string | null
+          id?: string
+          included?: boolean
+          lot_size_acres?: number | null
+          notes?: string | null
+          organization_id?: string
+          price?: number | null
+          similarity_score?: number | null
+          sqft?: number | null
+          status?: Database["public"]["Enums"]["comp_status"]
+          year_built?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_comps_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_comps_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_scenarios: {
+        Row: {
+          created_at: string
+          deal_id: string
+          id: string
+          inputs: Json
+          is_primary: boolean
+          name: string
+          organization_id: string
+          results: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          id?: string
+          inputs?: Json
+          is_primary?: boolean
+          name?: string
+          organization_id: string
+          results?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          id?: string
+          inputs?: Json
+          is_primary?: boolean
+          name?: string
+          organization_id?: string
+          results?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_scenarios_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_scenarios_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          address: string
+          annual_taxes: number | null
+          apn: string | null
+          assessed_value: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string | null
+          cma_recommended_offer: number | null
+          county: string | null
+          created_at: string
+          created_by: string | null
+          decision: Database["public"]["Enums"]["deal_decision"]
+          extracted_data: Json
+          id: string
+          investment_score: number | null
+          list_price: number | null
+          listing_description: string | null
+          lot_size_acres: number | null
+          mls_id: string | null
+          notes: string | null
+          organization_id: string
+          pdf_filename: string | null
+          pdf_path: string | null
+          property_type: string | null
+          rvm_range_high: number | null
+          rvm_range_low: number | null
+          rvm_value: number | null
+          sqft: number | null
+          stage: Database["public"]["Enums"]["deal_stage"]
+          state: string | null
+          updated_at: string
+          year_built: number | null
+          zip_code: string | null
+          zoning: string | null
+        }
+        Insert: {
+          address: string
+          annual_taxes?: number | null
+          apn?: string | null
+          assessed_value?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          cma_recommended_offer?: number | null
+          county?: string | null
+          created_at?: string
+          created_by?: string | null
+          decision?: Database["public"]["Enums"]["deal_decision"]
+          extracted_data?: Json
+          id?: string
+          investment_score?: number | null
+          list_price?: number | null
+          listing_description?: string | null
+          lot_size_acres?: number | null
+          mls_id?: string | null
+          notes?: string | null
+          organization_id: string
+          pdf_filename?: string | null
+          pdf_path?: string | null
+          property_type?: string | null
+          rvm_range_high?: number | null
+          rvm_range_low?: number | null
+          rvm_value?: number | null
+          sqft?: number | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          state?: string | null
+          updated_at?: string
+          year_built?: number | null
+          zip_code?: string | null
+          zoning?: string | null
+        }
+        Update: {
+          address?: string
+          annual_taxes?: number | null
+          apn?: string | null
+          assessed_value?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          cma_recommended_offer?: number | null
+          county?: string | null
+          created_at?: string
+          created_by?: string | null
+          decision?: Database["public"]["Enums"]["deal_decision"]
+          extracted_data?: Json
+          id?: string
+          investment_score?: number | null
+          list_price?: number | null
+          listing_description?: string | null
+          lot_size_acres?: number | null
+          mls_id?: string | null
+          notes?: string | null
+          organization_id?: string
+          pdf_filename?: string | null
+          pdf_path?: string | null
+          property_type?: string | null
+          rvm_range_high?: number | null
+          rvm_range_low?: number | null
+          rvm_value?: number | null
+          sqft?: number | null
+          stage?: Database["public"]["Enums"]["deal_stage"]
+          state?: string | null
+          updated_at?: string
+          year_built?: number | null
+          zip_code?: string | null
+          zoning?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hud_fmr_alabama_fy2026: {
         Row: {
           area_name: string
@@ -1350,8 +1652,18 @@ export type Database = {
         | "lost_to_competitor"
         | "other"
       buyer_tier: "platinum" | "gold" | "silver" | "bronze"
+      comp_status: "closed" | "pending" | "active" | "unknown"
       contract_status: "draft" | "sent" | "viewed" | "signed" | "completed"
       contract_type: "AB" | "BC" | "AMENDMENT" | "DC"
+      deal_decision: "buy" | "negotiate" | "pass" | "undecided"
+      deal_stage:
+        | "under_analysis"
+        | "offer"
+        | "under_contract"
+        | "rehab"
+        | "listed"
+        | "sold"
+        | "passed"
       kcfy_priority: "low" | "normal" | "high" | "urgent"
       kcfy_status:
         | "pending"
@@ -1535,8 +1847,19 @@ export const Constants = {
         "other",
       ],
       buyer_tier: ["platinum", "gold", "silver", "bronze"],
+      comp_status: ["closed", "pending", "active", "unknown"],
       contract_status: ["draft", "sent", "viewed", "signed", "completed"],
       contract_type: ["AB", "BC", "AMENDMENT", "DC"],
+      deal_decision: ["buy", "negotiate", "pass", "undecided"],
+      deal_stage: [
+        "under_analysis",
+        "offer",
+        "under_contract",
+        "rehab",
+        "listed",
+        "sold",
+        "passed",
+      ],
       kcfy_priority: ["low", "normal", "high", "urgent"],
       kcfy_status: [
         "pending",
