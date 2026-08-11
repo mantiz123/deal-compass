@@ -34,7 +34,8 @@ export function detectRedFlags(params: {
     });
   }
 
-  if (/no heat/.test(`${subject.heating || ''} ${text}`) || /no air/.test(`${subject.cooling || ''} ${text}`)) {
+  const hvacText = `${subject.heating || ''} ${subject.cooling || ''} ${text}`.toLowerCase();
+  if (/no heat/.test(hvacText) || /no air/.test(hvacText)) {
     flags.push({
       key: 'hvac_missing',
       severity: 'high',
