@@ -1,159 +1,88 @@
-# Pivot Plan: Wholesaling CRM → Section 8 Investment Platform
+# Fix & Flip Investment Analyzer — Alabama
 
-## Nueva visión
-Plataforma para inversionistas latinos en real estate Section 8 en USA:
-- Buscar y calificar propiedades para Section 8
-- Análisis financiero (cashflow, cap rate, DSCR)
-- Estimación de rentas HUD / Fair Market Rents (API gratuita)
-- Datos de barrio (crime, schools, walkability)
-- Estimación de arreglos
-- Red de contactos DSCR lenders, PM, contractors
-- Links de pago (Stripe) y bank connect (Mercury) — se conservan
+Reemplazar el enfoque Section 8 / DSCR por un motor de underwriting Fix & Flip con Hard Money, alimentado por el PDF de RPR/MLS.
 
----
+## Qué revisé en tu PDF (3306 Bonds Ave)
 
-## Auditoría: qué se queda, adapta o elimina
+El reporte RPR de 69 páginas es altamente estructurado y extraíble. Del ejemplo saqué:
 
-### ✅ SE QUEDA TAL CUAL (infra core)
-- **Auth** (Supabase, roles, approval flow, org multi-tenant)
-- **Stripe seamless payments** + `payment_links`, `payments`, `stripe-webhook`, `PayCheckout`, `Cobros`
-- **Mercury bank** (si existe, mantener)
-- **Resend emails** (`send-outreach-email`, dominio verificado goklose.com)
-- **Twilio SMS** (para notificaciones a inversionistas)
-- **Lovable AI Gateway** (análisis de propiedad, chat)
-- **Storage buckets**: `property-images`, `lead-documents` (renombrable)
-- **UI kit** (shadcn, sidebar, layout, theming dark)
-- **Landing page nueva** (ya pivotada a Section 8)
-- **Legal pages** (Terms, Privacy, Refund)
+- List Price $29,000 · 3 hab · 2 baños (1 full + 1 medio) · 1,040 sqft · lote 0.42 ac · 1971 · Zoning R2
+- CMA Recommended Offer $101,000 · RVM $138,120 (rango $122.9K–$153.3K) · Price to Est. Value 21%
+- Jefferson County · APN 21-00-27-2-000-020.000 · Assessor Market Value $99,700 · Tax anual $999
+- Señales de rehab: "No Heat" y "No Air" en listing facts vs "Forced Air Unit" en public records; foundation Wood (public) vs Crawl Space (listing) → discrepancia = red flag automático
+- Comparables con Closed Price, Closed Date, Similarity Score (ej. 84), similitudes/diferencias narradas, beds/baths/sqft/lote/año → suficiente para un ARV ponderado real
 
-### 🔄 SE ADAPTA (reusar con cambios)
-| Actual | Nuevo propósito |
-|---|---|
-| `properties` (97 cols) | Property inventory Section 8 — mantener addr, beds, baths, sqft, condition; añadir Section 8 fields |
-| `PropertyDetailSheet`, `EditPropertyDialog` | Ficha de inversión con Section 8 metrics |
-| `DealCalculator`, `strategyEconomics.ts` | Calculadora DSCR / cashflow / cap rate |
-| `property_analyses` + `analyze-property` edge fn | Análisis IA reorientado a Section 8 viability |
-| `property_comps`, `PropStreamCMAUploader` | Comps para ARV (útil para BRRRR Section 8) |
-| `PropertyImageGallery` | Igual |
-| `Import` / CSV importer | Import de propiedades desde MLS/Zillow exports |
-| `buyers` table | Renombrar a `investors` — perfil de inversionista (capital, mercados, riesgo) |
-| `interactions` + `LeadTimeline` | Timeline de comunicación con inversionista |
-| `contracts` + signing wizard | Contratos de management / purchase agreement |
-| `Dashboard` widgets | Widgets nuevos: pipeline propiedades, cashflow proyectado, rentas HUD |
-| `Sidebar` / `Layout` | Nueva navegación |
-| `notifications` | Igual |
+Conclusión: no hace falta OCR pesado. El PDF trae texto y tablas; con extracción + IA se llenan casi todos los campos que pediste, y lo que no esté se marca `Not Available`.
 
-### ❌ SE ELIMINA (wholesaling-específico)
-- **Leads / wholesaling pipeline**: `leads` (29 cols), `Leads.tsx`, `Pipeline.tsx`, `KanbanBoard`, `LeadDetailSheet`, `NewLeadDialog`, `ArchiveLeadDialog`, `HotLeadsWidget`, `LeadsDelDia`, `useLeadCleanup`, `daily-lead-cleanup`
-- **K-Score PIW engine**: `calculate-piw-score`, `batch-recalculate-piw`, `PIWScoreDetails`, `KScoreGauge`, `SkillBreakdown`, memorias K-Score
-- **Strategy Engine wholesaling**: `strategy-engine.ts`, `StrategyBattleCard` (sub-to/wrap/novation) — reemplazar con estrategias buy-and-hold / BRRRR / turnkey
-- **KCFY** (Klose Closes For You): `kcfy_requests`, `kcfy_status_events`, `AdminKCFY`, `KCFYTimeline`, `RequestKCFYDialog`, `KCFYExecutiveSheet`, edge fns relacionados
-- **Deal packages a buyers**: `deal_packages`, `DealPackageGenerator`, `generate-deal-package`, `send-buyer-deal-package`, `track-deal-package`, `DealPackageTracker`, `Tracking.tsx`
-- **Seller conversations / voice AI**: `seller_conversations`, `VoiceAgentSheet`, `initiate-outbound-call`, `twilio-media-stream`, `elevenlabs-conversation-token`, `process-seller-reply`, `adjust-piw-score-conversation`
-- **Campañas SMS/email outreach a sellers**: `drip_campaigns`, `campaign_sequences`, `campaign_enrollments`, `Campaigns.tsx`, `send-campaign-sms`, `process-sms-sequences`, `generate-outreach-email`, `OutreachEmailGenerator`, `outreach_email_log`, `sms_outreach_log`, `lead_email_drafts`
-- **Skip trace / DNC**: `useDNCCheck`, `SkipTraceInput`, `lead_cleanup_log`
-- **Realtors module**: `realtors`, `Realtors.tsx`, `useRealtors`, componentes
-- **Academy completa**: todas las tablas `academy_*`, `Academy.tsx`, componentes, `create-academy-checkout`, `issue-certificate`, `VerifyCertificate`, `academy-certificates` bucket
-- **Training sessions**: `training_sessions`, `Training.tsx`, `analyze-training-call`, `deep-analyze-training`, `agent_demos`, `generate-agent-demo`
-- **Contractor agreements / ICA**: `contractor_agreements`, `ContractorAgreement.tsx`, `generate-ica-pdf`, `useICAGuard`, `contractor-agreements` bucket, `Earnings.tsx` (comisiones estudiantes)
-- **Buyer liquidity / matchmaking**: `useBuyerLiquidity`, `useBuyerMatchmaking`, `BuyerLiquidityWidget`, `reactivate-buyers`
-- **PropStream / Propwire**: `propwire_import_log`, `process-propwire-import`
-- **Tools**: `SubToCalculator` (creative finance)
-- **Guide, Deals** (wholesaling)
+## Qué se conserva de lo actual
 
----
+- Auth, organizaciones, roles, aprobación de usuarios
+- Stripe / links de pago / Payments / Cobros (intacto)
+- Tabla `properties`, imágenes de propiedad, storage
+- Contratos y firma electrónica
+- Infra de Edge Functions + Lovable AI
 
-## Nuevas features a construir
+## Qué se elimina o archiva
 
-### 1. Property Intelligence Section 8
-- **HUD Fair Market Rents API** (gratis, `huduser.gov`) → renta esperada por ZIP + bedrooms
-- **HUD Small Area FMR** (por Census Tract, más preciso)
-- **Census API** (gratis) → demografía, median income, poverty rate
-- **FBI Crime Data API** (gratis) → seguridad por ciudad
-- **GreatSchools** (freemium) o **SchoolDigger** → calidad escolar
-- **Walk Score API** (freemium)
-- Todo cacheado en tabla `property_market_data`
+- `Section8UnderwritingCard` (DSCR/cap rate/semáforo Section 8) → se convierte en un módulo secundario "Buy & Hold" dentro de Exit Strategy, no la pantalla principal
+- Página pública `/analyze` de Section 8 → se reemplaza por el nuevo Analyzer interno
+- `DealCalculator`, `PropStreamCMAUploader`, `analyze-property` (prompt de wholesaling) → reemplazados
+- Tablas `hud_fmr_alabama_fy2026`, `hud_fmr_safmr_zip`, `property_underwriting` → quedan solo como fuente opcional de renta estimada para el exit secundario
 
-### 2. Análisis financiero Section 8
-- Cashflow: FMR rent − (mortgage PITI + PM 8-10% + vacancy 5% + repairs 5% + capex 5%)
-- **Cap rate**, **Cash-on-cash**, **DSCR** (para calificar préstamo)
-- Proyección 5/10/20 años con appreciation + rent growth
-- Comparación turnkey vs BRRRR
+## Arquitectura nueva
 
-### 3. Rehab estimator Section 8
-- Checklist HQS (Housing Quality Standards) — requisitos Section 8
-- Estimador por categoría (roof, HVAC, plumbing, paint, flooring)
-- Reusar `analyze-property` con nuevo prompt
+### Base de datos
+- `deals` — una fila por propiedad analizada: dirección, datos extraídos (jsonb con `{value, source, confidence}` por campo), pdf_path, stage (`under_analysis | offer | under_contract | rehab | listed | sold | passed`), decisión, score, notas
+- `deal_comps` — comparables extraídos: precio, fecha de cierre, distancia, similarity score, beds/baths/sqft/año, status (closed/active/pending), incluido/excluido del ARV + razón
+- `deal_scenarios` — cada modelo financiero guardado (Conservative / Base / Aggressive + estructuras de deal), con todos los inputs y outputs
+- `deal_checklists` — due diligence, 20 ítems por deal
+- Bucket privado `deal-documents` para el PDF original
 
-### 4. DSCR Lender network
-- Tabla `dscr_lenders` (name, states, min_loan, max_ltv, min_dscr, rate_range, contact)
-- Directorio filtrable por estado/loan size
+### Backend
+- `extract-property-pdf` — recibe el PDF, extrae texto por página, y con IA devuelve JSON estricto con cada campo etiquetado `FACT | ESTIMATE | ASSUMPTION | USER_INPUT` y su origen. Prohibido inventar: campo ausente = `null` + `Not Available`
+- `estimate-rehab` — estimación preliminar por partida (Roof, HVAC, Plumbing, Electrical, Kitchen, Baths, Flooring, Paint, Windows, Doors, Exterior, Foundation, Landscaping, Appliances, Permits, Cleanup, Other) en Low/Mid/High, basada en año, sqft, descripción y condición. Siempre etiquetada "Preliminary estimate — contractor inspection required"
+- `generate-investment-memo` — memo final en lenguaje simple: por qué, qué puede salir mal, qué verificar, qué ofrecer, máximo a pagar
+- Motor financiero **determinista en TypeScript compartido** (`src/lib/underwriting/`), no en la IA: ARV ponderado, rehab, hard money, holding, selling, MAO, score, red flags. La IA solo extrae y redacta.
 
-### 5. Investor pipeline
-- `investors` (ex-buyers): capital disponible, mercados target, tipo (turnkey/BRRRR), status
-- Match propiedades ↔ investors
-- Deal room: enviar oportunidad, tracking de vistas, aceptación
+### Motor de underwriting (código puro, testeable)
+- `comps.ts` — ARV ponderado: peso por status (closed > pending > active), distancia, similarity score, ajuste por $/sqft y antigüedad de la venta. Devuelve ARV Conservative / Base / Optimistic + lista de comps usados y descartados con razón
+- `rehab.ts` — partidas Low/Base/High, presets Light / Medium / Full
+- `financing.ts` — Hard Money con LTV, LTC, ARV-LTV, tasa, puntos, origination, plazo, extensión, interest-only y balloon. Todo configurable, nada hardcodeado por lender
+- `holding.ts` — interés + taxes + seguro + utilities + HOA + mantenimiento + seguridad + jardín, por 3/4/6/9/12 meses
+- `selling.ts` — comisión, closing del vendedor, transfer tax, título, abogado, staging, fotos — cada % editable
+- `deal.ts` — Total Project Cost, Gross Profit, ROI, Cash-on-Cash, Profit Margin, ROI anualizado
+- `mao.ts` — MAO inverso desde ARV con profit deseado y risk buffer, regla del 70% editable, no impuesta
+- `capital.ts` — Cash Required vs Cash Available ($30,000 configurable) → Fits / Shortfall
+- `structures.ts` — 6 estructuras (Cash, HM purchase-only, HM purchase+rehab, HM + private money, seller financing, híbrido) comparadas lado a lado, marcando la de menor capital propio con margen sano
+- `score.ts` — Investment Score 0–100 con los 9 subscores que pediste, cada uno con su justificación numérica
+- `liquidity.ts` — Resale Liquidity Score con ventas cerradas, DOM, inventario activo/pendiente, rango de precio
+- `redflags.ts` — reglas duras: discrepancias public vs listing (como el No Heat / No Air de esta propiedad), foundation, año, rehab desproporcionado, comps débiles, ARV irreal, capital insuficiente, gap de financiación
 
-### 6. Payment flow (mantener)
-- Stripe payment links para earnest money, PM fees, acquisition fees
-- Cobros dashboard
+### Frontend
+- `/deals` — pipeline por etapa con las cifras clave por tarjeta
+- `/deals/new` — dropzone "Upload Property PDF" → extracción → revisión editable campo por campo con su etiqueta de origen
+- `/deals/:id` — el workspace de underwriting:
+  1. Verdict banner: BUY / NEGOTIATE / PASS + Investment Score
+  2. KPIs: Purchase, ARV, Rehab, Total Project Cost, Cash Required, Profit, ROI, Max Offer
+  3. Comps engine con tabla de comps y toggle incluir/excluir en vivo
+  4. Rehab estimator editable por partida
+  5. Hard Money + escenarios A/B/C
+  6. Holding + Selling
+  7. Deal Structure Optimizer (las 6 opciones comparadas)
+  8. Capital $30K: Fits / Does Not Fit
+  9. Exit strategy: Flip primario, Buy & Hold y Section 8 secundarios (Section 8 solo si hay dato real; si no, "verify with local PHA")
+  10. Red Flags, Offer Strategy (Low / Target / Max), Due Diligence Checklist, Investment Memo exportable a PDF
+- Diseño: dashboard financiero profesional, tarjetas densas, tablas, barras proporcionales, sin estética de chatbot
 
----
+### Extensibilidad futura
+Capa `src/lib/dataSources/` con interfaz `PropertyDataSource` y un solo provider hoy (`RprPdfSource`). MLS, Zillow, Redfin, crime, flood, rent, Maps y lenders se enchufan después sin tocar el motor.
 
-## Nueva navegación propuesta
-```
-Dashboard         → KPIs cashflow, propiedades activas, deals cerrados
-Propiedades       → Inventario + análisis Section 8
-Análisis          → Calculadora DSCR + proyección
-Mercado           → HUD FMR explorer por ZIP
-Inversionistas    → CRM de inversionistas
-Deal Room         → Oportunidades enviadas
-Lenders           → Directorio DSCR
-Contratos         → PM / Purchase agreements
-Cobros / Pagos    → Stripe links
-Ajustes
-```
+## Orden de entrega
 
----
+1. Esquema de BD + bucket + subida y extracción del PDF con revisión editable
+2. Motor de underwriting completo en TS + tests con los números reales de 3306 Bonds Ave
+3. Pantalla del deal: comps, rehab, hard money, holding, selling, deal calculator, MAO, capital
+4. Score, red flags, structures, offer strategy, checklist, memo
+5. Pipeline `/deals` y limpieza de Section 8 / DSCR
 
-## Ejecución por fases (aprobación por fase)
-
-**Fase 0 — Decisiones (necesito tu input)**
-1. ¿Mantener multi-tenant orgs o simplificar a un solo workspace tuyo?
-2. ¿Migrar datos existentes (buyers → investors) o empezar limpio?
-3. ¿Mantener Academy y KCFY archivados o borrar en firme?
-4. ¿Idioma UI interno: español, inglés o bilingüe toggle?
-5. ¿Enfoque geográfico inicial: solo Alabama, todo USA, o top 5 estados Section 8?
-
-**Fase 1 — Limpieza (destructiva)**
-- Drop tablas wholesaling, delete edge functions, remove pages/components/hooks obsoletos
-- Backup previo de datos que quieras conservar
-
-**Fase 2 — Data model Section 8**
-- Migrations: extender `properties` con campos Section 8 (voucher_zip_fmr, hqs_status, rent_ratio), crear `investors`, `dscr_lenders`, `property_market_data`, `deal_room_sends`
-- Rebrand `buyers` → `investors`
-
-**Fase 3 — Integraciones gratis**
-- Edge fn `fetch-hud-fmr` (HUD API)
-- Edge fn `fetch-census-data`
-- Edge fn `fetch-crime-data`
-- Cache en `property_market_data`
-
-**Fase 4 — Análisis financiero**
-- Nueva calculadora Section 8 (cashflow, DSCR, cap rate, proyección)
-- Reemplazar `StrategyBattleCard` con `Section8AnalysisCard`
-- Rehab estimator con checklist HQS
-
-**Fase 5 — Investor CRM + Deal Room**
-- Perfil investor, matching, envío de deals, tracking
-
-**Fase 6 — DSCR lender directory**
-- Seed inicial (10-20 lenders conocidos), filtros
-
-**Fase 7 — Dashboard nuevo + navegación**
-- Widgets: pipeline propiedades, cashflow total proyectado, deals cerrados MTD, FMR heatmap
-
----
-
-## Preguntas antes de arrancar
-Confirma Fase 0 (5 decisiones arriba) y te propongo la migración SQL de Fase 1 para tu aprobación explícita. No borro nada sin tu OK.
+Cada fase se verifica con datos reales antes de pasar a la siguiente.
