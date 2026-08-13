@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   ShieldCheck,
+  Calculator,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +32,7 @@ const adminNavItems: NavItem[] = [
 
 const navItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Deals", href: "/deals", icon: Calculator },
   { name: "Propiedades", href: "/properties", icon: Building2 },
   { name: "Inversionistas", href: "/buyers", icon: Users },
   { name: "Importar", href: "/import", icon: Upload },

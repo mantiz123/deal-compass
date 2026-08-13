@@ -23,6 +23,9 @@ import ContractNew from "./pages/ContractNew";
 import ContractSign from "./pages/ContractSign";
 import NotFound from "./pages/NotFound";
 import Cobros from "./pages/Cobros";
+import Deals from "./pages/Deals";
+import DealNew from "./pages/DealNew";
+import DealDetail from "./pages/DealDetail";
 import PayCheckout from "./pages/PayCheckout";
 import Terms from "./pages/legal/Terms";
 import Refund from "./pages/legal/Refund";
@@ -49,6 +52,9 @@ const App = () => (
               <Route path="/pending-approval" element={<PendingApproval />} />
               <Route path="/buyers" element={<Buyers />} />
               <Route path="/admin/buyers" element={<AdminBuyers />} />
+              <Route path="/deals" element={<Deals />} />
+              <Route path="/deals/new" element={<DealNew />} />
+              <Route path="/deals/:id" element={<DealDetail />} />
               <Route path="/properties" element={<Properties />} />
               <Route path="/payments" element={<Payments />} />
               <Route path="/import" element={<Import />} />
