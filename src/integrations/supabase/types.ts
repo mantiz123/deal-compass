@@ -1569,6 +1569,54 @@ export type Database = {
           },
         ]
       }
+      site_submissions: {
+        Row: {
+          address: string | null
+          asking_price: number | null
+          city: string | null
+          created_at: string
+          email: string
+          id: string
+          kind: string
+          message: string | null
+          name: string
+          phone: string | null
+          property_type: string | null
+          state: string | null
+          timeline: string | null
+        }
+        Insert: {
+          address?: string | null
+          asking_price?: number | null
+          city?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          kind?: string
+          message?: string | null
+          name: string
+          phone?: string | null
+          property_type?: string | null
+          state?: string | null
+          timeline?: string | null
+        }
+        Update: {
+          address?: string | null
+          asking_price?: number | null
+          city?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          kind?: string
+          message?: string | null
+          name?: string
+          phone?: string | null
+          property_type?: string | null
+          state?: string | null
+          timeline?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
