@@ -30,6 +30,14 @@ import PayCheckout from "./pages/PayCheckout";
 import Terms from "./pages/legal/Terms";
 import Refund from "./pages/legal/Refund";
 import Privacy from "./pages/legal/Privacy";
+import Home from "./pages/site/Home";
+import Buy from "./pages/site/Buy";
+import Sell from "./pages/site/Sell";
+import LandPage from "./pages/site/Land";
+import Markets from "./pages/site/Markets";
+import MarketDetail from "./pages/site/MarketDetail";
+import About from "./pages/site/About";
+import Contact from "./pages/site/Contact";
 import "@/styles/landing.css";
 
 const queryClient = new QueryClient();
