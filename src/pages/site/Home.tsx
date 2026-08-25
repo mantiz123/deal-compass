@@ -49,12 +49,12 @@ function CinematicHero() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scale = 1.35 - progress * 0.35;
+  const scale = 1.75 - progress * 0.75;
   const radius = progress * 28;
-  const inset = progress * 4;
+  const inset = progress * 3;
 
   return (
-    <div ref={ref} className="relative h-[220vh]">
+    <div ref={ref} className="relative h-[165vh]">
       <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 overflow-hidden"
@@ -63,20 +63,21 @@ function CinematicHero() {
           <div className="relative h-full w-full overflow-hidden" style={{ borderRadius: `${radius}px` }}>
             <img
               src={heroImg}
-              alt="Aerial view of southern American land and development at golden hour"
+              alt="Aerial view rising from a single American home out over the city skyline at golden hour"
               width={1920}
               height={1088}
               className="h-full w-full object-cover"
-              style={{ transform: `scale(${scale})`, transformOrigin: "center" }}
+              style={{ transform: `scale(${scale})`, transformOrigin: "center 82%" }}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0b1530]/70 via-[#0b1530]/40 to-[#0f1b3d]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0b1530]/75 via-[#0b1530]/35 to-[#0f1b3d]/90" />
           </div>
         </div>
 
         <div
           className="relative z-10 mx-auto max-w-4xl px-6 text-center"
-          style={{ opacity: 1 - progress * 1.1, transform: `translateY(${-progress * 40}px)` }}
+          style={{ opacity: Math.max(1 - progress * 1.6, 0), transform: `translateY(${-progress * 40}px)` }}
         >
+
           <span className="text-[10px] uppercase tracking-[0.35em] text-white/70">Klose LLC</span>
           <h1
             className="mt-6 text-5xl font-medium leading-[1.05] lg:text-8xl"
