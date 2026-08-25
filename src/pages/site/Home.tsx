@@ -36,44 +36,62 @@ function useReveal() {
 
 function CinematicHero() {
   const ref = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    let raf = 0;
     const onScroll = () => {
       const el = ref.current;
       if (!el) return;
       const total = el.offsetHeight - window.innerHeight;
       const p = Math.min(Math.max(-el.getBoundingClientRect().top / Math.max(total, 1), 0), 1);
       setProgress(p);
+
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const v = videoRef.current;
+        if (v && v.readyState >= 1 && Number.isFinite(v.duration)) {
+          const t = p * (v.duration - 0.05);
+          if (Math.abs(v.currentTime - t) > 0.03) v.currentTime = t;
+        }
+      });
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
-  const scale = 1.75 - progress * 0.75;
+  const scale = 1.18 - progress * 0.18;
   const radius = progress * 28;
   const inset = progress * 3;
 
   return (
-    <div ref={ref} className="relative h-[165vh]">
+    <div ref={ref} className="relative h-[220vh]">
       <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 overflow-hidden"
           style={{ padding: `${inset}vh ${inset}vw`, transition: "padding 120ms linear" }}
         >
           <div className="relative h-full w-full overflow-hidden" style={{ borderRadius: `${radius}px` }}>
-            <img
-              src={heroImg}
-              alt="Aerial view rising from a single American home out over the city skyline at golden hour"
-              width={1920}
-              height={1088}
+            <video
+              ref={videoRef}
+              src={heroVideo.url}
+              poster={heroImg}
+              muted
+              playsInline
+              preload="auto"
+              aria-label="Aerial view rising from a single American home out over the city skyline at golden hour"
               className="h-full w-full object-cover"
-              style={{ transform: `scale(${scale})`, transformOrigin: "center 82%" }}
+              style={{ transform: `scale(${scale})`, transformOrigin: "center 70%" }}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0b1530]/75 via-[#0b1530]/35 to-[#0f1b3d]/90" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0b1530]/70 via-[#0b1530]/25 to-[#0f1b3d]/85" />
           </div>
         </div>
+
 
         <div
           className="relative z-10 mx-auto max-w-4xl px-6 text-center"
