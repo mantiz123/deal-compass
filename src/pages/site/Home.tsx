@@ -5,6 +5,8 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { ListingCard } from "@/components/site/ListingCard";
 import { listings, markets, landCategories } from "@/data/siteContent";
 import heroImg from "@/assets/site-hero.jpg";
+import heroVideo from "@/assets/site-hero.mp4.asset.json";
+
 
 function useReveal() {
   useEffect(() => {
