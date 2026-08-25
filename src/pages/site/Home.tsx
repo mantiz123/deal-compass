@@ -145,7 +145,7 @@ export default function Home() {
       <CinematicHero />
 
       {/* Brand philosophy */}
-      <section className="border-t border-white/10 px-6 py-28">
+      <section className="border-t border-white/10 px-6 pb-28 pt-20">
         <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-[1fr_1.2fr]" data-reveal>
           <div>
             <span className="text-[10px] uppercase tracking-[0.3em] text-[#3b6fa0]">Philosophy</span>
